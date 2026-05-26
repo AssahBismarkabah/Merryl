@@ -1,0 +1,11 @@
+[universe]
+name = "S&P 500 anchor universe"
+source = "wikipedia_constituents"
+url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+
+[normalization]
+information_technology_sector_name = "Technology"
+
+[guardrails]
+scope = "First implementation universe only; not a permanent product boundary."
+liquidity_rule = "Keep highly liquid stocks first, then expand to Russell 1000/3000 or all liquid US stocks."

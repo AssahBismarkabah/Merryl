@@ -1,0 +1,29 @@
+name = "daily"
+public_command = "merryl run daily --date latest"
+purpose = "Daily market map, sector ranking, stock ranking, and watchlist report."
+
+steps = [
+  "load_sp500_universe",
+  "ingest_daily_prices",
+  "score_sectors",
+  "score_industries",
+  "score_stocks",
+  "write_markdown_report",
+  "write_csv_exports",
+]
+
+[inputs]
+data_provider = "alpaca"
+timeframe = "1Day"
+feed = "iex"
+lookback_calendar_days = 420
+
+[outputs]
+database = "data/market.db"
+report = "reports/YYYY-MM-DD_market_report.md"
+sector_scores = "exports/YYYY-MM-DD_sector_scores.csv"
+watchlist = "exports/YYYY-MM-DD_stock_watchlist.csv"
+
+[guardrails]
+watchlist_not_signal = true
+no_internal_step_commands = true

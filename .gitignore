@@ -10,3 +10,16 @@
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
+
+# Rust build output
+/target/
+
+# Local generated market data and reports
+/data/*.db
+/data/*.db-shm
+/data/*.db-wal
+/reports/*.md
+/exports/*.csv
+
+# Local secrets
+.env

@@ -1,0 +1,12 @@
+[app]
+name = "Merryl"
+database_path = "data/market.db"
+
+[data]
+provider = "alpaca"
+feed = "iex"
+lookback_calendar_days = 420
+
+[outputs]
+reports_dir = "reports"
+exports_dir = "exports"

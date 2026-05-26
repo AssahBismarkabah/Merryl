@@ -129,8 +129,8 @@ Output: Markdown + CSV
 Primary UX target: local web dashboard
 CLI role: minimal workflow runner and maintenance surface
 Data source: adapter-based provider interface
-First provider: prototype-accessible daily OHLCV source
-Production provider later: Polygon or Alpaca
+First provider: Alpaca Market Data API daily OHLCV
+Production provider later: higher Alpaca feed or Polygon if needed
 ```
 
 Rust is a good fit because the first real product is a durable data pipeline and scoring engine:
@@ -243,7 +243,7 @@ Keep CLI small from day one.
 The first milestone may still generate Markdown/CSV before the dashboard exists, but that is a validation output, not the final user interface.
 
 ```text
-market-map
+merryl
 ```
 
 The CLI should expose user workflows, not internal modules.
@@ -251,13 +251,13 @@ The CLI should expose user workflows, not internal modules.
 Bad direction:
 
 ```text
-market-map ingest
-market-map score-sectors
-market-map score-stocks
-market-map calc-breadth
-market-map calc-relative-volume
-market-map write-sector-csv
-market-map write-watchlist-csv
+merryl ingest
+merryl score-sectors
+merryl score-stocks
+merryl calc-breadth
+merryl calc-relative-volume
+merryl write-sector-csv
+merryl write-watchlist-csv
 ```
 
 That becomes a command graveyard.
@@ -265,12 +265,12 @@ That becomes a command graveyard.
 Better direction:
 
 ```text
-market-map run daily --date latest
-market-map run weekly --date latest
-market-map run backtest --from 2020-01-01 --to 2026-05-26
-market-map status
-market-map doctor
-market-map db migrate
+merryl run daily --date latest
+merryl run weekly --date latest
+merryl run backtest --from 2020-01-01 --to 2026-05-26
+merryl status
+merryl doctor
+merryl db migrate
 ```
 
 Internal steps still exist, but they are called by the workflow engine:
@@ -331,7 +331,7 @@ config/workflows/backtest.toml
 The public command stays simple:
 
 ```text
-market-map run daily --date latest
+merryl run daily --date latest
 ```
 
 The workflow file defines the steps:
@@ -772,10 +772,9 @@ DailyOhlcvProvider
 
 Initial providers:
 
-- `mock_provider`: for tests and development.
-- `prototype_provider`: temporary accessible daily data.
-- `polygon_provider`: production candidate.
-- `alpaca_provider`: production candidate.
+- `alpaca_provider`: first real daily OHLCV provider.
+- `polygon_provider`: production candidate if Polygon becomes a better fit.
+- test fixtures: allowed only inside tests; not a fallback for daily runs.
 
 Provider rule:
 
@@ -1021,12 +1020,12 @@ explanation
 Public CLI target surface:
 
 ```text
-market-map run daily --date YYYY-MM-DD
-market-map run weekly --date YYYY-MM-DD
-market-map run backtest --from YYYY-MM-DD --to YYYY-MM-DD
-market-map status
-market-map doctor
-market-map db migrate
+merryl run daily --date YYYY-MM-DD
+merryl run weekly --date YYYY-MM-DD
+merryl run backtest --from YYYY-MM-DD --to YYYY-MM-DD
+merryl status
+merryl doctor
+merryl db migrate
 ```
 
 This is the target command surface, implemented incrementally.
@@ -1034,7 +1033,7 @@ This is the target command surface, implemented incrementally.
 First milestone:
 
 ```text
-market-map run daily --date latest
+merryl run daily --date latest
 ```
 
 Weekly and backtest workflows should only become usable after historical scores and validation data exist.
@@ -1264,7 +1263,7 @@ The chart, risk plan, and invalidation decide the trade.
 The first milestone is complete when this command works:
 
 ```text
-market-map run daily --date latest
+merryl run daily --date latest
 ```
 
 And produces:

@@ -1,0 +1,5 @@
+name = "weekly"
+status = "planned_after_historical_scores"
+purpose = "Review 5D/20D/60D sector and industry rotation after enough score history exists."
+
+guardrail = "Do not expose as a public workflow until the daily score history is stored and validated."

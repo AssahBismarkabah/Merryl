@@ -1,0 +1,160 @@
+use std::path::PathBuf;
+use std::time::Duration;
+
+pub const APP_NAME: &str = "Merryl";
+pub const CLI_NAME: &str = "merryl";
+pub const USER_AGENT: &str = "Merryl/0.1";
+pub const DAILY_RUN_COMMAND: &str = "merryl run daily --date latest";
+
+pub mod paths {
+    use super::PathBuf;
+
+    pub const DB_PATH: &str = "data/market.db";
+    pub const REPORTS_DIR: &str = "reports";
+    pub const EXPORTS_DIR: &str = "exports";
+    pub const DAILY_WORKFLOW_CONFIG: &str = "config/workflows/daily.toml";
+
+    pub const REQUIRED_DOCS: &[&str] = &[
+        "docs/market_rotation_system_spec.md",
+        "docs/phase_0_decisions_spec.md",
+        "docs/mvp_technical_plan_spec.md",
+    ];
+
+    pub fn db_path() -> PathBuf {
+        PathBuf::from(DB_PATH)
+    }
+
+    pub fn report_path(date: &str) -> PathBuf {
+        PathBuf::from(format!("{REPORTS_DIR}/{date}_market_report.md"))
+    }
+
+    pub fn sector_scores_export_path(date: &str) -> PathBuf {
+        PathBuf::from(format!("{EXPORTS_DIR}/{date}_sector_scores.csv"))
+    }
+
+    pub fn stock_watchlist_export_path(date: &str) -> PathBuf {
+        PathBuf::from(format!("{EXPORTS_DIR}/{date}_stock_watchlist.csv"))
+    }
+}
+
+pub mod market_data {
+    use super::Duration;
+
+    pub const ALPACA_API_KEY_ID_ENV: &str = "ALPACA_API_KEY_ID";
+    pub const ALPACA_API_SECRET_KEY_ENV: &str = "ALPACA_API_SECRET_KEY";
+    pub const ALPACA_FEED_ENV: &str = "ALPACA_FEED";
+    pub const ALPACA_DATA_URL_ENV: &str = "ALPACA_DATA_URL";
+    pub const LOOKBACK_DAYS_ENV: &str = "MERRYL_LOOKBACK_DAYS";
+
+    pub const ALPACA_DATA_URL: &str = "https://data.alpaca.markets";
+    pub const ALPACA_BARS_PATH: &str = "/v2/stocks/bars";
+    pub const ALPACA_KEY_HEADER: &str = "APCA-API-KEY-ID";
+    pub const ALPACA_SECRET_HEADER: &str = "APCA-API-SECRET-KEY";
+    pub const DEFAULT_ALPACA_FEED: &str = "iex";
+    pub const DAILY_TIMEFRAME: &str = "1Day";
+    pub const PRICE_ADJUSTMENT: &str = "all";
+    pub const SORT_ASC: &str = "asc";
+    pub const ALPACA_PAGE_LIMIT: &str = "10000";
+    pub const DEFAULT_LOOKBACK_DAYS: i64 = 420;
+    pub const ALPACA_BATCH_SIZE: usize = 25;
+    pub const ALPACA_BATCH_SLEEP_MS: u64 = 350;
+    pub const HTTP_TIMEOUT_SECONDS: u64 = 45;
+    pub const SOURCE_PREFIX: &str = "alpaca";
+
+    pub fn http_timeout() -> Duration {
+        Duration::from_secs(HTTP_TIMEOUT_SECONDS)
+    }
+
+    pub fn batch_sleep() -> Duration {
+        Duration::from_millis(ALPACA_BATCH_SLEEP_MS)
+    }
+}
+
+pub mod universe {
+    pub const SP500_WIKIPEDIA_URL: &str =
+        "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies";
+    pub const EXCHANGE_US: &str = "US";
+    pub const ASSET_STOCK: &str = "stock";
+    pub const ASSET_BROAD_ETF: &str = "broad_etf";
+    pub const ASSET_SECTOR_ETF: &str = "sector_etf";
+
+    pub const BROAD_ETFS: &[(&str, &str)] = &[
+        ("SPY", "SPDR S&P 500 ETF Trust"),
+        ("QQQ", "Invesco QQQ Trust"),
+        ("IWM", "iShares Russell 2000 ETF"),
+        ("DIA", "SPDR Dow Jones Industrial Average ETF"),
+    ];
+
+    pub const SECTOR_ETFS: &[(&str, &str)] = &[
+        ("Communication Services", "XLC"),
+        ("Consumer Discretionary", "XLY"),
+        ("Consumer Staples", "XLP"),
+        ("Energy", "XLE"),
+        ("Financials", "XLF"),
+        ("Health Care", "XLV"),
+        ("Industrials", "XLI"),
+        ("Materials", "XLB"),
+        ("Real Estate", "XLRE"),
+        ("Technology", "XLK"),
+        ("Utilities", "XLU"),
+    ];
+}
+
+pub mod scoring {
+    pub const BENCHMARK_SYMBOL: &str = "SPY";
+    pub const RETURN_1D: usize = 1;
+    pub const RETURN_5D: usize = 5;
+    pub const RETURN_20D: usize = 20;
+    pub const RETURN_50D: usize = 50;
+    pub const RETURN_60D: usize = 60;
+    pub const SCORE_MIN: f64 = 0.0;
+    pub const SCORE_MAX: f64 = 100.0;
+    pub const ZERO_PERCENT: f64 = 0.0;
+    pub const NEUTRAL_SCORE: f64 = 50.0;
+    pub const DEFAULT_RELATIVE_VOLUME: f64 = 1.0;
+    pub const MIN_AVG_DOLLAR_VOLUME: f64 = 20_000_000.0;
+    pub const INITIAL_RANK: usize = 0;
+    pub const FIRST_RANK: usize = 1;
+    pub const ZERO_RANK_CHANGE: f64 = 0.0;
+    pub const BREADTH_COMPONENT_DIVISOR: f64 = 2.0;
+    pub const RELATIVE_RETURN_SCORE_MULTIPLIER: f64 = 500.0;
+    pub const TREND_RETURN_SCORE_MULTIPLIER: f64 = 400.0;
+    pub const INDUSTRY_RETURN_SCORE_MULTIPLIER: f64 = 400.0;
+    pub const RELATIVE_VOLUME_BASELINE: f64 = 0.5;
+    pub const RELATIVE_VOLUME_SCORE_MULTIPLIER: f64 = 100.0;
+    pub const PERCENT_SCALE: f64 = 100.0;
+    pub const LIQUIDITY_SCORE_SCALE: f64 = 20.0;
+    pub const TREND_ABOVE_20D_50D_SCORE: f64 = 90.0;
+    pub const TREND_ABOVE_20D_SCORE: f64 = 70.0;
+    pub const TREND_BELOW_SCORE: f64 = 35.0;
+    pub const STOCK_WATCHLIST_LIMIT: usize = 50;
+    pub const REPORT_WATCHLIST_LIMIT: usize = 25;
+    pub const EXPLANATION_LIMIT: usize = 10;
+    pub const CATALYST_PENDING_SOURCE: &str = "pending_source";
+
+    pub const SECTOR_RELATIVE_RETURN_WEIGHT: f64 = 0.30;
+    pub const SECTOR_TREND_WEIGHT: f64 = 0.20;
+    pub const SECTOR_RELATIVE_VOLUME_WEIGHT: f64 = 0.20;
+    pub const SECTOR_BREADTH_WEIGHT: f64 = 0.20;
+    pub const SECTOR_RANK_CHANGE_WEIGHT: f64 = 0.10;
+
+    pub const STOCK_SECTOR_WEIGHT: f64 = 0.30;
+    pub const STOCK_RELATIVE_STRENGTH_WEIGHT: f64 = 0.25;
+    pub const STOCK_RELATIVE_VOLUME_WEIGHT: f64 = 0.20;
+    pub const STOCK_TREND_WEIGHT: f64 = 0.15;
+    pub const STOCK_LIQUIDITY_WEIGHT: f64 = 0.10;
+}
+
+pub mod output_text {
+    pub const DAILY_REPORT_TITLE: &str = "Daily Market Rotation Report";
+    pub const REPORT_RULE: &str = "Rule: this is a market rotation watchlist, not an automatic trade signal. Chart structure, invalidation, and risk define any trade.";
+    pub const SECTOR_SECTION: &str = "Sector Rotation";
+    pub const WATCHLIST_SECTION: &str = "Top Stock Watchlist";
+    pub const EXPLANATION_SECTION: &str = "Why These Names";
+    pub const SECTOR_TABLE_HEADER: &str = "| Rank | Sector | ETF | Score | 1D | 5D | 20D | 60D | Rel Vol | Breadth 20D | Breadth 50D |";
+    pub const SECTOR_TABLE_ALIGNMENT: &str =
+        "|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|";
+    pub const WATCHLIST_TABLE_HEADER: &str = "| Rank | Symbol | Name | Sector | Industry | Score | 20D | Rel Sector | Rel Vol | Trend | Catalyst |";
+    pub const WATCHLIST_TABLE_ALIGNMENT: &str =
+        "|---:|---|---|---|---|---:|---:|---:|---:|---|---|";
+}

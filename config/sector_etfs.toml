@@ -1,0 +1,43 @@
+[[sector]]
+name = "Communication Services"
+etf = "XLC"
+
+[[sector]]
+name = "Consumer Discretionary"
+etf = "XLY"
+
+[[sector]]
+name = "Consumer Staples"
+etf = "XLP"
+
+[[sector]]
+name = "Energy"
+etf = "XLE"
+
+[[sector]]
+name = "Financials"
+etf = "XLF"
+
+[[sector]]
+name = "Health Care"
+etf = "XLV"
+
+[[sector]]
+name = "Industrials"
+etf = "XLI"
+
+[[sector]]
+name = "Materials"
+etf = "XLB"
+
+[[sector]]
+name = "Real Estate"
+etf = "XLRE"
+
+[[sector]]
+name = "Technology"
+etf = "XLK"
+
+[[sector]]
+name = "Utilities"
+etf = "XLU"

@@ -1,0 +1,5 @@
+name = "backtest"
+status = "planned_after_scoring_history"
+purpose = "Validate whether sector and stock scores predict future relative returns."
+
+guardrail = "Required before dashboard polish or any trust in signal quality."

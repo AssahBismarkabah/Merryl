@@ -196,7 +196,7 @@ Option E: Temporary free data for prototyping
 Use a two-step approach:
 
 ```text
-Prototype: use any accessible daily data source to prove scoring logic.
+First implementation: use a real accessible daily data source through a provider adapter.
 Production v1: use Polygon or Alpaca for cleaner API-based data.
 ```
 
@@ -214,12 +214,20 @@ Choose one:
 Recommended:
 
 ```text
-Prototype fast first, then replace with paid/official API once the model proves useful.
+Use a real accessible provider first, then upgrade the provider/feed once the model proves useful.
 ```
 
 Guardrail:
 
 The implementation should use a data-provider interface so the scoring system is not locked to one temporary source. If we prototype with a free or easy source, it must be treated as a replaceable adapter, not the permanent foundation.
+
+Implementation selection:
+
+```text
+Use Alpaca Market Data API first.
+Require API keys through environment variables.
+Do not generate fake market candles for the daily workflow.
+```
 
 ## 7. Decision 3: Storage
 
@@ -454,7 +462,7 @@ Universe: S&P 500 anchor universe first, expandable later
 Data timeframe: daily first, intraday/live-ready later
 Output: Markdown + CSV
 Storage: SQLite
-Provider: prototype with accessible daily data, then move to Polygon or Alpaca
+Provider: Alpaca Market Data API first, with provider interface kept replaceable
 Scoring: transparent weighted scores
 Main use: market rotation map + chart-worthy watchlist for daily/weekly preparation
 V1 does not require: options, dark pools, gamma, intraday order flow, AI prediction

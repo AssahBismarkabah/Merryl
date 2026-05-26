@@ -1,0 +1,11 @@
+use anyhow::Result;
+use chrono::NaiveDate;
+
+use crate::domain::models::{DailyPrice, IndustryMap, SectorMap, Symbol};
+
+pub trait DailyOhlcvProvider {
+    fn symbols(&self) -> Result<Vec<Symbol>>;
+    fn sector_maps(&self) -> Vec<SectorMap>;
+    fn industry_maps(&self, symbols: &[Symbol]) -> Vec<IndustryMap>;
+    fn daily_prices(&self, symbols: &[Symbol], end_date: NaiveDate) -> Result<Vec<DailyPrice>>;
+}
