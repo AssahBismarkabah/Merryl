@@ -431,6 +431,7 @@ Applied constraints:
 - validation limits are compressed into area/current-state/next-step rows
 - overview uses a Chart.js horizontal sector score chart inspired by the Good AI List city chart treatment
 - sector chart uses the Good AI List-style dark chart panel: `#1a1a1a` surface, `#333333` border, compact title text, and dense horizontal bar spacing
+- sidebar uses a clean Merryl wordmark until a real logo direction is locked; do not use a placeholder mark as if it were final branding
 - dark analytical workspace with low-contrast surfaces
 - thin borders and low decoration
 - restrained teal/blue accent
