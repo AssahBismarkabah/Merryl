@@ -335,7 +335,7 @@ Must show:
 - required ETF price coverage
 - score-date coverage
 - latest score row coverage
-- database path
+- storage status
 - current latest score date
 
 This view can reuse the same checks behind `doctor`.
@@ -401,6 +401,7 @@ Rules:
 - operational views should avoid helper or instructional copy; show labels and values
 - market date and latest price date should not be shown as separate competing labels when they represent the same current data point
 - coverage caveats and limitations belong in the Validation view
+- Validation should show compact status rows and short state labels, not long internal run names, filesystem paths, or prose-heavy limits
 
 Design direction checked against Refero:
 
@@ -409,12 +410,27 @@ Primary layout reference: Stocktwits market overview dashboard.
 Primary data-treatment reference: Glassnode indicator table/dashboard.
 ```
 
+Additional visual reference checked:
+
+```text
+Good AI List: dark directory-style data surface with compact metric chips, flat tabs,
+thin borders, dense tables, badge-based classification, and Chart.js horizontal
+stacked bar charts for top-location rankings.
+```
+
 Applied constraints:
 
 - left navigation and watchlist context
 - central market overview and rotation path
 - sidebar-selected views instead of showing every module on the same page
 - compact table-first data panels
+- flat directory-style tables over card-heavy layouts
+- compact top metric chips for current market state
+- badge treatments for sector, industry, ETF, and catalyst/status classification
+- regime and validation views use the same compact table treatment as the market data views
+- validation limits are compressed into area/current-state/next-step rows
+- overview uses a Chart.js horizontal sector score chart inspired by the Good AI List city chart treatment
+- sector chart uses the Good AI List-style dark chart panel: `#1a1a1a` surface, `#333333` border, compact title text, and dense horizontal bar spacing
 - dark analytical workspace with low-contrast surfaces
 - thin borders and low decoration
 - restrained teal/blue accent
@@ -506,6 +522,7 @@ Primary sources checked during planning:
 - TanStack Table documentation: `https://tanstack.com/table/latest`
 - TradingView Lightweight Charts documentation: `https://tradingview.github.io/lightweight-charts/`
 - Refero design references: Stocktwits market overview dashboard for layout and Glassnode indicator dashboard for metric/table treatment.
+- Good AI List: `https://goodailist.com/` for dark directory-style tables, compact chips, and badge-based classification.
 
 ## 16. Current Decision
 
