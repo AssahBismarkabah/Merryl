@@ -92,6 +92,15 @@ pub struct IndustryScore {
     pub components_json: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct IndustryScoreSnapshot {
+    pub date: String,
+    pub industry: String,
+    pub sector: String,
+    pub score: f64,
+    pub rank: usize,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct StockScore {
     pub date: String,

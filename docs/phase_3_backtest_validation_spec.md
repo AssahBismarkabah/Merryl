@@ -1,8 +1,8 @@
 # Phase 3 Backtest Validation
 
-Version: 0.2  
+Version: 0.3  
 Date: 2026-05-27  
-Status: Validation checkpoint; industry/theme hardening recommendation implemented
+Status: Validation checkpoint; industry/theme hardening and PDB-1 validation complete
 
 ## 1. Purpose
 
@@ -26,6 +26,8 @@ Core documents:
 - `docs/mvp_technical_plan_spec.md`
 - `docs/phase_0_decisions_spec.md`
 - `docs/implementation_spec.md`
+- `docs/pre_dashboard_stability_backlog_spec.md`
+- `docs/industry_specific_validation_spec.md`
 
 Backtest artifacts:
 
@@ -40,7 +42,7 @@ sector scores: 2497
 industry scores: 28829
 stock scores: 11350
 watchlist rows: 5675
-backtest results: 2
+backtest results: 4
 ```
 
 Backtest observation counts:
@@ -48,6 +50,7 @@ Backtest observation counts:
 ```text
 sector observations: 11429
 stock observations: 51950
+industry validation observations: 51950
 ```
 
 ## 3. Scope Boundary
@@ -256,15 +259,37 @@ Historical scoring works.
 Stock ranking works well enough to preserve.
 Backtesting works.
 Sector score needs more evidence and possibly refinement.
-Industry/theme scoring is hardened enough for report review.
+Industry/theme scoring is hardened and validated enough to preserve as a core market-map layer.
 ```
 
 This preserves the original intent and avoids drifting into a polished dashboard before the market-map logic is strong enough.
 
 ## 12. Next Checkpoint
 
-Before full dashboard work, review the hardened industry/theme output in the daily report and decide whether:
+PDB-1 industry-specific validation is complete.
 
-- The minimal Phase 4 local dashboard/API slice should begin.
-- Industry-specific validation should be added first.
-- Catalyst/news enrichment should be connected before visual polish.
+Result:
+
+```text
+Industry/theme strength is validated enough to remain part of the core market map.
+```
+
+The result is recorded in:
+
+```text
+docs/industry_specific_validation_spec.md
+```
+
+Before full dashboard work, continue following the pre-dashboard stability backlog:
+
+```text
+docs/pre_dashboard_stability_backlog_spec.md
+```
+
+The locked next implementation checkpoint is:
+
+```text
+PDB-2: Sector score review
+```
+
+This should review sector score component behavior and decide whether to keep the current sector score, adjust it, or label it as map-only until more evidence exists.

@@ -67,6 +67,10 @@ fn main() -> Result<()> {
                 println!("summary export: {}", result.summary_export.display());
                 println!("sector observations: {}", result.sector_observation_count);
                 println!("stock observations: {}", result.stock_observation_count);
+                println!(
+                    "industry validation observations: {}",
+                    result.industry_stock_observation_count
+                );
                 println!("backtest result id: {}", result.backtest_result_id);
             }
         },

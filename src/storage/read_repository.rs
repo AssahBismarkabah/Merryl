@@ -3,7 +3,9 @@ use std::collections::{HashMap, HashSet};
 use anyhow::Result;
 use rusqlite::{OptionalExtension, params};
 
-use crate::domain::models::{DailyPrice, SectorMap, SectorScore, StockScore};
+use crate::domain::models::{
+    DailyPrice, IndustryScoreSnapshot, SectorMap, SectorScore, StockScore,
+};
 
 use super::sqlite::Database;
 
@@ -80,6 +82,32 @@ impl Database {
                 catalyst_status: row.get(17)?,
                 components_json: row.get(18)?,
                 explanation: row.get(19)?,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn industry_scores_between(
+        &self,
+        from_date: &str,
+        to_date: &str,
+    ) -> Result<Vec<IndustryScoreSnapshot>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT date, industry, sector, score, rank
+            FROM industry_scores
+            WHERE date BETWEEN ?1 AND ?2
+            ORDER BY date, rank
+            "#,
+        )?;
+        let rows = stmt.query_map(params![from_date, to_date], |row| {
+            Ok(IndustryScoreSnapshot {
+                date: row.get(0)?,
+                industry: row.get(1)?,
+                sector: row.get(2)?,
+                score: row.get(3)?,
+                rank: row.get::<_, i64>(4)? as usize,
             })
         })?;
 

@@ -21,6 +21,7 @@ Merryl backtest run
   -> read historical scores and daily prices from SQLite
   -> calculate forward 1D, 5D, 10D, 20D, and 60D returns from future trading bars
   -> group daily sector and stock scores into deciles
+  -> group stock forward behavior by same-day industry/theme score decile
   -> summarize hit rate, average return, median return, and relative return behavior
   -> store metrics in backtest_results
   -> write Markdown and CSV backtest summaries
@@ -167,6 +168,18 @@ Phase 3 validation:
 docs/phase_3_backtest_validation_spec.md
 ```
 
+Industry-specific validation:
+
+```text
+docs/industry_specific_validation_spec.md
+```
+
+Pre-dashboard stability backlog:
+
+```text
+docs/pre_dashboard_stability_backlog_spec.md
+```
+
 Generated database/report/export files are ignored by git.
 
 ## Output Format Policy
@@ -195,18 +208,22 @@ Do not treat Markdown or CSV as the system-of-record.
 - Market regime V1 uses broad ETF price proxies only: SPY, QQQ, IWM, and DIA.
 - The first valid score date in a fetched window has no prior rank-change baseline.
 - Catalyst and earnings fields are preserved as `pending_source` until a source is connected.
-- Industry scoring now uses transparent price, relative return, volume, breadth, and 20D-high components, but it still does not include news/catalyst or industry ETF/fund-flow confirmation.
+- Industry scoring now uses transparent price, relative return, volume, breadth, and 20D-high components. Industry-specific validation is supportive, but it still does not include news/catalyst or industry ETF/fund-flow confirmation.
 - Backtesting validates score behavior, not trade profitability. It does not model transaction costs, slippage, taxes, position sizing, portfolio constraints, or maximum adverse/favorable excursion yet.
 
 ## Current Next Step
 
-The Phase 3 validation checkpoint found that stock scoring has useful forward behavior, sector scoring is mixed, and the industry/theme layer needed hardening before dashboard work. The industry/theme scoring hardening pass is now implemented.
+The Phase 3 validation checkpoint found that stock scoring has useful forward behavior, sector scoring is mixed, and the industry/theme layer needed hardening before dashboard work. The industry/theme scoring hardening pass is implemented, and PDB-1 industry-specific validation is complete.
 
 Next implementation priority:
 
 ```text
-Review the hardened industry/theme output, then decide whether Phase 4 should start with a minimal local dashboard/API slice or whether industry-specific validation should be added first.
+PDB-2: Sector score review.
 ```
+
+This comes from `docs/pre_dashboard_stability_backlog_spec.md`.
+
+The goal is to review sector score component behavior and decide whether to keep the current sector score, adjust the formula, or label sector ranking as map-only until more evidence exists. Do not start the full Phase 4 dashboard before this checkpoint and the other pre-dashboard blockers are either resolved or explicitly accepted as visible V1 limitations.
 
 ## Guardrails
 

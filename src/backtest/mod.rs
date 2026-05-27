@@ -4,13 +4,20 @@ use anyhow::{Result, bail};
 use serde::Serialize;
 
 use crate::config::scoring;
-use crate::domain::models::{DailyPrice, SectorMap, SectorScore, StockScore};
+use crate::domain::models::{
+    DailyPrice, IndustryScoreSnapshot, SectorMap, SectorScore, StockScore,
+};
+
+const ENTITY_SECTOR: &str = "sector";
+const ENTITY_STOCK: &str = "stock";
+const ENTITY_STOCK_BY_INDUSTRY: &str = "stock_by_industry";
 
 #[derive(Debug, Clone)]
 pub struct BacktestInput {
     pub from_date: String,
     pub to_date: String,
     pub sector_scores: Vec<SectorScore>,
+    pub industry_scores: Vec<IndustryScoreSnapshot>,
     pub stock_scores: Vec<StockScore>,
     pub sector_maps: Vec<SectorMap>,
     pub prices: Vec<DailyPrice>,
@@ -39,6 +46,7 @@ pub struct BacktestMetrics {
     pub to_date: String,
     pub sector_observation_count: usize,
     pub stock_observation_count: usize,
+    pub industry_stock_observation_count: usize,
     pub summaries: Vec<BacktestSummaryRow>,
 }
 
@@ -55,6 +63,7 @@ struct Observation {
 
 pub fn run_backtest_analysis(input: BacktestInput) -> Result<BacktestMetrics> {
     if input.sector_scores.is_empty()
+        || input.industry_scores.is_empty()
         || input.stock_scores.is_empty()
         || input.sector_maps.is_empty()
         || input.prices.is_empty()
@@ -76,6 +85,12 @@ pub fn run_backtest_analysis(input: BacktestInput) -> Result<BacktestMetrics> {
         &histories,
         &sector_etfs,
     ));
+    observations.extend(stock_by_industry_observations(
+        &input.stock_scores,
+        &input.industry_scores,
+        &histories,
+        &sector_etfs,
+    ));
 
     if observations.is_empty() {
         bail!("no valid backtest observations had enough future price bars");
@@ -83,11 +98,15 @@ pub fn run_backtest_analysis(input: BacktestInput) -> Result<BacktestMetrics> {
 
     let sector_observation_count = observations
         .iter()
-        .filter(|observation| observation.entity_type == "sector")
+        .filter(|observation| observation.entity_type == ENTITY_SECTOR)
         .count();
     let stock_observation_count = observations
         .iter()
-        .filter(|observation| observation.entity_type == "stock")
+        .filter(|observation| observation.entity_type == ENTITY_STOCK)
+        .count();
+    let industry_stock_observation_count = observations
+        .iter()
+        .filter(|observation| observation.entity_type == ENTITY_STOCK_BY_INDUSTRY)
         .count();
     let summaries = summarize_observations(&observations);
 
@@ -96,6 +115,7 @@ pub fn run_backtest_analysis(input: BacktestInput) -> Result<BacktestMetrics> {
         to_date: input.to_date,
         sector_observation_count,
         stock_observation_count,
+        industry_stock_observation_count,
         summaries,
     })
 }
@@ -119,7 +139,7 @@ fn sector_observations(
                     continue;
                 };
                 observations.push(Observation {
-                    entity_type: "sector",
+                    entity_type: ENTITY_SECTOR,
                     horizon: *horizon,
                     decile,
                     forward_return: entity_forward_return,
@@ -141,36 +161,79 @@ fn stock_observations(
     let mut observations = Vec::new();
     for daily_scores in stock_scores_by_date(scores).values() {
         for (score, decile) in ranked_deciles(daily_scores) {
-            let Some(sector_etf) = sector_etfs.get(score.sector.as_str()) else {
-                continue;
-            };
-            for horizon in scoring::BACKTEST_HORIZONS {
-                let Some(entity_forward_return) =
-                    forward_return(histories, &score.symbol, &score.date, *horizon)
-                else {
-                    continue;
-                };
-                let Some(sector_return) =
-                    forward_return(histories, sector_etf, &score.date, *horizon)
-                else {
-                    continue;
-                };
-                let Some(spy_return) =
-                    forward_return(histories, scoring::BENCHMARK_SYMBOL, &score.date, *horizon)
-                else {
-                    continue;
-                };
-                observations.push(Observation {
-                    entity_type: "stock",
-                    horizon: *horizon,
-                    decile,
-                    forward_return: entity_forward_return,
-                    relative_return: entity_forward_return - sector_return,
-                    relative_return_vs_spy: entity_forward_return - spy_return,
-                    relative_return_vs_sector: Some(entity_forward_return - sector_return),
-                });
-            }
+            observations.extend(stock_forward_observations(
+                ENTITY_STOCK,
+                score,
+                decile,
+                histories,
+                sector_etfs,
+            ));
         }
+    }
+    observations
+}
+
+fn stock_by_industry_observations(
+    scores: &[StockScore],
+    industry_scores: &[IndustryScoreSnapshot],
+    histories: &HashMap<String, Vec<DailyPrice>>,
+    sector_etfs: &HashMap<&str, &str>,
+) -> Vec<Observation> {
+    let industry_deciles = industry_deciles_by_date(industry_scores);
+    let mut observations = Vec::new();
+    for score in scores {
+        let Some(decile) =
+            industry_deciles.get(&industry_key(&score.date, &score.sector, &score.industry))
+        else {
+            continue;
+        };
+        observations.extend(stock_forward_observations(
+            ENTITY_STOCK_BY_INDUSTRY,
+            score,
+            *decile,
+            histories,
+            sector_etfs,
+        ));
+    }
+    observations
+}
+
+fn stock_forward_observations(
+    entity_type: &'static str,
+    score: &StockScore,
+    decile: usize,
+    histories: &HashMap<String, Vec<DailyPrice>>,
+    sector_etfs: &HashMap<&str, &str>,
+) -> Vec<Observation> {
+    let Some(sector_etf) = sector_etfs.get(score.sector.as_str()) else {
+        return Vec::new();
+    };
+
+    let mut observations = Vec::new();
+    for horizon in scoring::BACKTEST_HORIZONS {
+        let Some(entity_forward_return) =
+            forward_return(histories, &score.symbol, &score.date, *horizon)
+        else {
+            continue;
+        };
+        let Some(sector_return) = forward_return(histories, sector_etf, &score.date, *horizon)
+        else {
+            continue;
+        };
+        let Some(spy_return) =
+            forward_return(histories, scoring::BENCHMARK_SYMBOL, &score.date, *horizon)
+        else {
+            continue;
+        };
+        observations.push(Observation {
+            entity_type,
+            horizon: *horizon,
+            decile,
+            forward_return: entity_forward_return,
+            relative_return: entity_forward_return - sector_return,
+            relative_return_vs_spy: entity_forward_return - spy_return,
+            relative_return_vs_sector: Some(entity_forward_return - sector_return),
+        });
     }
     observations
 }
@@ -260,6 +323,35 @@ fn stock_scores_by_date(scores: &[StockScore]) -> HashMap<String, Vec<&StockScor
     by_date
 }
 
+fn industry_scores_by_date(
+    scores: &[IndustryScoreSnapshot],
+) -> HashMap<String, Vec<&IndustryScoreSnapshot>> {
+    let mut by_date: HashMap<String, Vec<&IndustryScoreSnapshot>> = HashMap::new();
+    for score in scores {
+        by_date.entry(score.date.clone()).or_default().push(score);
+    }
+    by_date
+}
+
+fn industry_deciles_by_date(
+    scores: &[IndustryScoreSnapshot],
+) -> HashMap<(String, String, String), usize> {
+    let mut deciles = HashMap::new();
+    for daily_scores in industry_scores_by_date(scores).values() {
+        for (score, decile) in ranked_deciles(daily_scores) {
+            deciles.insert(
+                industry_key(&score.date, &score.sector, &score.industry),
+                decile,
+            );
+        }
+    }
+    deciles
+}
+
+fn industry_key(date: &str, sector: &str, industry: &str) -> (String, String, String) {
+    (date.to_string(), sector.to_string(), industry.to_string())
+}
+
 fn ranked_deciles<T: ScoreValue>(scores: &[T]) -> Vec<(&T, usize)> {
     let mut ranked: Vec<&T> = scores.iter().collect();
     ranked.sort_by(|a, b| a.score().total_cmp(&b.score()));
@@ -325,6 +417,12 @@ impl ScoreValue for &SectorScore {
 }
 
 impl ScoreValue for &StockScore {
+    fn score(&self) -> f64 {
+        self.score
+    }
+}
+
+impl ScoreValue for &IndustryScoreSnapshot {
     fn score(&self) -> f64 {
         self.score
     }

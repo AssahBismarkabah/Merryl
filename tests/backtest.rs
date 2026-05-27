@@ -6,7 +6,9 @@ use rusqlite::Connection;
 use tempfile::tempdir;
 
 use merryl::backtest::{BacktestInput, BacktestSummaryRow, run_backtest_analysis};
-use merryl::domain::models::{DailyPrice, SectorMap, SectorScore, StockScore};
+use merryl::domain::models::{
+    DailyPrice, IndustryScore, IndustryScoreSnapshot, SectorMap, SectorScore, StockScore,
+};
 use merryl::output::write_backtest_outputs;
 use merryl::storage::Database;
 
@@ -48,6 +50,103 @@ fn backtest_calculates_forward_returns_deciles_and_summary_metrics() -> Result<(
     let stock_decile_1 = summary(&metrics.summaries, "stock", 1, 1);
     assert_eq!(stock_decile_1.count, 2);
 
+    let industry_decile_10 = summary(&metrics.summaries, "stock_by_industry", 1, 10);
+    assert_eq!(industry_decile_10.count, 20);
+    assert_eq!(
+        metrics.industry_stock_observation_count,
+        metrics.stock_observation_count
+    );
+
+    Ok(())
+}
+
+#[test]
+fn backtest_groups_stock_returns_by_industry_score_decile() -> Result<()> {
+    let date = "2026-01-01".to_string();
+    let next_date = "2026-01-02".to_string();
+    let metrics = run_backtest_analysis(BacktestInput {
+        from_date: date.clone(),
+        to_date: date.clone(),
+        sector_scores: vec![SectorScore {
+            date: date.clone(),
+            sector: "Sector1".to_string(),
+            sector_etf: "ETF1".to_string(),
+            score: 50.0,
+            rank: 1,
+            return_1d: 0.0,
+            return_5d: 0.0,
+            return_20d: 0.0,
+            return_60d: 0.0,
+            relative_return_vs_spy: 0.0,
+            relative_volume: 1.0,
+            breadth_20d: 0.5,
+            breadth_50d: 0.5,
+            rank_change: 0.0,
+            explanation: "fixture sector score".to_string(),
+        }],
+        industry_scores: (1..=10)
+            .map(|idx| IndustryScoreSnapshot {
+                date: date.clone(),
+                industry: format!("Industry{idx}"),
+                sector: "Sector1".to_string(),
+                score: idx as f64,
+                rank: 11 - idx,
+            })
+            .collect(),
+        stock_scores: (1..=10)
+            .map(|idx| StockScore {
+                date: date.clone(),
+                rank: idx,
+                symbol: format!("STK{idx}"),
+                name: format!("Stock {idx}"),
+                sector: "Sector1".to_string(),
+                industry: format!("Industry{idx}"),
+                score: 50.0,
+                sector_score: 50.0,
+                return_1d: 0.0,
+                return_5d: 0.0,
+                return_20d: 0.0,
+                return_60d: 0.0,
+                relative_return_vs_sector: 0.0,
+                relative_return_vs_spy: 0.0,
+                relative_volume: 1.0,
+                avg_dollar_volume: 1_000_000.0,
+                trend_state: "fixture".to_string(),
+                catalyst_status: "pending_source".to_string(),
+                components_json: "{}".to_string(),
+                explanation: "fixture stock score".to_string(),
+            })
+            .collect(),
+        sector_maps: vec![SectorMap {
+            sector: "Sector1".to_string(),
+            sector_etf: "ETF1".to_string(),
+            description: "Sector 1 test proxy".to_string(),
+        }],
+        prices: industry_validation_prices(&date, &next_date),
+    })?;
+
+    let strongest = summary(&metrics.summaries, "stock_by_industry", 1, 10);
+    let weakest = summary(&metrics.summaries, "stock_by_industry", 1, 1);
+
+    assert_eq!(strongest.count, 1);
+    assert_eq!(weakest.count, 1);
+    assert_close(
+        strongest
+            .average_relative_return_vs_sector
+            .expect("strong industry sector-relative return"),
+        0.10,
+    );
+    assert_close(
+        weakest
+            .average_relative_return_vs_sector
+            .expect("weak industry sector-relative return"),
+        -0.10,
+    );
+    assert!(
+        strongest.average_relative_return > weakest.average_relative_return,
+        "stronger industry decile should beat weaker industry decile"
+    );
+
     Ok(())
 }
 
@@ -78,10 +177,12 @@ fn backtest_reads_sqlite_inputs_stores_results_and_writes_outputs() -> Result<()
 
     for date in &fixture.score_dates {
         db.replace_sector_scores(date, &sector_scores(date))?;
+        db.replace_industry_scores(date, &persisted_industry_scores(date))?;
         db.replace_stock_scores(date, &stock_scores(date))?;
     }
 
     let sector_scores = db.sector_scores_between(&fixture.from_date, &fixture.to_date)?;
+    let industry_scores = db.industry_scores_between(&fixture.from_date, &fixture.to_date)?;
     let stock_scores = db.stock_scores_between(&fixture.from_date, &fixture.to_date)?;
     let sector_maps = db.sector_maps()?;
     let prices = db.daily_prices()?;
@@ -89,6 +190,7 @@ fn backtest_reads_sqlite_inputs_stores_results_and_writes_outputs() -> Result<()
         from_date: fixture.from_date.clone(),
         to_date: fixture.to_date.clone(),
         sector_scores,
+        industry_scores,
         stock_scores,
         sector_maps,
         prices,
@@ -99,6 +201,7 @@ fn backtest_reads_sqlite_inputs_stores_results_and_writes_outputs() -> Result<()
     assert!(outputs.summary_export.exists());
     let report = fs::read_to_string(&outputs.report)?;
     assert!(report.contains("not a trading recommendation"));
+    assert!(report.contains("stock_by_industry"));
 
     let metrics_json = serde_json::to_string(&metrics)?;
     let result_id = db.insert_backtest_result(
@@ -174,6 +277,11 @@ impl BacktestFixture {
                 .iter()
                 .flat_map(|date| sector_scores(date))
                 .collect(),
+            industry_scores: self
+                .score_dates
+                .iter()
+                .flat_map(|date| industry_score_snapshots(date))
+                .collect(),
             stock_scores: self
                 .score_dates
                 .iter()
@@ -228,6 +336,37 @@ fn sector_scores(date: &str) -> Vec<SectorScore> {
         .collect()
 }
 
+fn industry_score_snapshots(date: &str) -> Vec<IndustryScoreSnapshot> {
+    vec![IndustryScoreSnapshot {
+        date: date.to_string(),
+        industry: "Fixture Industry".to_string(),
+        sector: "Sector10".to_string(),
+        score: 50.0,
+        rank: 1,
+    }]
+}
+
+fn persisted_industry_scores(date: &str) -> Vec<IndustryScore> {
+    vec![IndustryScore {
+        date: date.to_string(),
+        industry: "Fixture Industry".to_string(),
+        sector: "Sector10".to_string(),
+        score: 50.0,
+        rank: 1,
+        return_5d: 0.0,
+        return_20d: 0.0,
+        return_60d: 0.0,
+        relative_return_vs_sector: 0.0,
+        relative_return_vs_spy: 0.0,
+        relative_volume: 1.0,
+        breadth_20d: 0.0,
+        breadth_50d: 0.0,
+        high_20d_rate: 0.0,
+        member_count: 10,
+        components_json: "{}".to_string(),
+    }]
+}
+
 fn stock_scores(date: &str) -> Vec<StockScore> {
     (1..=10)
         .map(|idx| StockScore {
@@ -253,6 +392,27 @@ fn stock_scores(date: &str) -> Vec<StockScore> {
             explanation: "fixture stock score".to_string(),
         })
         .collect()
+}
+
+fn industry_validation_prices(date: &str, next_date: &str) -> Vec<DailyPrice> {
+    let mut prices = vec![
+        price("SPY", date, 100.0),
+        price("SPY", next_date, 100.0),
+        price("ETF1", date, 100.0),
+        price("ETF1", next_date, 100.0),
+    ];
+
+    for idx in 1..=10 {
+        let close = match idx {
+            1 => 90.0,
+            10 => 110.0,
+            _ => 100.0,
+        };
+        prices.push(price(&format!("STK{idx}"), date, 100.0));
+        prices.push(price(&format!("STK{idx}"), next_date, close));
+    }
+
+    prices
 }
 
 fn prices(dates: &[String]) -> Vec<DailyPrice> {
