@@ -26,6 +26,9 @@
 # Dashboard frontend generated files
 /dashboard/node_modules/
 /dashboard/dist/
+/dashboard/*.tsbuildinfo
+/dashboard/vite.config.d.ts
+/dashboard/vite.config.js
 
 # Local secrets
 .env
