@@ -154,10 +154,14 @@ PDB-1 is complete.
 
 PDB-2 sector score review is also complete.
 
+PDB-3 market regime V1 review is also complete.
+
+PDB-3.5 sector formula decision checkpoint is also complete.
+
 The next pre-dashboard item is:
 
 ```text
-PDB-3: Market regime V1 labeling or modest hardening
+PDB-4: Catalyst/earnings decision
 ```
 
-The current market regime label should be made visibly lightweight V1, or modestly hardened using existing data only, before Phase 4 dashboard work begins.
+Catalyst and earnings status should be made explicit before Phase 4 dashboard work begins.

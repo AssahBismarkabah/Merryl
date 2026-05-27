@@ -5,7 +5,8 @@ use reqwest::blocking::Client;
 use scraper::{Html, Selector};
 
 use crate::config::universe::{
-    ASSET_BROAD_ETF, ASSET_SECTOR_ETF, ASSET_STOCK, BROAD_ETFS, EXCHANGE_US, SP500_WIKIPEDIA_URL,
+    ASSET_BROAD_ETF, ASSET_MACRO_ETF, ASSET_SECTOR_ETF, ASSET_STOCK, BROAD_ETFS, EXCHANGE_US,
+    MACRO_ETFS, SP500_WIKIPEDIA_URL,
 };
 use crate::domain::models::{IndustryMap, Symbol};
 
@@ -29,6 +30,12 @@ pub fn etf_symbols() -> Vec<Symbol> {
         .iter()
         .map(|(ticker, name)| symbol(ticker, name, ASSET_BROAD_ETF, None, None))
         .collect();
+
+    symbols.extend(
+        MACRO_ETFS
+            .iter()
+            .map(|(ticker, name)| symbol(ticker, name, ASSET_MACRO_ETF, None, None)),
+    );
 
     for sector_map in sector_maps() {
         symbols.push(symbol(

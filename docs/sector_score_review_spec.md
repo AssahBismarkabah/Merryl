@@ -1,8 +1,8 @@
 # Sector Score Review
 
-Version: 0.1  
-Date: 2026-05-27  
-Status: PDB-2 complete; sector score remains map-only until stronger evidence exists
+Version: 0.2
+Date: 2026-05-27
+Status: PDB-2 and PDB-3.5 complete; sector score remains map-only until stronger evidence exists
 
 Related documents:
 
@@ -12,6 +12,8 @@ Related documents:
 - `docs/phase_3_backtest_validation_spec.md`
 - `docs/pre_dashboard_stability_backlog_spec.md`
 - `docs/industry_specific_validation_spec.md`
+- `docs/market_regime_v1_spec.md`
+- `docs/sector_formula_decision_checkpoint_spec.md`
 
 ## 1. Purpose
 
@@ -124,9 +126,9 @@ Findings:
 - Breadth is not strong enough in the current form to carry sector ranking.
 - Rank change is weak and should not be treated as a predictive component yet.
 
-## 6. Formula Issue Found
+## 6. Formula Issue Found And Closed
 
-The current sector formula has a rank-change weight in configuration, but the score uses a neutral rank-change placeholder.
+PDB-2 found that the sector formula had a rank-change weight in configuration, but the score used a neutral rank-change placeholder.
 
 Reason:
 
@@ -134,20 +136,35 @@ Reason:
 rank_change is known only after sector ranks are calculated.
 ```
 
-Current behavior:
+Old behavior:
 
 ```text
 rank_change is stored and reported,
 but it is not truly contributing to the sector score.
 ```
 
-Decision:
+Initial PDB-2 decision:
 
 ```text
 Do not force rank_change into the score now.
 ```
 
-Adding it directly would require a second-pass ranking design and a fresh validation cycle. The current evidence does not justify that change before regime and catalyst clarity.
+Adding it directly would require a second-pass ranking design and a fresh validation cycle.
+
+PDB-3.5 decision:
+
+```text
+Remove the neutral rank-change contribution from sector scoring.
+Renormalize the remaining active sector weights.
+Keep rank_change stored and reported, but do not score it yet.
+```
+
+Reason:
+
+```text
+The old neutral placeholder made the formula semantics misleading.
+Option B2 fixed the semantics without materially disrupting sector ranking, stock validation, or the latest watchlist.
+```
 
 ## 7. Decision
 
@@ -186,10 +203,14 @@ This keeps the sector tables useful without presenting the current sector score 
 
 PDB-2 is complete.
 
+PDB-3 market regime V1 review is complete.
+
+PDB-3.5 sector formula decision checkpoint is complete.
+
 The next pre-dashboard item is:
 
 ```text
-PDB-3: Market regime V1 labeling or modest hardening
+PDB-4: Catalyst/earnings decision
 ```
 
-The sector score should be revisited after regime labeling/hardening because sector behavior often depends on market regime.
+The sector formula decision is closed for this pass. Sector ranking remains map-only until stronger evidence exists.

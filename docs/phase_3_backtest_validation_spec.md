@@ -1,8 +1,8 @@
 # Phase 3 Backtest Validation
 
-Version: 0.4  
-Date: 2026-05-27  
-Status: Validation checkpoint; PDB-1 and PDB-2 complete
+Version: 0.6
+Date: 2026-05-27
+Status: Validation checkpoint; PDB-1, PDB-2, PDB-3, and PDB-3.5 complete
 
 ## 1. Purpose
 
@@ -29,6 +29,8 @@ Core documents:
 - `docs/pre_dashboard_stability_backlog_spec.md`
 - `docs/industry_specific_validation_spec.md`
 - `docs/sector_score_review_spec.md`
+- `docs/market_regime_v1_spec.md`
+- `docs/sector_formula_decision_checkpoint_spec.md`
 
 Backtest artifacts:
 
@@ -43,7 +45,7 @@ sector scores: 2497
 industry scores: 28829
 stock scores: 11350
 watchlist rows: 5675
-backtest results: 5
+backtest results: 7
 ```
 
 Backtest observation counts:
@@ -162,7 +164,7 @@ The current `implementation_spec.md` limitations are not equal in priority.
 
 | Limitation | Phase 4 blocker? | Reason |
 |---|---:|---|
-| Market regime V1 uses SPY, QQQ, IWM, DIA only | Partial | Acceptable for a V1 dashboard if clearly labeled as lightweight regime context. It should not be presented as a full macro model. |
+| Market regime V1 is lightweight | Addressed for V1 | PDB-3 labels regime as lightweight context and adds existing-data ETF proxies TLT, GLD, and USO. It still must not be presented as a full macro model. |
 | First valid score date has no prior rank-change baseline | No | This is expected for rolling historical windows. It affects only the first scored date. |
 | Catalyst and earnings are `pending_source` | Partial | Acceptable if visibly labeled. It weakens the "why is this moving?" layer until a source is connected. |
 | Industry/theme bridge | No | Hardened and validated in PDB-1. It should stay as an attention and confirmation layer, not a trade signal. |
@@ -173,7 +175,7 @@ The current `implementation_spec.md` limitations are not equal in priority.
 
 Do not start the full Phase 4 dashboard yet.
 
-The original scoring-quality pass focused on the industry/theme layer is complete. PDB-1 then validated the industry/theme bridge, and PDB-2 reviewed the sector score.
+The original scoring-quality pass focused on the industry/theme layer is complete. PDB-1 then validated the industry/theme bridge, PDB-2 reviewed the sector score, and PDB-3 clarified/hardened Market Regime V1.
 
 Current reason to keep holding full dashboard work:
 
@@ -181,10 +183,11 @@ Current reason to keep holding full dashboard work:
 The stock layer is useful.
 The industry/theme layer is useful enough to preserve.
 The sector layer is still map-only / not yet a proven forward-return predictor.
-The current market regime label is still lightweight V1 and must be made explicit before dashboard work.
+The current market regime label is lightweight V1 and is now explicit.
+The catalyst/earnings layer is still pending_source and must be made explicit before dashboard work.
 ```
 
-If we build the dashboard immediately, we risk visualizing lightweight regime and mixed sector behavior as if they are mature signals.
+If we build the dashboard immediately, we risk visualizing pending catalyst/earnings data and mixed sector behavior as if they are mature signals.
 
 ## 9. Recommended Next Implementation Work
 
@@ -254,6 +257,8 @@ The industry hardening and follow-up validation steps are complete:
 | `docs/implementation_spec.md` limitation about industry scoring is updated. | Complete |
 | PDB-1 industry-specific validation is documented. | Complete |
 | PDB-2 sector score review is documented. | Complete |
+| PDB-3 market regime V1 review is documented. | Complete |
+| PDB-3.5 sector formula decision is documented. | Complete |
 
 ## 11. Current State
 
@@ -264,8 +269,10 @@ Daily run works.
 Historical scoring works.
 Stock ranking works well enough to preserve.
 Backtesting works.
+Market regime is explicitly labeled as lightweight V1 context.
 Sector score needs more evidence and possibly refinement.
 Sector ranking is map-only / not yet a proven forward-return predictor.
+Sector formula no longer includes a neutral rank-change placeholder.
 Industry/theme scoring is hardened and validated enough to preserve as a core market-map layer.
 ```
 
@@ -302,6 +309,35 @@ The result is recorded in:
 docs/sector_score_review_spec.md
 ```
 
+PDB-3 market regime V1 review is complete.
+
+Result:
+
+```text
+Market Regime V1 is explicit lightweight context and includes TLT, GLD, and USO ETF proxy context.
+```
+
+The result is recorded in:
+
+```text
+docs/market_regime_v1_spec.md
+```
+
+PDB-3.5 sector formula decision checkpoint is complete.
+
+Result:
+
+```text
+The neutral rank-change contribution was removed from sector scoring.
+rank_change remains stored and reported, but it is not a scoring component.
+```
+
+The result is recorded in:
+
+```text
+docs/sector_formula_decision_checkpoint_spec.md
+```
+
 Before full dashboard work, continue following the pre-dashboard stability backlog:
 
 ```text
@@ -311,7 +347,7 @@ docs/pre_dashboard_stability_backlog_spec.md
 The locked next implementation checkpoint is:
 
 ```text
-PDB-3: Market regime V1 labeling or modest hardening
+PDB-4: Catalyst/earnings decision
 ```
 
-This should ensure users cannot mistake the current lightweight regime score for a full macro model.
+This should ensure users cannot mistake `pending_source` catalyst/earnings placeholders for real connected data.

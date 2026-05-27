@@ -14,6 +14,7 @@ Merryl daily run
   -> fetch real daily OHLCV data
   -> score the valid historical market window
   -> store market regime, sector, industry, stock, and watchlist rows in SQLite
+  -> explain Market Regime V1 with broad equity ETFs plus TLT, GLD, and USO context
   -> explain industry/theme strength with return, relative return, volume, breadth, and 20D-high components
   -> write Markdown and CSV outputs for the latest/requested score date
 
@@ -181,6 +182,18 @@ Sector score review:
 docs/sector_score_review_spec.md
 ```
 
+Sector formula decision checkpoint:
+
+```text
+docs/sector_formula_decision_checkpoint_spec.md
+```
+
+Market regime V1 review:
+
+```text
+docs/market_regime_v1_spec.md
+```
+
 Pre-dashboard stability backlog:
 
 ```text
@@ -212,26 +225,26 @@ Do not treat Markdown or CSV as the system-of-record.
 
 ## Current Limitations
 
-- Market regime V1 uses broad ETF price proxies only: SPY, QQQ, IWM, and DIA.
+- Market regime V1 is lightweight context, not a full macro model. It uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, and USO. VIX, DXY, US10Y, macro surprises, liquidity indicators, and richer rates data remain deferred until a real source is chosen.
 - The first valid score date in a fetched window has no prior rank-change baseline.
 - Catalyst and earnings fields are preserved as `pending_source` until a source is connected.
-- Sector ranking is useful as a market-map and attention layer, but PDB-2 labels it as map-only / not yet a proven forward-return predictor. Current rank-change is stored and reported, but it is not truly contributing to the score because it is known only after ranks are calculated.
+- Sector ranking is useful as a market-map and attention layer, but PDB-2 labels it as map-only / not yet a proven forward-return predictor. PDB-3.5 removed the neutral rank-change placeholder from sector scoring. Current rank-change is stored and reported, but it is not a scoring component.
 - Industry scoring now uses transparent price, relative return, volume, breadth, and 20D-high components. Industry-specific validation is supportive, but it still does not include news/catalyst or industry ETF/fund-flow confirmation.
 - Backtesting validates score behavior, not trade profitability. It does not model transaction costs, slippage, taxes, position sizing, portfolio constraints, or maximum adverse/favorable excursion yet.
 
 ## Current Next Step
 
-The Phase 3 validation checkpoint found that stock scoring has useful forward behavior, sector scoring is mixed, and the industry/theme layer needed hardening before dashboard work. The industry/theme scoring hardening pass is implemented. PDB-1 industry-specific validation and PDB-2 sector score review are complete.
+The Phase 3 validation checkpoint found that stock scoring has useful forward behavior, sector scoring is mixed, and the industry/theme layer needed hardening before dashboard work. The industry/theme scoring hardening pass is implemented. PDB-1 industry-specific validation, PDB-2 sector score review, PDB-3 market regime V1 review, and PDB-3.5 sector formula decision checkpoint are complete.
 
 Next implementation priority:
 
 ```text
-PDB-3: Market regime V1 labeling or modest hardening.
+PDB-4: Catalyst/earnings decision.
 ```
 
 This comes from `docs/pre_dashboard_stability_backlog_spec.md`.
 
-The goal is to ensure users cannot mistake the current lightweight regime score for a full macro model. Do not start the full Phase 4 dashboard before this checkpoint and the other pre-dashboard blockers are either resolved or explicitly accepted as visible V1 limitations.
+The goal is to ensure users cannot mistake unavailable catalyst/earnings data for real connected context. Do not start the full Phase 4 dashboard before this checkpoint and the other pre-dashboard blockers are either resolved or explicitly accepted as visible V1 limitations.
 
 ## Guardrails
 

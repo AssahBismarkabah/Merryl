@@ -1,8 +1,8 @@
 # Pre-Dashboard Stability Backlog
 
-Version: 0.3  
-Date: 2026-05-27  
-Status: PDB-1 and PDB-2 complete; PDB-3 is next before Phase 4 dashboard  
+Version: 0.6
+Date: 2026-05-27
+Status: PDB-1, PDB-2, PDB-3, and PDB-3.5 complete; PDB-4 is next before Phase 4 dashboard
 Related documents:
 
 - `docs/market_rotation_system_spec.md`
@@ -12,6 +12,8 @@ Related documents:
 - `docs/phase_3_backtest_validation_spec.md`
 - `docs/industry_specific_validation_spec.md`
 - `docs/sector_score_review_spec.md`
+- `docs/market_regime_v1_spec.md`
+- `docs/sector_formula_decision_checkpoint_spec.md`
 
 ## 1. Purpose
 
@@ -48,14 +50,14 @@ Implemented:
 Current data state at the latest check:
 
 ```text
-symbols: 518
-daily prices: 148949
-score dates: 227
-sector scores: 2497
-industry scores: 28829
-stock scores: 11350
-watchlist rows: 5675
-backtest results: 5
+symbols: 521
+daily prices: 150331
+score dates: 228
+sector scores: 2508
+industry scores: 28956
+stock scores: 11400
+watchlist rows: 5700
+backtest results: 7
 ```
 
 Latest validation state:
@@ -63,7 +65,9 @@ Latest validation state:
 ```text
 PDB-1 industry-specific validation: complete
 PDB-2 sector score review: complete
-latest backtest result id: 5
+PDB-3 market regime V1 review: complete
+PDB-3.5 sector formula decision checkpoint: complete
+latest backtest result id: 7
 ```
 
 ## 3. Stability Rule
@@ -89,8 +93,9 @@ These items should be addressed before full dashboard work.
 |---|---|---|---|---|---|
 | PDB-1 | Industry-specific validation | Complete | The industry/theme bridge was hardened, but we had not tested whether stronger industry groups improve stock outcomes. | Extended backtest analysis to compare stock behavior by industry score decile. | `docs/industry_specific_validation_spec.md` records that stronger industries/themes improved stock forward behavior versus weaker industries/themes in the tested window. |
 | PDB-2 | Sector score review | Complete | Phase 3 showed sector decile behavior is mixed. Sector ranking is core to the market map. | Analyzed sector score components and identified where the issue is weights, horizon mix, breadth, relative volume, and rank-change design. | `docs/sector_score_review_spec.md` records the decision to keep sector ranking as map-only / not yet a proven forward-return predictor. |
-| PDB-3 | Market regime V1 labeling or modest hardening | Next | The spec expects regime context, but current V1 uses only broad ETF proxies. | Either label the regime clearly as lightweight V1 in outputs, or add a small set of existing-data risk proxies if available without new provider complexity. | Users cannot mistake regime V1 for a full macro model. |
-| PDB-4 | Catalyst/earnings decision | Pending | The original spec preserves the question "why is this moving?" Current values are `pending_source`. | Decide whether to connect a real source now or keep it deferred with explicit report wording. Avoid fake catalyst inference. | The report and docs make the catalyst state explicit and do not imply unavailable data exists. |
+| PDB-3 | Market regime V1 labeling or modest hardening | Complete | The spec expects regime context, but current V1 used only broad ETF proxies. | Labeled regime clearly as lightweight V1 and added existing-data ETF proxies TLT, GLD, and USO for context. | `docs/market_regime_v1_spec.md` records that users should not mistake regime V1 for a full macro model. |
+| PDB-3.5 | Sector formula decision checkpoint | Complete | PDB-2 found that `SECTOR_RANK_CHANGE_WEIGHT` existed, but scoring used a neutral placeholder. PDB-3 was complete, so this could not be pushed forward silently. | Tested Option B2: remove neutral rank-change contribution, renormalize remaining sector weights, keep `rank_change` stored/reported only. | `docs/sector_formula_decision_checkpoint_spec.md` records the accepted decision and validation result. |
+| PDB-4 | Catalyst/earnings decision | Next | The original spec preserves the question "why is this moving?" Current values are `pending_source`. | Decide whether to connect a real source now or keep it deferred with explicit report wording. Avoid fake catalyst inference. | The report and docs make the catalyst state explicit and do not imply unavailable data exists. |
 | PDB-5 | Backtest scope clarity | Pending | Current backtest validates score behavior, not trade profitability. | Keep a clear document/report note explaining what the backtest proves and does not prove. | No output suggests the scores are direct trade entries or profitability claims. |
 | PDB-6 | Data quality and reproducibility check | Pending | Dashboard will depend on confidence in stored data and regenerated reports. | Add or run checks for required symbols, price coverage, score-date coverage, and idempotent workflow writes. | `doctor`, `status`, or tests can reveal missing core data before report/dashboard use. |
 
@@ -128,14 +133,13 @@ They should stay documented, but they do not need to stop the next controlled im
 
 Recommended pre-dashboard order:
 
-1. PDB-3: Market regime V1 labeling or modest hardening.
-2. PDB-4: Catalyst/earnings decision.
-3. PDB-5: Backtest scope clarity.
-4. PDB-6: Data quality and reproducibility check.
+1. PDB-4: Catalyst/earnings decision.
+2. PDB-5: Backtest scope clarity.
+3. PDB-6: Data quality and reproducibility check.
 
 Reason:
 
-- Regime and catalyst clarity prevent the dashboard from overstating unfinished context.
+- Catalyst clarity prevents the dashboard from overstating unfinished context.
 - Data quality checks make the eventual dashboard more reliable without adding product complexity.
 
 ## 8. Acceptance Before Phase 4
@@ -211,16 +215,57 @@ Revisit sector scoring after market regime V1 is clearly labeled or modestly har
 Daily reports label sector ranking as a map-only attention layer.
 ```
 
+PDB-3 is complete.
+
+Result:
+
+```text
+Market Regime V1 is explicitly labeled as lightweight context.
+The data universe now includes TLT, GLD, and USO as existing-data ETF proxies.
+Regime output records those proxy returns in components_json.
+```
+
+Evidence is recorded in:
+
+```text
+docs/market_regime_v1_spec.md
+```
+
+Decision:
+
+```text
+Keep the core regime score weights unchanged.
+Use new proxy values as context, not a full macro model.
+Do not add a new macro provider in this pass.
+```
+
+PDB-3.5 is complete.
+
+Result:
+
+```text
+Option B2 accepted.
+The neutral rank-change contribution was removed from sector scoring.
+Remaining sector weights are normalized.
+rank_change remains stored and reported, but it is not a scoring component.
+```
+
+Evidence is recorded in:
+
+```text
+docs/sector_formula_decision_checkpoint_spec.md
+```
+
 ## 10. Current Next Work
 
 The next implementation task should be:
 
 ```text
-PDB-3: Market regime V1 labeling or modest hardening
+PDB-4: Catalyst/earnings decision
 ```
 
 Expected output:
 
-- Clear report/docs wording that current regime is lightweight V1, or a modest hardening using existing data only.
-- No new provider dependency unless explicitly chosen later.
-- Users cannot mistake V1 regime for a full macro model.
+- A clear decision to connect a real catalyst/earnings source now or keep it deferred.
+- Daily report wording that does not imply catalyst data exists when it is still `pending_source`.
+- No fake catalyst inference.

@@ -23,6 +23,27 @@ pub fn score_market_regime(date: &str, histories: &PriceHistories) -> MarketRegi
     let qqq_relative = relative_to_spy(histories, scoring_config::GROWTH_SYMBOL, date, spy_20d);
     let iwm_relative = relative_to_spy(histories, scoring_config::SMALL_CAP_SYMBOL, date, spy_20d);
     let dia_relative = relative_to_spy(histories, scoring_config::INDUSTRIAL_SYMBOL, date, spy_20d);
+    let tlt_20d = pct_return(
+        histories,
+        scoring_config::LONG_BOND_SYMBOL,
+        date,
+        scoring_config::RETURN_20D,
+    )
+    .unwrap_or_default();
+    let gld_20d = pct_return(
+        histories,
+        scoring_config::GOLD_SYMBOL,
+        date,
+        scoring_config::RETURN_20D,
+    )
+    .unwrap_or_default();
+    let uso_20d = pct_return(
+        histories,
+        scoring_config::OIL_SYMBOL,
+        date,
+        scoring_config::RETURN_20D,
+    )
+    .unwrap_or_default();
 
     let spy_trend_component = clamp_score(
         scoring_config::NEUTRAL_SCORE
@@ -39,14 +60,23 @@ pub fn score_market_regime(date: &str, histories: &PriceHistories) -> MarketRegi
         + scoring_config::REGIME_QQQ_RELATIVE_WEIGHT * qqq_component
         + scoring_config::REGIME_IWM_RELATIVE_WEIGHT * iwm_component
         + scoring_config::REGIME_DIA_RELATIVE_WEIGHT * dia_component;
-    let label = regime_label(score, spy_20d, spy_60d, qqq_relative, iwm_relative);
+    let base_label = regime_label(score, spy_20d, spy_60d, qqq_relative, iwm_relative);
+    let context_label = regime_context(spy_20d, tlt_20d, gld_20d, uso_20d);
+    let label = if context_label.is_empty() {
+        base_label
+    } else {
+        format!("{base_label} / {context_label}")
+    };
     let explanation = format!(
-        "{label}: SPY 20D {}, SPY 60D {}, QQQ vs SPY {}, IWM vs SPY {}, DIA vs SPY {}.",
+        "{label}: lightweight V1 using ETF price proxies. SPY 20D {}, SPY 60D {}, QQQ vs SPY {}, IWM vs SPY {}, DIA vs SPY {}, TLT 20D {}, GLD 20D {}, USO 20D {}.",
         pct(spy_20d),
         pct(spy_60d),
         pct(qqq_relative),
         pct(iwm_relative),
-        pct(dia_relative)
+        pct(dia_relative),
+        pct(tlt_20d),
+        pct(gld_20d),
+        pct(uso_20d)
     );
 
     MarketRegimeScore {
@@ -63,7 +93,11 @@ pub fn score_market_regime(date: &str, histories: &PriceHistories) -> MarketRegi
             "qqq_relative_component": qqq_component,
             "iwm_relative_component": iwm_component,
             "dia_relative_component": dia_component,
-            "source_note": "V1 uses broad ETF price proxies only; VIX, TLT, DXY, macro surprises, and rates can be added when sources are connected."
+            "tlt_return_20d": tlt_20d,
+            "gld_return_20d": gld_20d,
+            "uso_return_20d": uso_20d,
+            "context_label": context_label,
+            "source_note": "V1 uses daily ETF price proxies only; it is not a full macro model. VIX, DXY, US10Y, macro surprises, and richer rates data can be added when sources are connected."
         })
         .to_string(),
         explanation,
@@ -86,6 +120,20 @@ fn relative_component(relative_return: f64) -> f64 {
         scoring_config::NEUTRAL_SCORE
             + relative_return * scoring_config::REGIME_RELATIVE_SCORE_MULTIPLIER,
     )
+}
+
+fn regime_context(spy_20d: f64, tlt_20d: f64, gld_20d: f64, uso_20d: f64) -> String {
+    if gld_20d >= scoring_config::REGIME_CONTEXT_RETURN_THRESHOLD
+        && uso_20d >= scoring_config::REGIME_CONTEXT_RETURN_THRESHOLD
+    {
+        "Inflation-sensitive".to_string()
+    } else if tlt_20d <= -scoring_config::REGIME_CONTEXT_RETURN_THRESHOLD {
+        "Rate-sensitive".to_string()
+    } else if spy_20d < 0.0 && tlt_20d >= scoring_config::REGIME_CONTEXT_RETURN_THRESHOLD {
+        "Defensive bid".to_string()
+    } else {
+        String::new()
+    }
 }
 
 fn regime_label(

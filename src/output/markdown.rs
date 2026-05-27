@@ -42,6 +42,7 @@ fn report_header(date: &str) -> String {
 fn market_regime(regime: &MarketRegimeScore) -> String {
     [
         section_heading(output_text::MARKET_REGIME_SECTION),
+        output_text::MARKET_REGIME_V1_NOTE.to_string(),
         format!(
             "**{}** with regime score {}.",
             regime.label,

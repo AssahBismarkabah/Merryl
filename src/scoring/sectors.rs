@@ -49,13 +49,13 @@ pub fn score_sectors(
         );
         let breadth_component =
             (breadth_20d + breadth_50d) / scoring_config::BREADTH_COMPONENT_DIVISOR;
-        let rank_improvement_component = scoring_config::NEUTRAL_SCORE;
 
-        let score = scoring_config::SECTOR_RELATIVE_RETURN_WEIGHT * relative_return_component
+        let weighted_score = scoring_config::SECTOR_RELATIVE_RETURN_WEIGHT
+            * relative_return_component
             + scoring_config::SECTOR_TREND_WEIGHT * trend_component
             + scoring_config::SECTOR_RELATIVE_VOLUME_WEIGHT * relative_volume_component
-            + scoring_config::SECTOR_BREADTH_WEIGHT * breadth_component
-            + scoring_config::SECTOR_RANK_CHANGE_WEIGHT * rank_improvement_component;
+            + scoring_config::SECTOR_BREADTH_WEIGHT * breadth_component;
+        let score = weighted_score / scoring_config::SECTOR_SCORE_WEIGHT_TOTAL;
 
         scores.push(SectorScore {
             date: date.to_string(),

@@ -66,6 +66,7 @@ fn daily_report_contains_documented_sections() {
         assert!(report.contains(section), "missing section {section}");
     }
     assert!(report.contains("## New Leaders"));
+    assert!(report.contains("Market Regime is lightweight V1 context."));
     assert!(report.contains("Sector ranking is a market-map and attention layer."));
     assert!(report.contains("| 1 | NVDA |"));
     assert!(report.contains("| 1 | Semiconductors | Technology | 88.0 | 5.00% | 12.00% |"));

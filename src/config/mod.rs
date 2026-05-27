@@ -90,6 +90,7 @@ pub mod universe {
     pub const EXCHANGE_US: &str = "US";
     pub const ASSET_STOCK: &str = "stock";
     pub const ASSET_BROAD_ETF: &str = "broad_etf";
+    pub const ASSET_MACRO_ETF: &str = "macro_etf";
     pub const ASSET_SECTOR_ETF: &str = "sector_etf";
 
     pub const BROAD_ETFS: &[(&str, &str)] = &[
@@ -97,6 +98,12 @@ pub mod universe {
         ("QQQ", "Invesco QQQ Trust"),
         ("IWM", "iShares Russell 2000 ETF"),
         ("DIA", "SPDR Dow Jones Industrial Average ETF"),
+    ];
+
+    pub const MACRO_ETFS: &[(&str, &str)] = &[
+        ("TLT", "iShares 20+ Year Treasury Bond ETF"),
+        ("GLD", "SPDR Gold Shares"),
+        ("USO", "United States Oil Fund"),
     ];
 
     pub const SECTOR_ETFS: &[(&str, &str)] = &[
@@ -119,6 +126,9 @@ pub mod scoring {
     pub const GROWTH_SYMBOL: &str = "QQQ";
     pub const SMALL_CAP_SYMBOL: &str = "IWM";
     pub const INDUSTRIAL_SYMBOL: &str = "DIA";
+    pub const LONG_BOND_SYMBOL: &str = "TLT";
+    pub const GOLD_SYMBOL: &str = "GLD";
+    pub const OIL_SYMBOL: &str = "USO";
     pub const RETURN_1D: usize = 1;
     pub const RETURN_5D: usize = 5;
     pub const RETURN_20D: usize = 20;
@@ -163,12 +173,16 @@ pub mod scoring {
     pub const REGIME_SPY_60D_WEIGHT: f64 = 0.40;
     pub const REGIME_RELATIVE_SCORE_MULTIPLIER: f64 = 500.0;
     pub const REGIME_TREND_SCORE_MULTIPLIER: f64 = 400.0;
+    pub const REGIME_CONTEXT_RETURN_THRESHOLD: f64 = 0.03;
 
     pub const SECTOR_RELATIVE_RETURN_WEIGHT: f64 = 0.30;
     pub const SECTOR_TREND_WEIGHT: f64 = 0.20;
     pub const SECTOR_RELATIVE_VOLUME_WEIGHT: f64 = 0.20;
     pub const SECTOR_BREADTH_WEIGHT: f64 = 0.20;
-    pub const SECTOR_RANK_CHANGE_WEIGHT: f64 = 0.10;
+    pub const SECTOR_SCORE_WEIGHT_TOTAL: f64 = SECTOR_RELATIVE_RETURN_WEIGHT
+        + SECTOR_TREND_WEIGHT
+        + SECTOR_RELATIVE_VOLUME_WEIGHT
+        + SECTOR_BREADTH_WEIGHT;
 
     pub const INDUSTRY_RELATIVE_SECTOR_WEIGHT: f64 = 0.30;
     pub const INDUSTRY_RELATIVE_SPY_WEIGHT: f64 = 0.20;
@@ -187,6 +201,7 @@ pub mod output_text {
     pub const DAILY_REPORT_TITLE: &str = "Daily Market Rotation Report";
     pub const REPORT_RULE: &str = "Rule: this is a market rotation watchlist, not an automatic trade signal. Chart structure, invalidation, and risk define any trade.";
     pub const MARKET_REGIME_SECTION: &str = "Market Regime";
+    pub const MARKET_REGIME_V1_NOTE: &str = "Market Regime is lightweight V1 context. It uses daily ETF price proxies, not a full macro model or a trading signal.";
     pub const TOP_SECTORS_SECTION: &str = "Top Sectors";
     pub const WEAK_SECTORS_SECTION: &str = "Weak Sectors";
     pub const SECTOR_RANK_CHANGES_SECTION: &str = "Sector Rank Changes";

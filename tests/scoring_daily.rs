@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use chrono::{Duration, NaiveDate};
 
+use merryl::config::scoring as scoring_config;
 use merryl::domain::models::{DailyPrice, SectorMap, Symbol};
 use merryl::scoring::{apply_sector_rank_changes, latest_date, score_market};
 
@@ -28,6 +29,15 @@ fn daily_scoring_produces_sector_and_stock_rankings() {
             None,
             None,
         ),
+        symbol(
+            "TLT",
+            "iShares 20+ Year Treasury Bond ETF",
+            "macro_etf",
+            None,
+            None,
+        ),
+        symbol("GLD", "SPDR Gold Shares", "macro_etf", None, None),
+        symbol("USO", "United States Oil Fund", "macro_etf", None, None),
         symbol(
             "XLK",
             "Technology Select Sector SPDR",
@@ -66,6 +76,9 @@ fn daily_scoring_produces_sector_and_stock_rankings() {
     prices.extend(series("QQQ", 100.0, 0.0020, 1_000_000.0));
     prices.extend(series("IWM", 100.0, 0.0015, 1_000_000.0));
     prices.extend(series("DIA", 100.0, 0.0008, 1_000_000.0));
+    prices.extend(series("TLT", 100.0, -0.0005, 1_000_000.0));
+    prices.extend(series("GLD", 100.0, 0.0020, 1_000_000.0));
+    prices.extend(series("USO", 100.0, 0.0020, 1_000_000.0));
     prices.extend(series("XLK", 120.0, 0.0020, 1_000_000.0));
     prices.extend(series("XLF", 90.0, 0.0005, 1_000_000.0));
     prices.extend(series("MSFT", 200.0, 0.0030, 1_000_000.0));
@@ -91,6 +104,37 @@ fn daily_scoring_produces_sector_and_stock_rankings() {
     assert_eq!(scores.sectors[0].rank, 1);
     assert_eq!(scores.stocks[0].rank, 1);
     assert!(!scores.regime.label.is_empty());
+    assert!(scores.regime.label.contains("Inflation-sensitive"));
+    assert!(scores.regime.components_json.contains("tlt_return_20d"));
+    assert!(scores.regime.components_json.contains("gld_return_20d"));
+    assert!(scores.regime.components_json.contains("uso_return_20d"));
+
+    let technology = scores
+        .sectors
+        .iter()
+        .find(|sector| sector.sector == "Technology")
+        .expect("Technology sector score");
+    let relative_return_component = clamp_score(
+        scoring_config::NEUTRAL_SCORE
+            + technology.relative_return_vs_spy * scoring_config::RELATIVE_RETURN_SCORE_MULTIPLIER,
+    );
+    let trend_component = clamp_score(
+        scoring_config::NEUTRAL_SCORE
+            + technology.return_20d * scoring_config::TREND_RETURN_SCORE_MULTIPLIER,
+    );
+    let relative_volume_component = clamp_score(
+        (technology.relative_volume - scoring_config::RELATIVE_VOLUME_BASELINE)
+            * scoring_config::RELATIVE_VOLUME_SCORE_MULTIPLIER,
+    );
+    let breadth_component = (technology.breadth_20d + technology.breadth_50d)
+        / scoring_config::BREADTH_COMPONENT_DIVISOR;
+    let expected_sector_score = (scoring_config::SECTOR_RELATIVE_RETURN_WEIGHT
+        * relative_return_component
+        + scoring_config::SECTOR_TREND_WEIGHT * trend_component
+        + scoring_config::SECTOR_RELATIVE_VOLUME_WEIGHT * relative_volume_component
+        + scoring_config::SECTOR_BREADTH_WEIGHT * breadth_component)
+        / scoring_config::SECTOR_SCORE_WEIGHT_TOTAL;
+    assert_close(technology.score, expected_sector_score);
 
     let previous_ranks = HashMap::from([
         ("Technology".to_string(), 2usize),
@@ -104,6 +148,17 @@ fn daily_scoring_produces_sector_and_stock_rankings() {
         .find(|sector| sector.sector == "Technology")
         .expect("Technology sector score");
     assert_eq!(technology.rank_change, 1.0);
+}
+
+fn assert_close(actual: f64, expected: f64) {
+    assert!(
+        (actual - expected).abs() < 0.000_001,
+        "actual {actual} expected {expected}"
+    );
+}
+
+fn clamp_score(value: f64) -> f64 {
+    value.clamp(scoring_config::SCORE_MIN, scoring_config::SCORE_MAX)
 }
 
 fn series(symbol: &str, base: f64, daily_return: f64, volume: f64) -> Vec<DailyPrice> {
