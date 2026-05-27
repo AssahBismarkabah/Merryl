@@ -166,7 +166,7 @@ PDB-5 backtest scope clarity is also complete.
 
 PDB-6 data quality and reproducibility is also complete.
 
-The next step is:
+That next step is now implemented:
 
 ```text
 Phase 4 first slice: read-only local API plus initial dashboard shell

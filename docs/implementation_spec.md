@@ -294,8 +294,8 @@ Do not treat Markdown or CSV as the system-of-record.
 - Sector ranking is useful as a market-map and attention layer, but PDB-2 labels it as map-only / not yet a proven forward-return predictor. PDB-3.5 removed the neutral rank-change placeholder from sector scoring. Current rank-change is stored and reported, but it is not a scoring component.
 - Industry scoring now uses transparent price, relative return, volume, breadth, and 20D-high components. Industry-specific validation is supportive, but it still does not include news/catalyst or industry ETF/fund-flow confirmation.
 - Backtesting validates score behavior, not trade profitability. Reports and stored metrics now include validation scope. It does not model transaction costs, slippage, taxes, position sizing, portfolio constraints, or portfolio P&L.
-- Data quality checks now run through `doctor` and can catch missing core symbols, ETF price coverage, score-date coverage, latest score row coverage, and replacement-write duplication before dashboard work starts.
-- Phase 4 dashboard/API planning is now locked: local browser dashboard first, Rust `axum` API, Vite React TypeScript frontend, Tauri later only if packaging is needed, and no Electron in the first dashboard path.
+- Data quality checks now run through `doctor` and can catch missing core symbols, ETF price coverage, score-date coverage, latest score row coverage, and replacement-write duplication before report/dashboard use.
+- Phase 4 dashboard/API planning is locked and the first read-only slice is implemented: local browser dashboard first, Rust `axum` API, Vite React TypeScript frontend, Tauri later only if packaging is needed, and no Electron in the first dashboard path.
 
 ## Current Next Step
 
@@ -303,13 +303,13 @@ The Phase 3 validation checkpoint found that stock scoring has useful forward be
 
 PDB-3.6 confirmed that the first-build boundaries are aligned with the source specs when they are stated precisely: S&P 500 anchor universe, daily data, GICS industries, SPDR sector ETFs, Alpaca daily prices, Markdown/CSV outputs, and ETF-proxy regime coverage are acceptable first-build scope. PDB-4 connects real recent news catalyst context while keeping structured earnings calendar data explicit as not connected. PDB-5 clarifies that backtests validate score behavior, not trade profitability. PDB-6 adds a direct pre-dashboard data quality gate through `doctor` and storage idempotency tests.
 
-Next implementation priority:
+Current implementation priority:
 
 ```text
-Phase 4 first slice: read-only local API plus initial dashboard shell.
+Phase 4 dashboard stabilization and controlled improvement.
 ```
 
-This comes from `docs/pre_dashboard_stability_backlog_spec.md` and `docs/phase_4_dashboard_api_spec.md`.
+The first read-only dashboard/API slice from `docs/pre_dashboard_stability_backlog_spec.md` and `docs/phase_4_dashboard_api_spec.md` is implemented. The current work should keep the dashboard as a reader over existing SQLite results, improve clarity of the current views, keep known limitations visible, and avoid moving into Phase 5 data expansion until the current market-review surface is stable.
 
 The dashboard must remain a reader over the controlled market-map chain first. Do not add alerts, portfolio simulation, intraday execution, options flow, or advanced data-provider expansion in the first dashboard slice.
 

@@ -108,7 +108,7 @@ latest score date matches benchmark price date (2026-05-27)
 latest score rows 2026-05-27: regime 1/1, sectors 11/11, industries 127, stocks 50/50, watchlist 25/25
 ```
 
-The next project step can be Phase 4 planning, provided we keep the dashboard scope narrow:
+The project has since moved into the first Phase 4 dashboard/API slice, while keeping the dashboard scope narrow:
 
 ```text
 Market regime

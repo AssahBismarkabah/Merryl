@@ -348,7 +348,7 @@ Evidence is recorded in:
 docs/data_quality_reproducibility_spec.md
 ```
 
-The next implementation task should be:
+That next implementation task is now complete:
 
 ```text
 Phase 4 first slice: read-only local API plus initial dashboard shell

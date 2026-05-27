@@ -481,7 +481,7 @@ Current implementation status:
 
 ```text
 1 through 7 are implemented for the first slice.
-8 is deferred until chart data endpoints are explicitly scoped.
+8 is partially implemented where existing dashboard data already supports it: the Overview uses a Chart.js sector score ranking chart from stored sector scores. Financial price charting remains deferred until chart data endpoints are explicitly scoped.
 9 is complete for this slice through API tests, frontend build, and local Safari desktop/narrow viewport inspection.
 ```
 

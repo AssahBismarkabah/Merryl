@@ -350,4 +350,4 @@ The pre-dashboard implementation checkpoints are now complete through:
 PDB-6: Data quality and reproducibility check
 ```
 
-PDB-6 made required data coverage and workflow reproducibility visible through `doctor` and tests. The next step is Phase 4 planning for the first controlled dashboard/API slice.
+PDB-6 made required data coverage and workflow reproducibility visible through `doctor` and tests. The first controlled Phase 4 dashboard/API slice is now implemented, so the current work is dashboard stabilization and controlled improvement.
