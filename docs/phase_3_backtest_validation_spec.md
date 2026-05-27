@@ -1,8 +1,8 @@
 # Phase 3 Backtest Validation
 
-Version: 0.6
+Version: 0.7
 Date: 2026-05-27
-Status: Validation checkpoint; PDB-1, PDB-2, PDB-3, and PDB-3.5 complete
+Status: Validation checkpoint; PDB-1 through PDB-6 complete and Phase 4 planning is next
 
 ## 1. Purpose
 

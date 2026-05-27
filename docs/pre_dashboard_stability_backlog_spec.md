@@ -139,13 +139,13 @@ These limitations are understood and acceptable for now:
 
 They should stay documented, but they do not need to stop the next controlled implementation step.
 
-## 7. Recommended Order
+## 7. Completed Pre-Dashboard Order
 
-Recommended pre-dashboard order:
+Completed pre-dashboard order:
 
 1. PDB-6: Data quality and reproducibility check.
 
-Reason:
+Reason this was last:
 
 - Catalyst clarity prevents the dashboard from overstating unfinished context.
 - Data quality checks make the eventual dashboard more reliable without adding product complexity.

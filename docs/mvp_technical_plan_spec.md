@@ -1,8 +1,8 @@
 # MVP Technical Plan
 
-Version: 0.1  
-Date: 2026-05-26  
-Status: Technical plan before implementation  
+Version: 0.2
+Date: 2026-05-27
+Status: MVP technical plan; Rust core is implemented through PDB-6 and Phase 4 planning is next
 Source documents:
 
 - `market_rotation_system_spec.md`

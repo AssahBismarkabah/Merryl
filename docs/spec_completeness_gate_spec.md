@@ -1,8 +1,8 @@
 # Spec Completeness Gate
 
-Version: 0.2
+Version: 0.3
 Date: 2026-05-27
-Status: Complete; PDB-4 has been implemented after this gate
+Status: Complete; PDB-4 through PDB-6 have been implemented after this gate
 
 Related documents:
 

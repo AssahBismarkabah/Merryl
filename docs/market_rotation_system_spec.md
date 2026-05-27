@@ -1,8 +1,8 @@
 # Market Rotation And Stock Discovery System
 
-Version: 0.1  
-Date: 2026-05-26  
-Status: Read-through specification before building  
+Version: 0.2
+Date: 2026-05-27
+Status: Source specification; implementation is complete through PDB-6 and Phase 4 planning is next
 Purpose: Define what we are building, why it matters, what data is needed, what can be left out, and how to validate the system before relying on it.
 
 ## 1. Executive Summary
@@ -1451,4 +1451,3 @@ Positioning and filings:
 - SEC EDGAR search: https://www.sec.gov/search-filings
 - WhaleWisdom features: https://whalewisdom.com/info/features
 - OpenInsider charts: https://openinsider.com/charts
-

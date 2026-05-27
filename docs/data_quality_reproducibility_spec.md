@@ -1,7 +1,7 @@
 # Data Quality And Reproducibility Spec
 
-Version: 1.0  
-Date: 2026-05-27  
+Version: 1.0
+Date: 2026-05-27
 Status: Implemented
 
 ## Purpose

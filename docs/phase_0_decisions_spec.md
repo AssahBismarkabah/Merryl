@@ -1,8 +1,8 @@
 # Phase 0 Decisions
 
-Version: 0.1  
-Date: 2026-05-26  
-Status: Decision document before implementation  
+Version: 0.2
+Date: 2026-05-27
+Status: Phase 0 decisions locked; implementation is complete through PDB-6 and Phase 4 planning is next
 Related spec: `market_rotation_system_spec.md`
 
 ## 1. Purpose
