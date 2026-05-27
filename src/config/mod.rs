@@ -6,6 +6,12 @@ pub const CLI_NAME: &str = "merryl";
 pub const USER_AGENT: &str = "Merryl/0.1";
 pub const DAILY_RUN_COMMAND: &str = "merryl run daily --date latest";
 
+pub mod dashboard {
+    pub const DEFAULT_PORT: u16 = 8787;
+    pub const HOST: &str = "127.0.0.1";
+    pub const FRONTEND_DIST_DIR: &str = "dashboard/dist";
+}
+
 pub mod paths {
     use super::PathBuf;
 
@@ -126,6 +132,15 @@ pub mod universe {
         ("Technology", "XLK"),
         ("Utilities", "XLU"),
     ];
+
+    pub fn required_market_symbols() -> Vec<&'static str> {
+        BROAD_ETFS
+            .iter()
+            .map(|(symbol, _)| *symbol)
+            .chain(MACRO_ETFS.iter().map(|(symbol, _)| *symbol))
+            .chain(SECTOR_ETFS.iter().map(|(_, symbol)| *symbol))
+            .collect()
+    }
 }
 
 pub mod scoring {

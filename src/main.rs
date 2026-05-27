@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use merryl::config::dashboard::DEFAULT_PORT;
 
 #[derive(Parser)]
 #[command(name = "merryl")]
@@ -17,6 +18,10 @@ enum Commands {
     },
     Status,
     Doctor,
+    Dashboard {
+        #[arg(long, default_value_t = DEFAULT_PORT)]
+        port: u16,
+    },
     Db {
         #[command(subcommand)]
         command: DbCommand,
@@ -87,6 +92,12 @@ fn main() -> Result<()> {
             for check in checks {
                 println!("{check}");
             }
+        }
+        Commands::Dashboard { port } => {
+            let runtime = tokio::runtime::Runtime::new()?;
+            runtime.block_on(merryl::dashboard::run_dashboard(
+                merryl::dashboard::DashboardServerConfig::local(port),
+            ))?;
         }
         Commands::Db { command } => match command {
             DbCommand::Migrate => {

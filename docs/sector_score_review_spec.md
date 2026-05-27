@@ -218,7 +218,7 @@ PDB-6 data quality and reproducibility is complete.
 The next step is:
 
 ```text
-Phase 4 planning: first controlled dashboard/API slice
+Phase 4 first slice: read-only local API plus initial dashboard shell
 ```
 
-The sector formula decision is closed for this pass, and the broader market-map completeness gate accepted sector ranking as a map layer. Recent news catalysts are connected through Alpaca News; structured earnings calendar data remains not connected. Backtest scope is now explicit as score-behavior validation, not trade profitability. `doctor` now checks core stored data before dashboard work.
+The sector formula decision is closed for this pass, and the broader market-map completeness gate accepted sector ranking as a map layer. Recent news catalysts are connected through Alpaca News; structured earnings calendar data remains not connected. Backtest scope is now explicit as score-behavior validation, not trade profitability. `doctor` now checks core stored data before dashboard work. Phase 4 dashboard/API planning is recorded in `docs/phase_4_dashboard_api_spec.md`.

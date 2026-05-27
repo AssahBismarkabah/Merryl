@@ -2,7 +2,7 @@
 
 Version: 0.2
 Date: 2026-05-27
-Status: Source specification; implementation is complete through PDB-6 and Phase 4 planning is next
+Status: Source specification; implementation is complete through PDB-6 and the first Phase 4 dashboard/API slice
 Purpose: Define what we are building, why it matters, what data is needed, what can be left out, and how to validate the system before relying on it.
 
 ## 1. Executive Summary

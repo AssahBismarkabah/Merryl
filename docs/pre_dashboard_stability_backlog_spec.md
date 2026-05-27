@@ -1,8 +1,8 @@
 # Pre-Dashboard Stability Backlog
 
-Version: 1.1
+Version: 1.2
 Date: 2026-05-27
-Status: PDB-1 through PDB-6 complete; Phase 4 planning is next
+Status: PDB-1 through PDB-6 complete; first Phase 4 dashboard/API slice is implemented
 Related documents:
 
 - `docs/market_rotation_system_spec.md`
@@ -18,6 +18,7 @@ Related documents:
 - `docs/catalyst_earnings_source_spec.md`
 - `docs/backtest_scope_clarity_spec.md`
 - `docs/data_quality_reproducibility_spec.md`
+- `docs/phase_4_dashboard_api_spec.md`
 
 ## 1. Purpose
 
@@ -156,7 +157,7 @@ Status:
 PDB-6 is complete.
 ```
 
-The next step is Phase 4 planning for the first controlled dashboard/API slice.
+The first controlled Phase 4 dashboard/API slice from `docs/phase_4_dashboard_api_spec.md` is now implemented.
 
 ## 8. Acceptance Before Phase 4
 
@@ -171,7 +172,7 @@ Phase 4 dashboard can start when:
 
 All listed pre-dashboard blockers are now complete.
 
-The dashboard should begin as a minimal local dashboard/API slice, not a broad product expansion.
+The dashboard began as a minimal local dashboard/API slice, not a broad product expansion.
 
 Initial dashboard scope should remain:
 
@@ -185,6 +186,14 @@ Historical score/backtest review
 ```
 
 No alerts, portfolio simulation, intraday execution, options flow, or advanced data layer should be added in the first dashboard slice.
+
+Implemented first dashboard slice:
+
+- `merryl dashboard` starts a localhost-only Rust axum server.
+- The API reads from SQLite and does not fetch market data or recalculate scores.
+- The React dashboard shows market regime, sector rotation, industry/theme strength, stock leadership, watchlist, latest backtest review, data health, and visible limitations.
+- Frontend concerns are separated into loading, page composition, reusable components, table columns, and formatting helpers.
+- The visual direction follows a dense financial analytics workstation style, with compact tables, thin borders, restrained accents, and no marketing-style landing page.
 
 ## 9. Completed Work
 
@@ -342,5 +351,5 @@ docs/data_quality_reproducibility_spec.md
 The next implementation task should be:
 
 ```text
-Phase 4 planning: first controlled dashboard/API slice
+Phase 4 first slice: read-only local API plus initial dashboard shell
 ```

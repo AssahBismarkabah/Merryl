@@ -2,7 +2,7 @@
 
 Version: 0.2
 Date: 2026-05-27
-Status: MVP technical plan; Rust core is implemented through PDB-6 and Phase 4 planning is next
+Status: MVP technical plan; Rust core is implemented through PDB-6 and the first Phase 4 dashboard/API slice
 Source documents:
 
 - `market_rotation_system_spec.md`

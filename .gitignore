@@ -23,5 +23,9 @@
 /exports/*.csv
 /exports/backtests/
 
+# Dashboard frontend generated files
+/dashboard/node_modules/
+/dashboard/dist/
+
 # Local secrets
 .env

@@ -62,12 +62,7 @@ fn data_quality_checks(db_path: &Path) -> Result<Vec<String>> {
 }
 
 fn required_market_symbols() -> Vec<&'static str> {
-    universe::BROAD_ETFS
-        .iter()
-        .map(|(symbol, _)| *symbol)
-        .chain(universe::MACRO_ETFS.iter().map(|(symbol, _)| *symbol))
-        .chain(universe::SECTOR_ETFS.iter().map(|(_, symbol)| *symbol))
-        .collect()
+    universe::required_market_symbols()
 }
 
 fn data_quality_messages(snapshot: &DataQualitySnapshot) -> Vec<String> {

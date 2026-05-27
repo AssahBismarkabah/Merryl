@@ -2,14 +2,14 @@
 
 Version: 0.2
 Date: 2026-05-27
-Status: Phase 0 decisions locked; implementation is complete through PDB-6 and Phase 4 planning is next
+Status: Phase 0 decisions locked; implementation is complete through PDB-6 and the first Phase 4 dashboard/API slice
 Related spec: `market_rotation_system_spec.md`
 
 ## 1. Purpose
 
 The main specification defines the market rotation and stock discovery system.
 
-This document defines the decisions we need to make before building anything. The goal is to prevent the first implementation from becoming too broad, too expensive, or too complex.
+This document records the decisions that shaped the first implementation. The goal is to prevent later work from becoming too broad, too expensive, or too complex.
 
 The immediate next step is not to build the full dashboard. The immediate next step is to lock the first useful version:
 

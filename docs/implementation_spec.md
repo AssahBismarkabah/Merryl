@@ -2,7 +2,7 @@
 
 Version: 0.2
 Date: 2026-05-27
-Status: Daily scoring, Phase 3 backtesting, and pre-dashboard stability notes
+Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, and first Phase 4 dashboard/API slice
 
 ## Current Slice
 
@@ -34,6 +34,12 @@ Merryl doctor run
   -> verify required ETF price coverage and latest-date alignment
   -> verify historical score-date coverage
   -> verify latest regime, sector, industry, stock, and watchlist row coverage
+
+Merryl dashboard run
+  -> start a localhost-only Rust axum server
+  -> read dashboard-ready JSON from SQLite
+  -> serve the Vite React dashboard build from dashboard/dist when present
+  -> show the stored market map without fetching new data or recalculating scores
 ```
 
 The implementation does not generate fake market candles. If real data credentials are missing, the daily run stops.
@@ -48,8 +54,10 @@ src/domain/      shared domain models
 src/data/        provider trait, Alpaca adapter, S&P 500 universe, sector ETF mapping
 src/storage/     SQLite connection, schema migration, write repositories
 src/scoring/     indicators, sector scoring, industry scoring, stock scoring, market orchestration
+src/dashboard/   read-only dashboard DTOs, repositories, and local axum server
 src/output/      report paths, Markdown rendering, CSV exports
 src/workflows/   user workflows such as daily run, status, and doctor
+dashboard/       Vite React TypeScript dashboard frontend
 ```
 
 Rules for new code:
@@ -117,6 +125,18 @@ Check stored data counts:
 
 ```text
 cargo run -- status
+```
+
+Start the local dashboard:
+
+```text
+cargo run -- dashboard
+```
+
+Optional dashboard port:
+
+```text
+cargo run -- dashboard --port 8787
 ```
 
 The installed binary command name is:
@@ -231,6 +251,18 @@ Pre-dashboard stability backlog:
 docs/pre_dashboard_stability_backlog_spec.md
 ```
 
+Phase 4 dashboard/API plan:
+
+```text
+docs/phase_4_dashboard_api_spec.md
+```
+
+Dashboard frontend:
+
+```text
+dashboard/
+```
+
 Generated database/report/export files are ignored by git.
 
 ## Output Format Policy
@@ -263,6 +295,7 @@ Do not treat Markdown or CSV as the system-of-record.
 - Industry scoring now uses transparent price, relative return, volume, breadth, and 20D-high components. Industry-specific validation is supportive, but it still does not include news/catalyst or industry ETF/fund-flow confirmation.
 - Backtesting validates score behavior, not trade profitability. Reports and stored metrics now include validation scope. It does not model transaction costs, slippage, taxes, position sizing, portfolio constraints, or portfolio P&L.
 - Data quality checks now run through `doctor` and can catch missing core symbols, ETF price coverage, score-date coverage, latest score row coverage, and replacement-write duplication before dashboard work starts.
+- Phase 4 dashboard/API planning is now locked: local browser dashboard first, Rust `axum` API, Vite React TypeScript frontend, Tauri later only if packaging is needed, and no Electron in the first dashboard path.
 
 ## Current Next Step
 
@@ -273,10 +306,10 @@ PDB-3.6 confirmed that the first-build boundaries are aligned with the source sp
 Next implementation priority:
 
 ```text
-Phase 4 planning: first controlled dashboard/API slice.
+Phase 4 first slice: read-only local API plus initial dashboard shell.
 ```
 
-This comes from `docs/pre_dashboard_stability_backlog_spec.md`.
+This comes from `docs/pre_dashboard_stability_backlog_spec.md` and `docs/phase_4_dashboard_api_spec.md`.
 
 The dashboard must remain a reader over the controlled market-map chain first. Do not add alerts, portfolio simulation, intraday execution, options flow, or advanced data-provider expansion in the first dashboard slice.
 

@@ -1,5 +1,6 @@
 pub mod backtest;
 pub mod config;
+pub mod dashboard;
 pub mod data;
 pub mod domain;
 pub mod output;

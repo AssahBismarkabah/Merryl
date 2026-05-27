@@ -4,12 +4,195 @@ use anyhow::Result;
 use rusqlite::{OptionalExtension, params};
 
 use crate::domain::models::{
-    DailyPrice, IndustryScoreSnapshot, SectorMap, SectorScore, StockScore,
+    BacktestResultRow, DailyPrice, IndustryScore, IndustryScoreSnapshot, MarketRegimeScore,
+    SectorMap, SectorScore, StockScore, WatchlistRow,
 };
 
 use super::sqlite::Database;
 
 impl Database {
+    pub fn scored_dates(&self) -> Result<Vec<String>> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT DISTINCT date FROM sector_scores ORDER BY date DESC")?;
+        let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn latest_scored_date(&self) -> Result<Option<String>> {
+        Ok(self
+            .conn
+            .query_row("SELECT MAX(date) FROM sector_scores", [], |row| row.get(0))
+            .optional()?
+            .flatten())
+    }
+
+    pub fn market_regime_for_date(&self, date: &str) -> Result<Option<MarketRegimeScore>> {
+        self.conn
+            .query_row(
+                r#"
+                SELECT date, label, score, spy_return_20d, spy_return_60d,
+                       qqq_relative_return_vs_spy, iwm_relative_return_vs_spy,
+                       dia_relative_return_vs_spy, components_json, explanation
+                FROM market_regime_scores
+                WHERE date = ?1
+                "#,
+                params![date],
+                |row| {
+                    Ok(MarketRegimeScore {
+                        date: row.get(0)?,
+                        label: row.get(1)?,
+                        score: row.get(2)?,
+                        spy_return_20d: row.get(3)?,
+                        spy_return_60d: row.get(4)?,
+                        qqq_relative_return_vs_spy: row.get(5)?,
+                        iwm_relative_return_vs_spy: row.get(6)?,
+                        dia_relative_return_vs_spy: row.get(7)?,
+                        components_json: row.get(8)?,
+                        explanation: row.get(9)?,
+                    })
+                },
+            )
+            .optional()
+            .map_err(Into::into)
+    }
+
+    pub fn sector_scores_for_date(&self, date: &str) -> Result<Vec<SectorScore>> {
+        self.sector_scores_between(date, date)
+    }
+
+    pub fn industry_scores_for_date(&self, date: &str, limit: usize) -> Result<Vec<IndustryScore>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT date, industry, sector, score, rank, components_json
+            FROM industry_scores
+            WHERE date = ?1
+            ORDER BY rank
+            LIMIT ?2
+            "#,
+        )?;
+        let rows = stmt.query_map(params![date, limit as i64], |row| {
+            let components_json: String = row.get(5)?;
+            let components = serde_json::from_str::<serde_json::Value>(&components_json).ok();
+            Ok(IndustryScore {
+                date: row.get(0)?,
+                industry: row.get(1)?,
+                sector: row.get(2)?,
+                score: row.get(3)?,
+                rank: row.get::<_, i64>(4)? as usize,
+                return_5d: component_f64(components.as_ref(), "return_5d"),
+                return_20d: component_f64(components.as_ref(), "return_20d"),
+                return_60d: component_f64(components.as_ref(), "return_60d"),
+                relative_return_vs_sector: component_f64(
+                    components.as_ref(),
+                    "relative_return_vs_sector",
+                ),
+                relative_return_vs_spy: component_f64(
+                    components.as_ref(),
+                    "relative_return_vs_spy",
+                ),
+                relative_volume: component_f64(components.as_ref(), "relative_volume"),
+                breadth_20d: component_f64(components.as_ref(), "breadth_20d"),
+                breadth_50d: component_f64(components.as_ref(), "breadth_50d"),
+                high_20d_rate: component_f64(components.as_ref(), "high_20d_rate"),
+                member_count: component_usize(components.as_ref(), "member_count"),
+                components_json,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn stock_scores_for_date(&self, date: &str, limit: usize) -> Result<Vec<StockScore>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT date, rank, symbol, name, sector, industry, score, sector_score, return_1d,
+                   return_5d, return_20d, return_60d, relative_return_vs_sector,
+                   relative_return_vs_spy, relative_volume, avg_dollar_volume, trend_state,
+                   catalyst_status, components_json, explanation
+            FROM stock_scores
+            WHERE date = ?1
+            ORDER BY rank
+            LIMIT ?2
+            "#,
+        )?;
+        let rows = stmt.query_map(params![date, limit as i64], |row| {
+            Ok(StockScore {
+                date: row.get(0)?,
+                rank: row.get::<_, i64>(1)? as usize,
+                symbol: row.get(2)?,
+                name: row.get(3)?,
+                sector: row.get(4)?,
+                industry: row.get(5)?,
+                score: row.get(6)?,
+                sector_score: row.get(7)?,
+                return_1d: row.get(8)?,
+                return_5d: row.get(9)?,
+                return_20d: row.get(10)?,
+                return_60d: row.get(11)?,
+                relative_return_vs_sector: row.get(12)?,
+                relative_return_vs_spy: row.get(13)?,
+                relative_volume: row.get(14)?,
+                avg_dollar_volume: row.get(15)?,
+                trend_state: row.get(16)?,
+                catalyst_status: row.get(17)?,
+                components_json: row.get(18)?,
+                explanation: row.get(19)?,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn watchlist_for_date(&self, date: &str) -> Result<Vec<WatchlistRow>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT date, rank, symbol, score, reason
+            FROM watchlists
+            WHERE date = ?1
+            ORDER BY rank
+            "#,
+        )?;
+        let rows = stmt.query_map(params![date], |row| {
+            Ok(WatchlistRow {
+                date: row.get(0)?,
+                rank: row.get::<_, i64>(1)? as usize,
+                symbol: row.get(2)?,
+                score: row.get(3)?,
+                reason: row.get(4)?,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn latest_backtest_result(&self) -> Result<Option<BacktestResultRow>> {
+        self.conn
+            .query_row(
+                r#"
+                SELECT id, run_name, from_date, to_date, config_json, metrics_json, created_at
+                FROM backtest_results
+                ORDER BY id DESC
+                LIMIT 1
+                "#,
+                [],
+                |row| {
+                    Ok(BacktestResultRow {
+                        id: row.get(0)?,
+                        run_name: row.get(1)?,
+                        from_date: row.get(2)?,
+                        to_date: row.get(3)?,
+                        config_json: row.get(4)?,
+                        metrics_json: row.get(5)?,
+                        created_at: row.get(6)?,
+                    })
+                },
+            )
+            .optional()
+            .map_err(Into::into)
+    }
+
     pub fn sector_scores_between(
         &self,
         from_date: &str,
@@ -203,4 +386,19 @@ impl Database {
             .optional()?
             .flatten())
     }
+}
+
+fn component_f64(value: Option<&serde_json::Value>, key: &str) -> f64 {
+    value
+        .and_then(|value| value.get(key))
+        .and_then(serde_json::Value::as_f64)
+        .unwrap_or_default()
+}
+
+fn component_usize(value: Option<&serde_json::Value>, key: &str) -> usize {
+    value
+        .and_then(|value| value.get(key))
+        .and_then(serde_json::Value::as_u64)
+        .map(|value| value as usize)
+        .unwrap_or_default()
 }

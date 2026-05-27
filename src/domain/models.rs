@@ -64,6 +64,26 @@ pub struct MarketRegimeScore {
     pub explanation: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct WatchlistRow {
+    pub date: String,
+    pub rank: usize,
+    pub symbol: String,
+    pub score: f64,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct BacktestResultRow {
+    pub id: i64,
+    pub run_name: String,
+    pub from_date: String,
+    pub to_date: String,
+    pub config_json: String,
+    pub metrics_json: String,
+    pub created_at: String,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct SectorScore {
     pub date: String,
