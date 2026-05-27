@@ -1,8 +1,8 @@
 # Phase 3 Backtest Validation
 
-Version: 0.3  
+Version: 0.4  
 Date: 2026-05-27  
-Status: Validation checkpoint; industry/theme hardening and PDB-1 validation complete
+Status: Validation checkpoint; PDB-1 and PDB-2 complete
 
 ## 1. Purpose
 
@@ -28,6 +28,7 @@ Core documents:
 - `docs/implementation_spec.md`
 - `docs/pre_dashboard_stability_backlog_spec.md`
 - `docs/industry_specific_validation_spec.md`
+- `docs/sector_score_review_spec.md`
 
 Backtest artifacts:
 
@@ -42,13 +43,14 @@ sector scores: 2497
 industry scores: 28829
 stock scores: 11350
 watchlist rows: 5675
-backtest results: 4
+backtest results: 5
 ```
 
 Backtest observation counts:
 
 ```text
 sector observations: 11429
+sector component observations: 80003
 stock observations: 51950
 industry validation observations: 51950
 ```
@@ -87,7 +89,7 @@ Current answer:
 
 | Question | Answer | Decision |
 |---|---|---|
-| High-ranked sectors outperform low-ranked sectors? | Mixed. The current sector score does not show stable high-decile leadership across all horizons. | Do not treat sector score as proven yet. |
+| High-ranked sectors outperform low-ranked sectors? | Mixed. The current sector score does not show stable high-decile leadership across all horizons. PDB-2 component review confirms sector score should remain map-only for now. | Do not treat sector score as proven yet. |
 | High-ranked stocks outperform their sector? | Yes. Stock decile 10 beats decile 1 across all tested horizons on average relative return. | Stock ranking is useful enough to preserve and visualize later. |
 | Can we identify false positives? | Yes. Sector decile 10 is weak at 60D and inconsistent at 1D/5D. Stock hit rates are positive but not strong enough to imply direct trade signals. | Keep watchlist framing, not trade-signal framing. |
 | Should scoring weights be revised? | Sector and industry logic need review before dashboard. Stock scoring should not be over-optimized from one backtest window. | Improve industry/theme scoring first; avoid blind weight fitting. |
@@ -163,25 +165,26 @@ The current `implementation_spec.md` limitations are not equal in priority.
 | Market regime V1 uses SPY, QQQ, IWM, DIA only | Partial | Acceptable for a V1 dashboard if clearly labeled as lightweight regime context. It should not be presented as a full macro model. |
 | First valid score date has no prior rank-change baseline | No | This is expected for rolling historical windows. It affects only the first scored date. |
 | Catalyst and earnings are `pending_source` | Partial | Acceptable if visibly labeled. It weakens the "why is this moving?" layer until a source is connected. |
-| Industry scoring uses simple 20D return proxy | Yes | The original product depends on sector -> industry/theme -> stock. A thin industry layer creates a weak bridge between sector and stock. |
+| Industry/theme bridge | No | Hardened and validated in PDB-1. It should stay as an attention and confirmation layer, not a trade signal. |
+| Sector score is mixed | Partial | Reviewed in PDB-2. Keep it as map-only until stronger evidence or regime-aware validation exists. |
 | Backtest is not trade profitability | No | Merryl is not an auto-trading system. This limitation should remain explicit. |
 
 ## 8. Decision Before Dashboard
 
 Do not start the full Phase 4 dashboard yet.
 
-The correct next implementation step is a scoring-quality pass focused on the industry/theme layer.
+The original scoring-quality pass focused on the industry/theme layer is complete. PDB-1 then validated the industry/theme bridge, and PDB-2 reviewed the sector score.
 
-Reason:
+Current reason to keep holding full dashboard work:
 
 ```text
 The stock layer is useful.
-The sector layer is mixed.
-The industry/theme layer is currently too simple.
-The original product depends on the bridge from sector to industry/theme to stock.
+The industry/theme layer is useful enough to preserve.
+The sector layer is still map-only / not yet a proven forward-return predictor.
+The current market regime label is still lightweight V1 and must be made explicit before dashboard work.
 ```
 
-If we build the dashboard immediately, we risk visualizing a weak middle layer and making the system look more mature than it is.
+If we build the dashboard immediately, we risk visualizing lightweight regime and mixed sector behavior as if they are mature signals.
 
 ## 9. Recommended Next Implementation Work
 
@@ -224,7 +227,8 @@ Completed scope:
    - breadth where enough stock history exists.
 5. Stored industry `components_json`.
 6. Updated the daily report so industry/theme strength is explainable.
-7. Kept industry-specific backtest expansion deferred until review shows it is needed.
+7. Added industry-specific backtest expansion after review showed it was needed.
+8. Added sector component backtest review for PDB-2.
 
 Out of scope:
 
@@ -238,7 +242,7 @@ Out of scope:
 
 ## 10. Acceptance For Industry Hardening
 
-The industry hardening step is complete:
+The industry hardening and follow-up validation steps are complete:
 
 | Acceptance item | Status |
 |---|---|
@@ -248,6 +252,8 @@ The industry hardening step is complete:
 | Tests prove industry scoring does not use future prices. | Complete |
 | Backtest can still run after the change. | Complete |
 | `docs/implementation_spec.md` limitation about industry scoring is updated. | Complete |
+| PDB-1 industry-specific validation is documented. | Complete |
+| PDB-2 sector score review is documented. | Complete |
 
 ## 11. Current State
 
@@ -259,6 +265,7 @@ Historical scoring works.
 Stock ranking works well enough to preserve.
 Backtesting works.
 Sector score needs more evidence and possibly refinement.
+Sector ranking is map-only / not yet a proven forward-return predictor.
 Industry/theme scoring is hardened and validated enough to preserve as a core market-map layer.
 ```
 
@@ -280,6 +287,21 @@ The result is recorded in:
 docs/industry_specific_validation_spec.md
 ```
 
+PDB-2 sector score review is complete.
+
+Result:
+
+```text
+Sector ranking remains a market-map and attention layer.
+It is map-only / not yet a proven forward-return predictor.
+```
+
+The result is recorded in:
+
+```text
+docs/sector_score_review_spec.md
+```
+
 Before full dashboard work, continue following the pre-dashboard stability backlog:
 
 ```text
@@ -289,7 +311,7 @@ docs/pre_dashboard_stability_backlog_spec.md
 The locked next implementation checkpoint is:
 
 ```text
-PDB-2: Sector score review
+PDB-3: Market regime V1 labeling or modest hardening
 ```
 
-This should review sector score component behavior and decide whether to keep the current sector score, adjust it, or label it as map-only until more evidence exists.
+This should ensure users cannot mistake the current lightweight regime score for a full macro model.

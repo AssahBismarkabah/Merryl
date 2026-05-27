@@ -41,12 +41,15 @@ fn backtest_report_markdown(metrics: &BacktestMetrics) -> String {
         "Rule: this report validates historical score behavior. It is not a trading recommendation and does not model execution, slippage, taxes, or portfolio constraints."
             .to_string(),
         format!(
-            "Sector observations: `{}`\n\nStock observations: `{}`\n\nIndustry validation observations: `{}`",
+            "Sector observations: `{}`\n\nSector component observations: `{}`\n\nStock observations: `{}`\n\nIndustry validation observations: `{}`",
             metrics.sector_observation_count,
+            metrics.sector_component_observation_count,
             metrics.stock_observation_count,
             metrics.industry_stock_observation_count
         ),
         "Primary relative return means sector ETF vs SPY for sectors, and stock vs sector ETF for stocks."
+            .to_string(),
+        "`sector_component_*` rows group sector ETF forward returns by individual same-day sector component deciles. Decile 10 means the strongest value for that component on that score date."
             .to_string(),
         "`stock_by_industry` rows group stock forward returns by the same-day industry/theme score decile. Decile 10 means the strongest industries/themes for that score date."
             .to_string(),

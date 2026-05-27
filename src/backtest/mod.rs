@@ -11,6 +11,16 @@ use crate::domain::models::{
 const ENTITY_SECTOR: &str = "sector";
 const ENTITY_STOCK: &str = "stock";
 const ENTITY_STOCK_BY_INDUSTRY: &str = "stock_by_industry";
+const SECTOR_COMPONENT_PREFIX: &str = "sector_component_";
+const SECTOR_COMPONENTS: &[SectorComponent] = &[
+    SectorComponent::Return5d,
+    SectorComponent::Return20d,
+    SectorComponent::Return60d,
+    SectorComponent::RelativeReturnVsSpy,
+    SectorComponent::RelativeVolume,
+    SectorComponent::Breadth,
+    SectorComponent::RankChange,
+];
 
 #[derive(Debug, Clone)]
 pub struct BacktestInput {
@@ -45,6 +55,7 @@ pub struct BacktestMetrics {
     pub from_date: String,
     pub to_date: String,
     pub sector_observation_count: usize,
+    pub sector_component_observation_count: usize,
     pub stock_observation_count: usize,
     pub industry_stock_observation_count: usize,
     pub summaries: Vec<BacktestSummaryRow>,
@@ -80,6 +91,10 @@ pub fn run_backtest_analysis(input: BacktestInput) -> Result<BacktestMetrics> {
 
     let mut observations = Vec::new();
     observations.extend(sector_observations(&input.sector_scores, &histories));
+    observations.extend(sector_component_observations(
+        &input.sector_scores,
+        &histories,
+    ));
     observations.extend(stock_observations(
         &input.stock_scores,
         &histories,
@@ -100,6 +115,10 @@ pub fn run_backtest_analysis(input: BacktestInput) -> Result<BacktestMetrics> {
         .iter()
         .filter(|observation| observation.entity_type == ENTITY_SECTOR)
         .count();
+    let sector_component_observation_count = observations
+        .iter()
+        .filter(|observation| observation.entity_type.starts_with(SECTOR_COMPONENT_PREFIX))
+        .count();
     let stock_observation_count = observations
         .iter()
         .filter(|observation| observation.entity_type == ENTITY_STOCK)
@@ -114,6 +133,7 @@ pub fn run_backtest_analysis(input: BacktestInput) -> Result<BacktestMetrics> {
         from_date: input.from_date,
         to_date: input.to_date,
         sector_observation_count,
+        sector_component_observation_count,
         stock_observation_count,
         industry_stock_observation_count,
         summaries,
@@ -147,6 +167,43 @@ fn sector_observations(
                     relative_return_vs_spy: entity_forward_return - spy_return,
                     relative_return_vs_sector: None,
                 });
+            }
+        }
+    }
+    observations
+}
+
+fn sector_component_observations(
+    scores: &[SectorScore],
+    histories: &HashMap<String, Vec<DailyPrice>>,
+) -> Vec<Observation> {
+    let mut observations = Vec::new();
+    for daily_scores in sector_scores_by_date(scores).values() {
+        for component in SECTOR_COMPONENTS {
+            for (score, decile) in ranked_deciles_by(daily_scores, |score| {
+                sector_component_value(score, *component)
+            }) {
+                for horizon in scoring::BACKTEST_HORIZONS {
+                    let Some(entity_forward_return) =
+                        forward_return(histories, &score.sector_etf, &score.date, *horizon)
+                    else {
+                        continue;
+                    };
+                    let Some(spy_return) =
+                        forward_return(histories, scoring::BENCHMARK_SYMBOL, &score.date, *horizon)
+                    else {
+                        continue;
+                    };
+                    observations.push(Observation {
+                        entity_type: component.entity_type(),
+                        horizon: *horizon,
+                        decile,
+                        forward_return: entity_forward_return,
+                        relative_return: entity_forward_return - spy_return,
+                        relative_return_vs_spy: entity_forward_return - spy_return,
+                        relative_return_vs_sector: None,
+                    });
+                }
             }
         }
     }
@@ -353,8 +410,15 @@ fn industry_key(date: &str, sector: &str, industry: &str) -> (String, String, St
 }
 
 fn ranked_deciles<T: ScoreValue>(scores: &[T]) -> Vec<(&T, usize)> {
+    ranked_deciles_by(scores, |score| score.score())
+}
+
+fn ranked_deciles_by<T, F>(scores: &[T], mut value: F) -> Vec<(&T, usize)>
+where
+    F: FnMut(&T) -> f64,
+{
     let mut ranked: Vec<&T> = scores.iter().collect();
-    ranked.sort_by(|a, b| a.score().total_cmp(&b.score()));
+    ranked.sort_by(|a, b| value(a).total_cmp(&value(b)));
     let len = ranked.len();
     ranked
         .into_iter()
@@ -365,6 +429,45 @@ fn ranked_deciles<T: ScoreValue>(scores: &[T]) -> Vec<(&T, usize)> {
             (score, decile)
         })
         .collect()
+}
+
+#[derive(Debug, Clone, Copy)]
+enum SectorComponent {
+    Return5d,
+    Return20d,
+    Return60d,
+    RelativeReturnVsSpy,
+    RelativeVolume,
+    Breadth,
+    RankChange,
+}
+
+impl SectorComponent {
+    fn entity_type(self) -> &'static str {
+        match self {
+            Self::Return5d => "sector_component_return_5d",
+            Self::Return20d => "sector_component_return_20d",
+            Self::Return60d => "sector_component_return_60d",
+            Self::RelativeReturnVsSpy => "sector_component_relative_return_vs_spy",
+            Self::RelativeVolume => "sector_component_relative_volume",
+            Self::Breadth => "sector_component_breadth",
+            Self::RankChange => "sector_component_rank_change",
+        }
+    }
+}
+
+fn sector_component_value(score: &SectorScore, component: SectorComponent) -> f64 {
+    match component {
+        SectorComponent::Return5d => score.return_5d,
+        SectorComponent::Return20d => score.return_20d,
+        SectorComponent::Return60d => score.return_60d,
+        SectorComponent::RelativeReturnVsSpy => score.relative_return_vs_spy,
+        SectorComponent::RelativeVolume => score.relative_volume,
+        SectorComponent::Breadth => {
+            (score.breadth_20d + score.breadth_50d) / scoring::BREADTH_COMPONENT_DIVISOR
+        }
+        SectorComponent::RankChange => score.rank_change,
+    }
 }
 
 fn forward_return(

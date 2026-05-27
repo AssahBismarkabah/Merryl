@@ -16,6 +16,7 @@ pub fn daily_report_markdown(
     [
         report_header(date),
         market_regime(regime),
+        sector_map_note(),
         top_sector_table(sector_scores),
         weak_sector_table(sector_scores),
         sector_rank_changes(sector_scores),
@@ -49,6 +50,10 @@ fn market_regime(regime: &MarketRegimeScore) -> String {
         regime.explanation.clone(),
     ]
     .join("\n\n")
+}
+
+fn sector_map_note() -> String {
+    output_text::SECTOR_MAP_NOTE.to_string()
 }
 
 fn top_sector_table(sector_scores: &[SectorScore]) -> String {

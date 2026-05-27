@@ -139,7 +139,7 @@ Reason:
 - The industry/theme layer clearly adds useful context.
 - The current stock score is already behaving well.
 - Weight changes should not be made from one validation window.
-- PDB-2 sector score review is still needed before changing formula weights.
+- PDB-2 sector score review labels sector ranking as map-only for now, so stock weights should not be changed based on sector score confidence.
 
 Current product stance:
 
@@ -152,10 +152,12 @@ Do not present it as an automatic trade signal.
 
 PDB-1 is complete.
 
+PDB-2 sector score review is also complete.
+
 The next pre-dashboard item is:
 
 ```text
-PDB-2: Sector score review
+PDB-3: Market regime V1 labeling or modest hardening
 ```
 
-The sector score remains the weakest validated layer and should be reviewed before Phase 4 dashboard work begins.
+The current market regime label should be made visibly lightweight V1, or modestly hardened using existing data only, before Phase 4 dashboard work begins.

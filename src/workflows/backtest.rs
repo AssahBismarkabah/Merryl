@@ -17,6 +17,7 @@ pub struct RunBacktestResult {
     pub report: PathBuf,
     pub summary_export: PathBuf,
     pub sector_observation_count: usize,
+    pub sector_component_observation_count: usize,
     pub stock_observation_count: usize,
     pub industry_stock_observation_count: usize,
     pub backtest_result_id: i64,
@@ -69,6 +70,7 @@ pub fn run_backtest(from_arg: &str, to_arg: &str) -> Result<RunBacktestResult> {
         "horizons": scoring::BACKTEST_HORIZONS,
         "relative_return_policy": {
             "sector": "sector ETF forward return minus SPY forward return",
+            "sector_components": "sector ETF forward return grouped by same-day sector component decile",
             "stock_primary": "stock forward return minus sector ETF forward return",
             "stock_vs_spy": "stock forward return minus SPY forward return",
             "stock_by_industry": "stock forward return grouped by same-day industry/theme score decile"
@@ -88,6 +90,7 @@ pub fn run_backtest(from_arg: &str, to_arg: &str) -> Result<RunBacktestResult> {
         report: outputs.report,
         summary_export: outputs.summary_export,
         sector_observation_count: metrics.sector_observation_count,
+        sector_component_observation_count: metrics.sector_component_observation_count,
         stock_observation_count: metrics.stock_observation_count,
         industry_stock_observation_count: metrics.industry_stock_observation_count,
         backtest_result_id,

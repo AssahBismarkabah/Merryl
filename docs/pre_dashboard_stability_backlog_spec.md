@@ -1,8 +1,8 @@
 # Pre-Dashboard Stability Backlog
 
-Version: 0.2  
+Version: 0.3  
 Date: 2026-05-27  
-Status: PDB-1 complete; PDB-2 is next before Phase 4 dashboard  
+Status: PDB-1 and PDB-2 complete; PDB-3 is next before Phase 4 dashboard  
 Related documents:
 
 - `docs/market_rotation_system_spec.md`
@@ -11,6 +11,7 @@ Related documents:
 - `docs/implementation_spec.md`
 - `docs/phase_3_backtest_validation_spec.md`
 - `docs/industry_specific_validation_spec.md`
+- `docs/sector_score_review_spec.md`
 
 ## 1. Purpose
 
@@ -54,14 +55,15 @@ sector scores: 2497
 industry scores: 28829
 stock scores: 11350
 watchlist rows: 5675
-backtest results: 4
+backtest results: 5
 ```
 
 Latest validation state:
 
 ```text
 PDB-1 industry-specific validation: complete
-latest backtest result id: 4
+PDB-2 sector score review: complete
+latest backtest result id: 5
 ```
 
 ## 3. Stability Rule
@@ -86,8 +88,8 @@ These items should be addressed before full dashboard work.
 | ID | Item | Status | Why It Matters | Required Action | Done When |
 |---|---|---|---|---|---|
 | PDB-1 | Industry-specific validation | Complete | The industry/theme bridge was hardened, but we had not tested whether stronger industry groups improve stock outcomes. | Extended backtest analysis to compare stock behavior by industry score decile. | `docs/industry_specific_validation_spec.md` records that stronger industries/themes improved stock forward behavior versus weaker industries/themes in the tested window. |
-| PDB-2 | Sector score review | Next | Phase 3 showed sector decile behavior is mixed. Sector ranking is core to the market map. | Analyze sector score components and identify whether the issue is weights, horizon mix, breadth, relative volume, or market-regime context. Do not blindly optimize weights. | We have a written decision: keep current sector score, adjust formula, or label sector score as map-only until more data exists. |
-| PDB-3 | Market regime V1 labeling or modest hardening | Pending | The spec expects regime context, but current V1 uses only broad ETF proxies. | Either label the regime clearly as lightweight V1 in outputs, or add a small set of existing-data risk proxies if available without new provider complexity. | Users cannot mistake regime V1 for a full macro model. |
+| PDB-2 | Sector score review | Complete | Phase 3 showed sector decile behavior is mixed. Sector ranking is core to the market map. | Analyzed sector score components and identified where the issue is weights, horizon mix, breadth, relative volume, and rank-change design. | `docs/sector_score_review_spec.md` records the decision to keep sector ranking as map-only / not yet a proven forward-return predictor. |
+| PDB-3 | Market regime V1 labeling or modest hardening | Next | The spec expects regime context, but current V1 uses only broad ETF proxies. | Either label the regime clearly as lightweight V1 in outputs, or add a small set of existing-data risk proxies if available without new provider complexity. | Users cannot mistake regime V1 for a full macro model. |
 | PDB-4 | Catalyst/earnings decision | Pending | The original spec preserves the question "why is this moving?" Current values are `pending_source`. | Decide whether to connect a real source now or keep it deferred with explicit report wording. Avoid fake catalyst inference. | The report and docs make the catalyst state explicit and do not imply unavailable data exists. |
 | PDB-5 | Backtest scope clarity | Pending | Current backtest validates score behavior, not trade profitability. | Keep a clear document/report note explaining what the backtest proves and does not prove. | No output suggests the scores are direct trade entries or profitability claims. |
 | PDB-6 | Data quality and reproducibility check | Pending | Dashboard will depend on confidence in stored data and regenerated reports. | Add or run checks for required symbols, price coverage, score-date coverage, and idempotent workflow writes. | `doctor`, `status`, or tests can reveal missing core data before report/dashboard use. |
@@ -126,15 +128,13 @@ They should stay documented, but they do not need to stop the next controlled im
 
 Recommended pre-dashboard order:
 
-1. PDB-2: Sector score review.
-2. PDB-3: Market regime V1 labeling or modest hardening.
-3. PDB-4: Catalyst/earnings decision.
-4. PDB-5: Backtest scope clarity.
-5. PDB-6: Data quality and reproducibility check.
+1. PDB-3: Market regime V1 labeling or modest hardening.
+2. PDB-4: Catalyst/earnings decision.
+3. PDB-5: Backtest scope clarity.
+4. PDB-6: Data quality and reproducibility check.
 
 Reason:
 
-- Sector review addresses the weakest Phase 3 result.
 - Regime and catalyst clarity prevent the dashboard from overstating unfinished context.
 - Data quality checks make the eventual dashboard more reliable without adding product complexity.
 
@@ -187,16 +187,40 @@ Use industry/theme strength as an attention and confirmation layer.
 Do not change stock scoring weights yet.
 ```
 
+PDB-2 is complete.
+
+Result:
+
+```text
+Sector ranking stays as a market-map and attention layer.
+It is map-only / not yet a proven forward-return predictor.
+```
+
+Evidence is recorded in:
+
+```text
+docs/sector_score_review_spec.md
+```
+
+Decision:
+
+```text
+Do not change sector weights yet.
+Do not force rank_change into the sector score yet.
+Revisit sector scoring after market regime V1 is clearly labeled or modestly hardened.
+Daily reports label sector ranking as a map-only attention layer.
+```
+
 ## 10. Current Next Work
 
 The next implementation task should be:
 
 ```text
-PDB-2: Sector score review
+PDB-3: Market regime V1 labeling or modest hardening
 ```
 
 Expected output:
 
-- A written review of sector score component behavior.
-- A decision to keep the sector score, adjust it, or label it as map-only until more evidence exists.
-- No blind scoring-weight optimization.
+- Clear report/docs wording that current regime is lightweight V1, or a modest hardening using existing data only.
+- No new provider dependency unless explicitly chosen later.
+- Users cannot mistake V1 regime for a full macro model.

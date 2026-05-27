@@ -190,6 +190,7 @@ pub mod output_text {
     pub const TOP_SECTORS_SECTION: &str = "Top Sectors";
     pub const WEAK_SECTORS_SECTION: &str = "Weak Sectors";
     pub const SECTOR_RANK_CHANGES_SECTION: &str = "Sector Rank Changes";
+    pub const SECTOR_MAP_NOTE: &str = "Sector ranking is a market-map and attention layer. PDB-2 validation labels it as map-only, not a proven forward-return signal.";
     pub const TOP_INDUSTRIES_SECTION: &str = "Top Industries Or Themes";
     pub const WATCHLIST_SECTION: &str = "Top Stocks Worth Charting";
     pub const NEW_LEADERS_SECTION: &str = "New Leaders";

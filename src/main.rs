@@ -66,6 +66,10 @@ fn main() -> Result<()> {
                 println!("report: {}", result.report.display());
                 println!("summary export: {}", result.summary_export.display());
                 println!("sector observations: {}", result.sector_observation_count);
+                println!(
+                    "sector component observations: {}",
+                    result.sector_component_observation_count
+                );
                 println!("stock observations: {}", result.stock_observation_count);
                 println!(
                     "industry validation observations: {}",

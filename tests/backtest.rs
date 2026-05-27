@@ -29,6 +29,14 @@ fn backtest_calculates_forward_returns_deciles_and_summary_metrics() -> Result<(
     );
     assert_eq!(sector_decile_10.average_relative_return_vs_sector, None);
 
+    let sector_component_decile_10 =
+        summary(&metrics.summaries, "sector_component_return_20d", 1, 10);
+    assert_eq!(sector_component_decile_10.count, 2);
+    assert_eq!(
+        metrics.sector_component_observation_count,
+        metrics.sector_observation_count * 7
+    );
+
     let stock_decile_10 = summary(&metrics.summaries, "stock", 1, 10);
     assert_eq!(stock_decile_10.count, 2);
     assert_close(stock_decile_10.hit_rate, 0.5);
@@ -201,6 +209,7 @@ fn backtest_reads_sqlite_inputs_stores_results_and_writes_outputs() -> Result<()
     assert!(outputs.summary_export.exists());
     let report = fs::read_to_string(&outputs.report)?;
     assert!(report.contains("not a trading recommendation"));
+    assert!(report.contains("sector_component_return_20d"));
     assert!(report.contains("stock_by_industry"));
 
     let metrics_json = serde_json::to_string(&metrics)?;
@@ -324,7 +333,7 @@ fn sector_scores(date: &str) -> Vec<SectorScore> {
             rank: 11 - idx,
             return_1d: 0.0,
             return_5d: 0.0,
-            return_20d: 0.0,
+            return_20d: idx as f64 / 100.0,
             return_60d: 0.0,
             relative_return_vs_spy: 0.0,
             relative_volume: 1.0,
