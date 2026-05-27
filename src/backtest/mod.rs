@@ -54,11 +54,22 @@ pub struct BacktestSummaryRow {
 pub struct BacktestMetrics {
     pub from_date: String,
     pub to_date: String,
+    pub validation_scope: BacktestValidationScope,
     pub sector_observation_count: usize,
     pub sector_component_observation_count: usize,
     pub stock_observation_count: usize,
     pub industry_stock_observation_count: usize,
     pub summaries: Vec<BacktestSummaryRow>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct BacktestValidationScope {
+    pub purpose: String,
+    pub proves: Vec<String>,
+    pub does_not_prove: Vec<String>,
+    pub hit_rate_definition: String,
+    pub metrics_allowed_before_dashboard: Vec<String>,
+    pub metrics_deferred_until_trade_model: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -132,12 +143,44 @@ pub fn run_backtest_analysis(input: BacktestInput) -> Result<BacktestMetrics> {
     Ok(BacktestMetrics {
         from_date: input.from_date,
         to_date: input.to_date,
+        validation_scope: validation_scope(),
         sector_observation_count,
         sector_component_observation_count,
         stock_observation_count,
         industry_stock_observation_count,
         summaries,
     })
+}
+
+fn validation_scope() -> BacktestValidationScope {
+    BacktestValidationScope {
+        purpose: "score_behavior_validation".to_string(),
+        proves: vec![
+            "Whether higher same-day scores were followed by stronger forward returns in stored daily data.".to_string(),
+            "Whether sector, sector-component, stock, and industry/theme deciles behaved differently over 1D, 5D, 10D, 20D, and 60D horizons.".to_string(),
+            "Whether relative forward returns were positive against the configured comparison policy.".to_string(),
+        ],
+        does_not_prove: vec![
+            "Trade profitability.".to_string(),
+            "Entry or exit timing quality.".to_string(),
+            "Position sizing, portfolio construction, taxes, transaction costs, slippage, or liquidity at execution.".to_string(),
+            "That any score is a buy or sell signal.".to_string(),
+        ],
+        hit_rate_definition: "Share of observations with positive relative forward return under the row's comparison policy; it is not a trade win rate.".to_string(),
+        metrics_allowed_before_dashboard: vec![
+            "Return dispersion by decile.".to_string(),
+            "Decile membership turnover.".to_string(),
+            "Path drawdown/runup from score-date close over each horizon, labeled as path behavior rather than trade P&L.".to_string(),
+        ],
+        metrics_deferred_until_trade_model: vec![
+            "Transaction costs.".to_string(),
+            "Slippage.".to_string(),
+            "Taxes.".to_string(),
+            "Position sizing.".to_string(),
+            "Portfolio P&L.".to_string(),
+            "Sharpe, Sortino, and other portfolio-risk metrics.".to_string(),
+        ],
+    }
 }
 
 fn sector_observations(

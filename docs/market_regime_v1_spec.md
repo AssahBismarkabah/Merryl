@@ -145,7 +145,7 @@ context_label
 The next pre-dashboard item is:
 
 ```text
-PDB-5: Backtest scope clarity
+PDB-6: Data quality and reproducibility check
 ```
 
-PDB-3.6 decided that current ETF-proxy regime coverage is acceptable for the first build when the wording is precise. PDB-4 connected recent news catalysts through Alpaca News. Additional macro sources are post-MVP macro expansion.
+PDB-3.6 decided that current ETF-proxy regime coverage is acceptable for the first build when the wording is precise. PDB-4 connected recent news catalysts through Alpaca News. PDB-5 clarified backtest scope. Additional macro sources are post-MVP macro expansion.

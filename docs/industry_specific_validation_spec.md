@@ -162,10 +162,12 @@ PDB-3.6 spec completeness gate is also complete.
 
 PDB-4 catalyst/news source decision is also complete.
 
+PDB-5 backtest scope clarity is also complete.
+
 The next pre-dashboard item is:
 
 ```text
-PDB-5: Backtest scope clarity
+PDB-6: Data quality and reproducibility check
 ```
 
-The current GICS industry/theme coverage was audited against the main spec and accepted for the first build. Recent news catalysts are connected through Alpaca News; structured earnings calendar data remains not connected.
+The current GICS industry/theme coverage was audited against the main spec and accepted for the first build. Recent news catalysts are connected through Alpaca News; structured earnings calendar data remains not connected. Backtest scope is now explicit as score-behavior validation, not trade profitability.

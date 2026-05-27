@@ -1,8 +1,8 @@
 # Pre-Dashboard Stability Backlog
 
-Version: 0.9
+Version: 1.0
 Date: 2026-05-27
-Status: PDB-1 through PDB-4 complete; PDB-5 is next
+Status: PDB-1 through PDB-5 complete; PDB-6 is next
 Related documents:
 
 - `docs/market_rotation_system_spec.md`
@@ -16,6 +16,7 @@ Related documents:
 - `docs/sector_formula_decision_checkpoint_spec.md`
 - `docs/spec_completeness_gate_spec.md`
 - `docs/catalyst_earnings_source_spec.md`
+- `docs/backtest_scope_clarity_spec.md`
 
 ## 1. Purpose
 
@@ -71,6 +72,7 @@ PDB-3 market regime V1 review: complete
 PDB-3.5 sector formula decision checkpoint: complete
 Spec completeness gate: complete
 PDB-4 catalyst/news source: complete
+PDB-5 backtest scope clarity: complete
 latest backtest result id: 7
 ```
 
@@ -101,7 +103,7 @@ These items should be addressed before full dashboard work.
 | PDB-3.5 | Sector formula decision checkpoint | Complete | PDB-2 found that `SECTOR_RANK_CHANGE_WEIGHT` existed, but scoring used a neutral placeholder. PDB-3 was complete, so this could not be pushed forward silently. | Tested Option B2: remove neutral rank-change contribution, renormalize remaining sector weights, keep `rank_change` stored/reported only. | `docs/sector_formula_decision_checkpoint_spec.md` records the accepted decision and validation result. |
 | PDB-3.6 | Spec completeness gate | Complete | The project had accumulated reduced-scope, placeholder, and deferred labels that could drift from the main spec if not audited. | Classified every reduced/placeholder area as required now, acceptable first-version scope, deferred by original spec, or incorrect drift. | `docs/spec_completeness_gate_spec.md` records the classification and confirms PDB-4 as the next required implementation task. |
 | PDB-4 | Catalyst/earnings decision | Complete | The original spec preserves the question "why is this moving?" Current values were all `pending_source`. | Connected real recent news through Alpaca News using the existing Alpaca key. Kept structured earnings calendar explicitly not connected. Avoided fake catalyst inference. | `docs/catalyst_earnings_source_spec.md` records the source decision; reports show real recent-news headlines where available and do not imply earnings calendar data exists. |
-| PDB-5 | Backtest scope clarity | Pending | Current backtest validates score behavior, not trade profitability. | Keep a clear document/report note explaining what the backtest proves and does not prove. | No output suggests the scores are direct trade entries or profitability claims. |
+| PDB-5 | Backtest scope clarity | Complete | Current backtest validates score behavior, not trade profitability. | Added report and stored metrics scope explaining what the backtest proves and does not prove. Classified which metrics can be added before dashboard without trade-entry assumptions. | `docs/backtest_scope_clarity_spec.md` records the decision; reports include validation scope and hit-rate meaning. |
 | PDB-6 | Data quality and reproducibility check | Pending | Dashboard will depend on confidence in stored data and regenerated reports. | Add or run checks for required symbols, price coverage, score-date coverage, and idempotent workflow writes. | `doctor`, `status`, or tests can reveal missing core data before report/dashboard use. |
 
 ## 5. Work To Defer Deliberately
@@ -138,8 +140,7 @@ They should stay documented, but they do not need to stop the next controlled im
 
 Recommended pre-dashboard order:
 
-1. PDB-5: Backtest scope clarity.
-2. PDB-6: Data quality and reproducibility check.
+1. PDB-6: Data quality and reproducibility check.
 
 Reason:
 
@@ -293,14 +294,31 @@ Evidence is recorded in:
 docs/catalyst_earnings_source_spec.md
 ```
 
+PDB-5 is complete.
+
+Result:
+
+```text
+Backtest reports validate score behavior, not trade profitability.
+metrics_json stores validation_scope.
+Hit rate is defined as positive relative forward return, not trade win rate.
+```
+
+Evidence is recorded in:
+
+```text
+docs/backtest_scope_clarity_spec.md
+```
+
 The next implementation task should be:
 
 ```text
-PDB-5: Backtest scope clarity
+PDB-6: Data quality and reproducibility check
 ```
 
 Expected output:
 
-- Clear report wording that backtests validate score behavior, not trade profitability.
-- A decision on which additional backtest metrics can be computed before dashboard without trade-entry assumptions.
-- No output that implies scores are direct trade entries or profit claims.
+- Required symbol coverage checks.
+- Price coverage and score-date coverage checks.
+- Idempotent workflow write verification.
+- A clear pass/fail surface before dashboard work starts.

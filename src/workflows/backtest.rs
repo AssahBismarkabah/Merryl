@@ -68,6 +68,7 @@ pub fn run_backtest(from_arg: &str, to_arg: &str) -> Result<RunBacktestResult> {
     let run_name = format!("backtest_{}_{}", from_date, to_date);
     let config_json = json!({
         "horizons": scoring::BACKTEST_HORIZONS,
+        "validation_scope": &metrics.validation_scope,
         "relative_return_policy": {
             "sector": "sector ETF forward return minus SPY forward return",
             "sector_components": "sector ETF forward return grouped by same-day sector component decile",

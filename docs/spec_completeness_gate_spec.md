@@ -166,7 +166,7 @@ The gate classified it as required before dashboard work.
 
 Later required before dashboard:
 
-- PDB-5: Backtest scope clarity, including MAE/MFE, volatility, turnover, and what requires trade-entry assumptions.
+- PDB-5: Backtest scope clarity, including MAE/MFE, volatility, turnover, and what requires trade-entry assumptions. Complete.
 - PDB-6: Data quality and reproducibility checks.
 - Phase 4: Basic dashboard/reporting surface after blockers close.
 

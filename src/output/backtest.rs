@@ -38,8 +38,7 @@ fn backtest_report_markdown(metrics: &BacktestMetrics) -> String {
             "# Merryl Backtest Report: {} to {}",
             metrics.from_date, metrics.to_date
         ),
-        "Rule: this report validates historical score behavior. It is not a trading recommendation and does not model execution, slippage, taxes, or portfolio constraints."
-            .to_string(),
+        validation_scope(metrics),
         format!(
             "Sector observations: `{}`\n\nSector component observations: `{}`\n\nStock observations: `{}`\n\nIndustry validation observations: `{}`",
             metrics.sector_observation_count,
@@ -56,6 +55,39 @@ fn backtest_report_markdown(metrics: &BacktestMetrics) -> String {
         summary_table(&metrics.summaries),
     ]
     .join("\n\n")
+}
+
+fn validation_scope(metrics: &BacktestMetrics) -> String {
+    [
+        "## Validation Scope".to_string(),
+        format!("Purpose: `{}`.", metrics.validation_scope.purpose),
+        "This report validates historical score behavior. It is not a trading recommendation."
+            .to_string(),
+        bullet_section("What this can show", &metrics.validation_scope.proves),
+        bullet_section(
+            "What this does not prove",
+            &metrics.validation_scope.does_not_prove,
+        ),
+        format!(
+            "Hit rate definition: {}",
+            metrics.validation_scope.hit_rate_definition
+        ),
+        bullet_section(
+            "Metrics allowed before dashboard without trade-entry assumptions",
+            &metrics.validation_scope.metrics_allowed_before_dashboard,
+        ),
+        bullet_section(
+            "Deferred until a trade/portfolio model exists",
+            &metrics.validation_scope.metrics_deferred_until_trade_model,
+        ),
+    ]
+    .join("\n\n")
+}
+
+fn bullet_section(title: &str, items: &[String]) -> String {
+    let mut lines = vec![format!("### {title}")];
+    lines.extend(items.iter().map(|item| format!("- {item}")));
+    lines.join("\n")
 }
 
 fn summary_table(rows: &[BacktestSummaryRow]) -> String {

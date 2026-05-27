@@ -18,6 +18,18 @@ fn backtest_calculates_forward_returns_deciles_and_summary_metrics() -> Result<(
 
     let metrics = run_backtest_analysis(fixture.input())?;
 
+    assert_eq!(
+        metrics.validation_scope.purpose,
+        "score_behavior_validation"
+    );
+    assert!(
+        metrics
+            .validation_scope
+            .does_not_prove
+            .iter()
+            .any(|item| item == "Trade profitability.")
+    );
+
     let sector_decile_10 = summary(&metrics.summaries, "sector", 1, 10);
     assert_eq!(sector_decile_10.count, 2);
     assert_close(sector_decile_10.hit_rate, 0.5);
@@ -209,6 +221,9 @@ fn backtest_reads_sqlite_inputs_stores_results_and_writes_outputs() -> Result<()
     assert!(outputs.summary_export.exists());
     let report = fs::read_to_string(&outputs.report)?;
     assert!(report.contains("not a trading recommendation"));
+    assert!(report.contains("## Validation Scope"));
+    assert!(report.contains("What this does not prove"));
+    assert!(report.contains("not a trade win rate"));
     assert!(report.contains("sector_component_return_20d"));
     assert!(report.contains("stock_by_industry"));
 
@@ -227,6 +242,7 @@ fn backtest_reads_sqlite_inputs_stores_results_and_writes_outputs() -> Result<()
         conn.query_row("SELECT metrics_json FROM backtest_results", [], |row| {
             row.get(0)
         })?;
+    assert!(stored_metrics.contains("validation_scope"));
     assert!(stored_metrics.contains("summaries"));
 
     let _ = fs::remove_file(outputs.report);

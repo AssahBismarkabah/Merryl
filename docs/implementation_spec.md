@@ -206,6 +206,12 @@ Catalyst and earnings source decision:
 docs/catalyst_earnings_source_spec.md
 ```
 
+Backtest scope clarity:
+
+```text
+docs/backtest_scope_clarity_spec.md
+```
+
 Pre-dashboard stability backlog:
 
 ```text
@@ -242,23 +248,23 @@ Do not treat Markdown or CSV as the system-of-record.
 - Recent news catalysts are connected through Alpaca News for the current top watchlist. Watchlist rows with recent news show `recent_news:N`. Structured earnings calendar data is not connected yet.
 - Sector ranking is useful as a market-map and attention layer, but PDB-2 labels it as map-only / not yet a proven forward-return predictor. PDB-3.5 removed the neutral rank-change placeholder from sector scoring. Current rank-change is stored and reported, but it is not a scoring component.
 - Industry scoring now uses transparent price, relative return, volume, breadth, and 20D-high components. Industry-specific validation is supportive, but it still does not include news/catalyst or industry ETF/fund-flow confirmation.
-- Backtesting validates score behavior, not trade profitability. It does not model transaction costs, slippage, taxes, position sizing, portfolio constraints, or maximum adverse/favorable excursion yet.
+- Backtesting validates score behavior, not trade profitability. Reports and stored metrics now include validation scope. It does not model transaction costs, slippage, taxes, position sizing, portfolio constraints, or portfolio P&L.
 
 ## Current Next Step
 
-The Phase 3 validation checkpoint found that stock scoring has useful forward behavior, sector scoring is mixed, and the industry/theme layer needed hardening before dashboard work. The industry/theme scoring hardening pass is implemented. PDB-1 industry-specific validation, PDB-2 sector score review, PDB-3 market regime V1 review, PDB-3.5 sector formula decision checkpoint, PDB-3.6 spec completeness gate, and PDB-4 catalyst/news connection are complete.
+The Phase 3 validation checkpoint found that stock scoring has useful forward behavior, sector scoring is mixed, and the industry/theme layer needed hardening before dashboard work. The industry/theme scoring hardening pass is implemented. PDB-1 industry-specific validation, PDB-2 sector score review, PDB-3 market regime V1 review, PDB-3.5 sector formula decision checkpoint, PDB-3.6 spec completeness gate, PDB-4 catalyst/news connection, and PDB-5 backtest scope clarity are complete.
 
-PDB-3.6 confirmed that the first-build boundaries are aligned with the source specs when they are stated precisely: S&P 500 anchor universe, daily data, GICS industries, SPDR sector ETFs, Alpaca daily prices, Markdown/CSV outputs, and ETF-proxy regime coverage are acceptable first-build scope. PDB-4 connects real recent news catalyst context while keeping structured earnings calendar data explicit as not connected.
+PDB-3.6 confirmed that the first-build boundaries are aligned with the source specs when they are stated precisely: S&P 500 anchor universe, daily data, GICS industries, SPDR sector ETFs, Alpaca daily prices, Markdown/CSV outputs, and ETF-proxy regime coverage are acceptable first-build scope. PDB-4 connects real recent news catalyst context while keeping structured earnings calendar data explicit as not connected. PDB-5 clarifies that backtests validate score behavior, not trade profitability.
 
 Next implementation priority:
 
 ```text
-PDB-5: Backtest scope clarity.
+PDB-6: Data quality and reproducibility check.
 ```
 
 This comes from `docs/pre_dashboard_stability_backlog_spec.md`.
 
-The goal is to clarify what the current backtest proves and what it does not prove before dashboard work starts. Do not start the full Phase 4 dashboard before PDB-5 and PDB-6 are either resolved or explicitly accepted with precise source/coverage wording.
+The goal is to add or run checks for required symbols, price coverage, score-date coverage, and idempotent workflow writes before dashboard work starts. Do not start the full Phase 4 dashboard before PDB-6 is resolved or explicitly accepted with precise source/coverage wording.
 
 ## Guardrails
 

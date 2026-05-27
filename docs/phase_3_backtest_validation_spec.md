@@ -169,7 +169,7 @@ The current `implementation_spec.md` limitations are not equal in priority.
 | Catalyst/news source | Addressed for recent news | PDB-4 connects real Alpaca News headlines for current watchlist symbols. Structured earnings calendar data remains explicitly not connected. |
 | Industry/theme bridge | No | Hardened and validated in PDB-1. It should stay as an attention and confirmation layer, not a trade signal. |
 | Sector score is mixed | Partial | Reviewed in PDB-2. Keep it as map-only until stronger evidence or regime-aware validation exists. |
-| Backtest is not trade profitability | No | Merryl is not an auto-trading system. This limitation should remain explicit. |
+| Backtest is not trade profitability | Addressed for pre-dashboard | PDB-5 stores validation scope in metrics and adds report wording explaining what the backtest proves and does not prove. |
 
 ## 8. Decision Before Dashboard
 
@@ -347,7 +347,7 @@ docs/pre_dashboard_stability_backlog_spec.md
 The locked next implementation checkpoint is:
 
 ```text
-PDB-5: Backtest scope clarity
+PDB-6: Data quality and reproducibility check
 ```
 
-This should clarify what current backtests prove before dashboard work continues.
+This should make required data coverage and workflow reproducibility visible before dashboard work continues.
