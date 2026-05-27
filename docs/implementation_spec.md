@@ -1,8 +1,8 @@
 # Merryl Implementation Runbook
 
-Version: 0.1  
-Date: 2026-05-26  
-Status: Daily scoring and Phase 3 backtesting implementation notes
+Version: 0.2
+Date: 2026-05-27
+Status: Daily scoring, Phase 3 backtesting, and pre-dashboard stability notes
 
 ## Current Slice
 
@@ -27,6 +27,13 @@ Merryl backtest run
   -> summarize hit rate, average return, median return, and relative return behavior
   -> store metrics in backtest_results
   -> write Markdown and CSV backtest summaries
+
+Merryl doctor run
+  -> verify required docs, workflow config, credentials, and generated paths
+  -> verify required market symbols and sector maps exist
+  -> verify required ETF price coverage and latest-date alignment
+  -> verify historical score-date coverage
+  -> verify latest regime, sector, industry, stock, and watchlist row coverage
 ```
 
 The implementation does not generate fake market candles. If real data credentials are missing, the daily run stops.
@@ -182,6 +189,12 @@ Sector score review:
 docs/sector_score_review_spec.md
 ```
 
+Pre-dashboard data quality:
+
+```text
+docs/data_quality_reproducibility_spec.md
+```
+
 Sector formula decision checkpoint:
 
 ```text
@@ -249,22 +262,23 @@ Do not treat Markdown or CSV as the system-of-record.
 - Sector ranking is useful as a market-map and attention layer, but PDB-2 labels it as map-only / not yet a proven forward-return predictor. PDB-3.5 removed the neutral rank-change placeholder from sector scoring. Current rank-change is stored and reported, but it is not a scoring component.
 - Industry scoring now uses transparent price, relative return, volume, breadth, and 20D-high components. Industry-specific validation is supportive, but it still does not include news/catalyst or industry ETF/fund-flow confirmation.
 - Backtesting validates score behavior, not trade profitability. Reports and stored metrics now include validation scope. It does not model transaction costs, slippage, taxes, position sizing, portfolio constraints, or portfolio P&L.
+- Data quality checks now run through `doctor` and can catch missing core symbols, ETF price coverage, score-date coverage, latest score row coverage, and replacement-write duplication before dashboard work starts.
 
 ## Current Next Step
 
-The Phase 3 validation checkpoint found that stock scoring has useful forward behavior, sector scoring is mixed, and the industry/theme layer needed hardening before dashboard work. The industry/theme scoring hardening pass is implemented. PDB-1 industry-specific validation, PDB-2 sector score review, PDB-3 market regime V1 review, PDB-3.5 sector formula decision checkpoint, PDB-3.6 spec completeness gate, PDB-4 catalyst/news connection, and PDB-5 backtest scope clarity are complete.
+The Phase 3 validation checkpoint found that stock scoring has useful forward behavior, sector scoring is mixed, and the industry/theme layer needed hardening before dashboard work. The industry/theme scoring hardening pass is implemented. PDB-1 industry-specific validation, PDB-2 sector score review, PDB-3 market regime V1 review, PDB-3.5 sector formula decision checkpoint, PDB-3.6 spec completeness gate, PDB-4 catalyst/news connection, PDB-5 backtest scope clarity, and PDB-6 data quality/reproducibility are complete.
 
-PDB-3.6 confirmed that the first-build boundaries are aligned with the source specs when they are stated precisely: S&P 500 anchor universe, daily data, GICS industries, SPDR sector ETFs, Alpaca daily prices, Markdown/CSV outputs, and ETF-proxy regime coverage are acceptable first-build scope. PDB-4 connects real recent news catalyst context while keeping structured earnings calendar data explicit as not connected. PDB-5 clarifies that backtests validate score behavior, not trade profitability.
+PDB-3.6 confirmed that the first-build boundaries are aligned with the source specs when they are stated precisely: S&P 500 anchor universe, daily data, GICS industries, SPDR sector ETFs, Alpaca daily prices, Markdown/CSV outputs, and ETF-proxy regime coverage are acceptable first-build scope. PDB-4 connects real recent news catalyst context while keeping structured earnings calendar data explicit as not connected. PDB-5 clarifies that backtests validate score behavior, not trade profitability. PDB-6 adds a direct pre-dashboard data quality gate through `doctor` and storage idempotency tests.
 
 Next implementation priority:
 
 ```text
-PDB-6: Data quality and reproducibility check.
+Phase 4 planning: first controlled dashboard/API slice.
 ```
 
 This comes from `docs/pre_dashboard_stability_backlog_spec.md`.
 
-The goal is to add or run checks for required symbols, price coverage, score-date coverage, and idempotent workflow writes before dashboard work starts. Do not start the full Phase 4 dashboard before PDB-6 is resolved or explicitly accepted with precise source/coverage wording.
+The dashboard must remain a reader over the controlled market-map chain first. Do not add alerts, portfolio simulation, intraday execution, options flow, or advanced data-provider expansion in the first dashboard slice.
 
 ## Guardrails
 

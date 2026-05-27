@@ -205,6 +205,13 @@ pub mod scoring {
     pub const STOCK_LIQUIDITY_WEIGHT: f64 = 0.10;
 }
 
+pub mod quality {
+    use super::scoring::RETURN_60D;
+
+    pub const MIN_REQUIRED_PRICE_BARS: i64 = RETURN_60D as i64 + 1;
+    pub const MIN_REQUIRED_SCORE_DATES: i64 = RETURN_60D as i64;
+}
+
 pub mod output_text {
     pub const DAILY_REPORT_TITLE: &str = "Daily Market Rotation Report";
     pub const REPORT_RULE: &str = "Rule: this is a market rotation watchlist, not an automatic trade signal. Chart structure, invalidation, and risk define any trade.";

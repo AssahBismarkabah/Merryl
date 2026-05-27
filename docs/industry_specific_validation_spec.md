@@ -164,10 +164,12 @@ PDB-4 catalyst/news source decision is also complete.
 
 PDB-5 backtest scope clarity is also complete.
 
-The next pre-dashboard item is:
+PDB-6 data quality and reproducibility is also complete.
+
+The next step is:
 
 ```text
-PDB-6: Data quality and reproducibility check
+Phase 4 planning: first controlled dashboard/API slice
 ```
 
-The current GICS industry/theme coverage was audited against the main spec and accepted for the first build. Recent news catalysts are connected through Alpaca News; structured earnings calendar data remains not connected. Backtest scope is now explicit as score-behavior validation, not trade profitability.
+The current GICS industry/theme coverage was audited against the main spec and accepted for the first build. Recent news catalysts are connected through Alpaca News; structured earnings calendar data remains not connected. Backtest scope is now explicit as score-behavior validation, not trade profitability. `doctor` now checks core stored data before dashboard work.

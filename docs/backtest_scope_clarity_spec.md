@@ -1,8 +1,8 @@
 # Backtest Scope Clarity
 
-Version: 0.1
+Version: 0.2
 Date: 2026-05-27
-Status: PDB-5 complete; PDB-6 is next
+Status: PDB-5 complete; PDB-6 complete; Phase 4 planning is next
 
 Related documents:
 

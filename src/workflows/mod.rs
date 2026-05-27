@@ -1,9 +1,11 @@
 mod backtest;
 mod daily;
 mod date_args;
+mod doctor;
 mod health;
 mod messages;
 
 pub use backtest::{RunBacktestResult, run_backtest};
 pub use daily::{RunDailyResult, run_daily};
-pub use health::{doctor, status};
+pub use doctor::{doctor, doctor_for_db_path};
+pub use health::status;

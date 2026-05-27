@@ -213,10 +213,12 @@ PDB-4 catalyst/news source decision is complete.
 
 PDB-5 backtest scope clarity is complete.
 
-The next pre-dashboard item is:
+PDB-6 data quality and reproducibility is complete.
+
+The next step is:
 
 ```text
-PDB-6: Data quality and reproducibility check
+Phase 4 planning: first controlled dashboard/API slice
 ```
 
-The sector formula decision is closed for this pass, and the broader market-map completeness gate accepted sector ranking as a map layer. Recent news catalysts are connected through Alpaca News; structured earnings calendar data remains not connected. Backtest scope is now explicit as score-behavior validation, not trade profitability.
+The sector formula decision is closed for this pass, and the broader market-map completeness gate accepted sector ranking as a map layer. Recent news catalysts are connected through Alpaca News; structured earnings calendar data remains not connected. Backtest scope is now explicit as score-behavior validation, not trade profitability. `doctor` now checks core stored data before dashboard work.

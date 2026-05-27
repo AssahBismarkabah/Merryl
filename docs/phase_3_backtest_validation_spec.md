@@ -344,10 +344,10 @@ Before full dashboard work, continue following the pre-dashboard stability backl
 docs/pre_dashboard_stability_backlog_spec.md
 ```
 
-The locked next implementation checkpoint is:
+The pre-dashboard implementation checkpoints are now complete through:
 
 ```text
 PDB-6: Data quality and reproducibility check
 ```
 
-This should make required data coverage and workflow reproducibility visible before dashboard work continues.
+PDB-6 made required data coverage and workflow reproducibility visible through `doctor` and tests. The next step is Phase 4 planning for the first controlled dashboard/API slice.

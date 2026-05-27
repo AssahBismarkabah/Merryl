@@ -1,8 +1,8 @@
 # Pre-Dashboard Stability Backlog
 
-Version: 1.0
+Version: 1.1
 Date: 2026-05-27
-Status: PDB-1 through PDB-5 complete; PDB-6 is next
+Status: PDB-1 through PDB-6 complete; Phase 4 planning is next
 Related documents:
 
 - `docs/market_rotation_system_spec.md`
@@ -17,6 +17,7 @@ Related documents:
 - `docs/spec_completeness_gate_spec.md`
 - `docs/catalyst_earnings_source_spec.md`
 - `docs/backtest_scope_clarity_spec.md`
+- `docs/data_quality_reproducibility_spec.md`
 
 ## 1. Purpose
 
@@ -55,12 +56,13 @@ Current data state at the latest check:
 ```text
 symbols: 521
 daily prices: 150331
+market regime scores: 228
 score dates: 228
 sector scores: 2508
 industry scores: 28956
 stock scores: 11400
 watchlist rows: 5700
-backtest results: 7
+backtest results: 8
 ```
 
 Latest validation state:
@@ -73,7 +75,8 @@ PDB-3.5 sector formula decision checkpoint: complete
 Spec completeness gate: complete
 PDB-4 catalyst/news source: complete
 PDB-5 backtest scope clarity: complete
-latest backtest result id: 7
+PDB-6 data quality/reproducibility: complete
+latest backtest result id: 8
 ```
 
 ## 3. Stability Rule
@@ -104,7 +107,7 @@ These items should be addressed before full dashboard work.
 | PDB-3.6 | Spec completeness gate | Complete | The project had accumulated reduced-scope, placeholder, and deferred labels that could drift from the main spec if not audited. | Classified every reduced/placeholder area as required now, acceptable first-version scope, deferred by original spec, or incorrect drift. | `docs/spec_completeness_gate_spec.md` records the classification and confirms PDB-4 as the next required implementation task. |
 | PDB-4 | Catalyst/earnings decision | Complete | The original spec preserves the question "why is this moving?" Current values were all `pending_source`. | Connected real recent news through Alpaca News using the existing Alpaca key. Kept structured earnings calendar explicitly not connected. Avoided fake catalyst inference. | `docs/catalyst_earnings_source_spec.md` records the source decision; reports show real recent-news headlines where available and do not imply earnings calendar data exists. |
 | PDB-5 | Backtest scope clarity | Complete | Current backtest validates score behavior, not trade profitability. | Added report and stored metrics scope explaining what the backtest proves and does not prove. Classified which metrics can be added before dashboard without trade-entry assumptions. | `docs/backtest_scope_clarity_spec.md` records the decision; reports include validation scope and hit-rate meaning. |
-| PDB-6 | Data quality and reproducibility check | Pending | Dashboard will depend on confidence in stored data and regenerated reports. | Add or run checks for required symbols, price coverage, score-date coverage, and idempotent workflow writes. | `doctor`, `status`, or tests can reveal missing core data before report/dashboard use. |
+| PDB-6 | Data quality and reproducibility check | Complete | Dashboard will depend on confidence in stored data and regenerated reports. | Added `doctor` checks for required symbols, sector maps, price coverage, score-date coverage, and latest score row coverage. Added tests for missing-data detection, complete fixture pass, and idempotent replacement writes. | `docs/data_quality_reproducibility_spec.md` records the implemented gate; `doctor` and tests can reveal missing core data before report/dashboard use. |
 
 ## 5. Work To Defer Deliberately
 
@@ -147,6 +150,14 @@ Reason:
 - Catalyst clarity prevents the dashboard from overstating unfinished context.
 - Data quality checks make the eventual dashboard more reliable without adding product complexity.
 
+Status:
+
+```text
+PDB-6 is complete.
+```
+
+The next step is Phase 4 planning for the first controlled dashboard/API slice.
+
 ## 8. Acceptance Before Phase 4
 
 Phase 4 dashboard can start when:
@@ -157,6 +168,8 @@ Phase 4 dashboard can start when:
 - Catalyst/earnings status is explicit and not misleading.
 - Backtest outputs clearly say score behavior is not trade profitability.
 - Status/doctor/tests can catch missing core data.
+
+All listed pre-dashboard blockers are now complete.
 
 The dashboard should begin as a minimal local dashboard/API slice, not a broad product expansion.
 
@@ -310,15 +323,24 @@ Evidence is recorded in:
 docs/backtest_scope_clarity_spec.md
 ```
 
+PDB-6 is complete.
+
+Result:
+
+```text
+doctor checks required market symbols, sector maps, ETF price coverage, historical score coverage,
+latest score-date alignment, and latest score row coverage.
+Tests verify missing-data detection, complete fixture acceptance, and idempotent replacement writes.
+```
+
+Evidence is recorded in:
+
+```text
+docs/data_quality_reproducibility_spec.md
+```
+
 The next implementation task should be:
 
 ```text
-PDB-6: Data quality and reproducibility check
+Phase 4 planning: first controlled dashboard/API slice
 ```
-
-Expected output:
-
-- Required symbol coverage checks.
-- Price coverage and score-date coverage checks.
-- Idempotent workflow write verification.
-- A clear pass/fail surface before dashboard work starts.

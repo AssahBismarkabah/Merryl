@@ -2,7 +2,9 @@ use anyhow::Result;
 use rusqlite::Connection;
 use tempfile::tempdir;
 
-use merryl::domain::models::MarketEvent;
+use merryl::domain::models::{
+    IndustryScore, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
+};
 use merryl::storage::Database;
 
 #[test]
@@ -52,4 +54,129 @@ fn recent_news_events_replace_is_idempotent() -> Result<()> {
     assert_eq!(count, 1);
 
     Ok(())
+}
+
+#[test]
+fn score_replacement_writes_are_idempotent() -> Result<()> {
+    let dir = tempdir()?;
+    let db_path = dir.path().join("market.db");
+    let mut db = Database::open(&db_path)?;
+    db.migrate()?;
+
+    let date = "2026-05-27";
+    let regime = market_regime_score(date);
+    let sectors = vec![sector_score(date)];
+    let industries = vec![industry_score(date)];
+    let stocks = vec![stock_score(date)];
+
+    db.replace_market_regime(&regime)?;
+    db.replace_market_regime(&regime)?;
+    db.replace_sector_scores(date, &sectors)?;
+    db.replace_sector_scores(date, &sectors)?;
+    db.replace_industry_scores(date, &industries)?;
+    db.replace_industry_scores(date, &industries)?;
+    db.replace_stock_scores(date, &stocks)?;
+    db.replace_stock_scores(date, &stocks)?;
+    db.replace_watchlist(date, &stocks)?;
+    db.replace_watchlist(date, &stocks)?;
+    drop(db);
+
+    let conn = Connection::open(db_path)?;
+
+    assert_eq!(count_rows(&conn, "market_regime_scores")?, 1);
+    assert_eq!(count_rows(&conn, "sector_scores")?, 1);
+    assert_eq!(count_rows(&conn, "industry_scores")?, 1);
+    assert_eq!(count_rows(&conn, "stock_scores")?, 1);
+    assert_eq!(count_rows(&conn, "watchlists")?, 1);
+
+    Ok(())
+}
+
+fn count_rows(conn: &Connection, table: &str) -> Result<i64> {
+    Ok(
+        conn.query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| {
+            row.get(0)
+        })?,
+    )
+}
+
+fn market_regime_score(date: &str) -> MarketRegimeScore {
+    MarketRegimeScore {
+        date: date.to_string(),
+        label: "risk_on".to_string(),
+        score: 75.0,
+        spy_return_20d: 0.10,
+        spy_return_60d: 0.20,
+        qqq_relative_return_vs_spy: 0.01,
+        iwm_relative_return_vs_spy: 0.02,
+        dia_relative_return_vs_spy: 0.0,
+        components_json: "{}".to_string(),
+        explanation: "fixture regime".to_string(),
+    }
+}
+
+fn sector_score(date: &str) -> SectorScore {
+    SectorScore {
+        date: date.to_string(),
+        sector: "Technology".to_string(),
+        sector_etf: "XLK".to_string(),
+        score: 90.0,
+        rank: 1,
+        return_1d: 0.0,
+        return_5d: 0.0,
+        return_20d: 0.0,
+        return_60d: 0.0,
+        relative_return_vs_spy: 0.0,
+        relative_volume: 1.0,
+        breadth_20d: 0.5,
+        breadth_50d: 0.5,
+        rank_change: 0.0,
+        explanation: "fixture sector score".to_string(),
+    }
+}
+
+fn industry_score(date: &str) -> IndustryScore {
+    IndustryScore {
+        date: date.to_string(),
+        industry: "Software".to_string(),
+        sector: "Technology".to_string(),
+        score: 80.0,
+        rank: 1,
+        return_5d: 0.0,
+        return_20d: 0.0,
+        return_60d: 0.0,
+        relative_return_vs_sector: 0.0,
+        relative_return_vs_spy: 0.0,
+        relative_volume: 1.0,
+        breadth_20d: 0.5,
+        breadth_50d: 0.5,
+        high_20d_rate: 0.0,
+        member_count: 1,
+        components_json: "{}".to_string(),
+    }
+}
+
+fn stock_score(date: &str) -> StockScore {
+    StockScore {
+        date: date.to_string(),
+        rank: 1,
+        symbol: "MSFT".to_string(),
+        name: "Microsoft Corporation".to_string(),
+        sector: "Technology".to_string(),
+        industry: "Software".to_string(),
+        score: 90.0,
+        sector_score: 90.0,
+        return_1d: 0.0,
+        return_5d: 0.0,
+        return_20d: 0.0,
+        return_60d: 0.0,
+        relative_return_vs_sector: 0.0,
+        relative_return_vs_spy: 0.0,
+        relative_volume: 1.0,
+        avg_dollar_volume: 1_000_000.0,
+        trend_state: "fixture".to_string(),
+        catalyst_status: "pending_source".to_string(),
+        components_json: "{}".to_string(),
+        explanation: "fixture stock score".to_string(),
+    }
 }
