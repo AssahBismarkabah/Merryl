@@ -5,11 +5,10 @@ purpose = "Daily market map, sector ranking, stock ranking, and watchlist report
 steps = [
   "load_sp500_universe",
   "ingest_daily_prices",
-  "score_sectors",
-  "score_industries",
-  "score_stocks",
-  "write_markdown_report",
-  "write_csv_exports",
+  "score_historical_market_window",
+  "store_historical_scores",
+  "write_latest_markdown_report",
+  "write_latest_csv_exports",
 ]
 
 [inputs]
@@ -20,6 +19,7 @@ lookback_calendar_days = 420
 
 [outputs]
 database = "data/market.db"
+historical_scores = "SQLite rows for every valid score date in the fetched window"
 report = "reports/YYYY-MM-DD_market_report.md"
 sector_scores = "exports/YYYY-MM-DD_sector_scores.csv"
 watchlist = "exports/YYYY-MM-DD_stock_watchlist.csv"

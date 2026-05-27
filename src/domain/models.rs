@@ -102,5 +102,7 @@ pub struct StockScore {
     pub avg_dollar_volume: f64,
     pub trend_state: String,
     pub catalyst_status: String,
+    #[serde(skip_serializing)]
+    pub components_json: String,
     pub explanation: String,
 }

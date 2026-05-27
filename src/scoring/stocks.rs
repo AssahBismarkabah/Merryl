@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use serde_json::json;
+
 use crate::config::scoring as scoring_config;
 use crate::config::universe::ASSET_STOCK;
 use crate::domain::models::{SectorMap, SectorScore, StockScore, Symbol};
@@ -114,6 +116,17 @@ pub fn score_stocks(
             avg_dollar_volume,
             trend_state,
             catalyst_status: scoring_config::CATALYST_PENDING_SOURCE.to_string(),
+            components_json: json!({
+                "sector_score": sector_score,
+                "relative_strength_component": relative_strength_component,
+                "relative_volume_component": relative_volume_component,
+                "trend_component": trend_component,
+                "liquidity_component": liquidity_component,
+                "relative_return_vs_sector": relative_return_vs_sector,
+                "relative_return_vs_spy": relative_return_vs_spy,
+                "avg_dollar_volume": avg_dollar_volume
+            })
+            .to_string(),
             explanation: stock_explanation(
                 &symbol.symbol,
                 score,

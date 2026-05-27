@@ -152,6 +152,7 @@ CREATE TABLE IF NOT EXISTS stock_scores (
     avg_dollar_volume REAL NOT NULL,
     trend_state TEXT NOT NULL,
     catalyst_status TEXT NOT NULL,
+    components_json TEXT NOT NULL,
     explanation TEXT NOT NULL,
     PRIMARY KEY (date, symbol)
 );
@@ -180,6 +181,31 @@ CREATE TABLE IF NOT EXISTS backtest_results (
 impl Database {
     pub fn migrate(&self) -> Result<()> {
         self.conn.execute_batch(MIGRATION_SQL)?;
+        self.add_column_if_missing(
+            "stock_scores",
+            "components_json",
+            "ALTER TABLE stock_scores ADD COLUMN components_json TEXT NOT NULL DEFAULT '{}'",
+        )?;
         Ok(())
+    }
+
+    fn add_column_if_missing(&self, table: &str, column: &str, sql: &str) -> Result<()> {
+        if !self.column_exists(table, column)? {
+            self.conn.execute_batch(sql)?;
+        }
+        Ok(())
+    }
+
+    fn column_exists(&self, table: &str, column: &str) -> Result<bool> {
+        let mut stmt = self.conn.prepare(&format!("PRAGMA table_info({table})"))?;
+        let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+
+        for row in rows {
+            if row? == column {
+                return Ok(true);
+            }
+        }
+
+        Ok(false)
     }
 }

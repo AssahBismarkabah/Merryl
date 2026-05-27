@@ -49,6 +49,7 @@ fn main() -> Result<()> {
                 println!("report: {}", result.report.display());
                 println!("sector export: {}", result.sector_export.display());
                 println!("watchlist export: {}", result.watchlist_export.display());
+                println!("historical score dates: {}", result.historical_score_dates);
             }
         },
         Commands::Status => {

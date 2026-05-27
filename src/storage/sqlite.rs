@@ -19,6 +19,7 @@ pub struct DbCounts {
     pub symbols: i64,
     pub prices_daily: i64,
     pub market_regime_scores: i64,
+    pub score_dates: i64,
     pub sector_scores: i64,
     pub industry_scores: i64,
     pub stock_scores: i64,
@@ -45,6 +46,7 @@ impl Database {
             symbols: self.count_table("symbols")?,
             prices_daily: self.count_table("prices_daily")?,
             market_regime_scores: self.count_table("market_regime_scores")?,
+            score_dates: self.count_distinct_dates("sector_scores")?,
             sector_scores: self.count_table("sector_scores")?,
             industry_scores: self.count_table("industry_scores")?,
             stock_scores: self.count_table("stock_scores")?,
@@ -58,5 +60,15 @@ impl Database {
                 row.get(0)
             })
             .with_context(|| format!("failed to count {table} rows"))
+    }
+
+    fn count_distinct_dates(&self, table: &str) -> Result<i64> {
+        self.conn
+            .query_row(
+                &format!("SELECT COUNT(DISTINCT date) FROM {table}"),
+                [],
+                |row| row.get(0),
+            )
+            .with_context(|| format!("failed to count distinct {table} dates"))
     }
 }

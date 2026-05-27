@@ -12,9 +12,9 @@ The current implementation target is:
 Merryl daily run
   -> load S&P 500 anchor universe
   -> fetch real daily OHLCV data
-  -> score market regime, sectors, industries, and stocks
-  -> store results in SQLite
-  -> write Markdown and CSV outputs
+  -> score the valid historical market window
+  -> store market regime, sector, industry, stock, and watchlist rows in SQLite
+  -> write Markdown and CSV outputs for the latest/requested score date
 ```
 
 The implementation does not generate fake market candles. If real data credentials are missing, the daily run stops.
@@ -145,6 +145,8 @@ Generated database/report/export files are ignored by git.
 
 SQLite is the canonical local store for Merryl.
 
+The daily workflow stores historical score rows for every valid date in the fetched window. A valid score date has at least 60 benchmark bars available, matching the longest current scoring lookback.
+
 Markdown and CSV are Phase 0 outputs:
 
 - Markdown is the human market-review report.
@@ -161,7 +163,7 @@ Do not treat Markdown or CSV as the system-of-record.
 ## Current Limitations
 
 - Market regime V1 uses broad ETF price proxies only: SPY, QQQ, IWM, and DIA.
-- Sector rank changes and new leaders require a prior dated run before they can show real movement.
+- The first valid score date in a fetched window has no prior rank-change baseline.
 - Catalyst and earnings fields are preserved as `pending_source` until a source is connected.
 - Industry scoring currently uses a simple 20-day return proxy and should be expanded later.
 - Backtesting is not implemented yet.

@@ -31,13 +31,14 @@ fn daily_report_contains_documented_sections() {
         components_json: "{}".to_string(),
     }];
     let stocks = vec![stock("NVDA", 1, 91.0, 2.2), stock("AMD", 2, 84.0, 1.6)];
+    let previous_watchlist = HashSet::from(["AMD".to_string()]);
     let report = daily_report_markdown(
         "2026-05-26",
         &regime,
         &sectors,
         &industries,
         &stocks,
-        &HashSet::new(),
+        &previous_watchlist,
     );
 
     for section in [
@@ -54,6 +55,8 @@ fn daily_report_contains_documented_sections() {
     ] {
         assert!(report.contains(section), "missing section {section}");
     }
+    assert!(report.contains("## New Leaders"));
+    assert!(report.contains("| 1 | NVDA |"));
 }
 
 fn sector(name: &str, etf: &str, rank: usize, score: f64, rank_change: f64) -> SectorScore {
@@ -96,6 +99,7 @@ fn stock(symbol: &str, rank: usize, score: f64, relative_volume: f64) -> StockSc
         avg_dollar_volume: 100_000_000.0,
         trend_state: "above_20d_50d".to_string(),
         catalyst_status: "pending_source".to_string(),
+        components_json: "{}".to_string(),
         explanation: format!("{symbol} explanation"),
     }
 }

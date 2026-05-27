@@ -5,7 +5,7 @@ use chrono::Duration as ChronoDuration;
 
 use crate::data::{AlpacaProvider, DailyOhlcvProvider, default_end_date};
 use crate::output::write_daily_outputs;
-use crate::scoring::{apply_sector_rank_changes, latest_date, score_market};
+use crate::scoring::{latest_date, previous_watchlist_symbols_for_date, score_market_history};
 use crate::storage::{Database, default_db_path};
 
 use super::date_args::parse_date_arg;
@@ -17,6 +17,7 @@ pub struct RunDailyResult {
     pub report: PathBuf,
     pub sector_export: PathBuf,
     pub watchlist_export: PathBuf,
+    pub historical_score_dates: usize,
 }
 
 pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
@@ -44,31 +45,35 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
     let mut db = Database::open(&db_path)?;
     db.migrate()?;
 
-    let previous_sector_ranks = db.latest_sector_ranks_before(&score_date)?;
-    let previous_watchlist_symbols = db.latest_watchlist_symbols_before(&score_date)?;
-
-    let mut scores = score_market(&score_date, &symbols, &prices, &sector_maps);
-    apply_sector_rank_changes(&mut scores.sectors, &previous_sector_ranks);
+    let score_history = score_market_history(&score_date, &symbols, &prices, &sector_maps);
+    let scores = score_history.last().context(
+        "no valid historical score dates were produced; need at least 60 benchmark bars",
+    )?;
+    let report_date = scores.date.clone();
+    let previous_watchlist_symbols =
+        previous_watchlist_symbols_for_date(&score_history, &report_date);
 
     if scores.sectors.is_empty() {
-        bail!("no sector scores were produced for {score_date}");
+        bail!("no sector scores were produced for {report_date}");
     }
     if scores.stocks.is_empty() {
-        bail!("no stock watchlist rows were produced for {score_date}");
+        bail!("no stock watchlist rows were produced for {report_date}");
     }
 
     db.upsert_symbols(&symbols)?;
     db.upsert_sector_maps(&sector_maps)?;
     db.upsert_industry_maps(&industry_maps)?;
     db.upsert_prices(&prices)?;
-    db.replace_market_regime(&scores.regime)?;
-    db.replace_sector_scores(&score_date, &scores.sectors)?;
-    db.replace_industry_scores(&score_date, &scores.industries)?;
-    db.replace_stock_scores(&score_date, &scores.stocks)?;
-    db.replace_watchlist(&score_date, &scores.stocks)?;
+    for scores in &score_history {
+        db.replace_market_regime(&scores.regime)?;
+        db.replace_sector_scores(&scores.date, &scores.sectors)?;
+        db.replace_industry_scores(&scores.date, &scores.industries)?;
+        db.replace_stock_scores(&scores.date, &scores.stocks)?;
+        db.replace_watchlist(&scores.date, &scores.stocks)?;
+    }
 
     let outputs = write_daily_outputs(
-        &score_date,
+        &report_date,
         &scores.regime,
         &scores.sectors,
         &scores.industries,
@@ -77,10 +82,11 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
     )?;
 
     Ok(RunDailyResult {
-        date: score_date,
+        date: report_date,
         database: db_path,
         report: outputs.report,
         sector_export: outputs.sector_export,
         watchlist_export: outputs.watchlist_export,
+        historical_score_dates: score_history.len(),
     })
 }

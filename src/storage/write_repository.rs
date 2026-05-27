@@ -243,9 +243,9 @@ impl Database {
                     date, rank, symbol, name, sector, industry, score, sector_score, return_1d,
                     return_5d, return_20d, return_60d, relative_return_vs_sector,
                     relative_return_vs_spy, relative_volume, avg_dollar_volume, trend_state,
-                    catalyst_status, explanation
+                    catalyst_status, components_json, explanation
                 )
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
                 "#,
             )?;
 
@@ -269,6 +269,7 @@ impl Database {
                     score.avg_dollar_volume,
                     &score.trend_state,
                     &score.catalyst_status,
+                    &score.components_json,
                     &score.explanation,
                 ])?;
             }
