@@ -79,6 +79,16 @@ pub struct IndustryScore {
     pub sector: String,
     pub score: f64,
     pub rank: usize,
+    pub return_5d: f64,
+    pub return_20d: f64,
+    pub return_60d: f64,
+    pub relative_return_vs_sector: f64,
+    pub relative_return_vs_spy: f64,
+    pub relative_volume: f64,
+    pub breadth_20d: f64,
+    pub breadth_50d: f64,
+    pub high_20d_rate: f64,
+    pub member_count: usize,
     pub components_json: String,
 }
 

@@ -136,7 +136,6 @@ pub mod scoring {
     pub const BREADTH_COMPONENT_DIVISOR: f64 = 2.0;
     pub const RELATIVE_RETURN_SCORE_MULTIPLIER: f64 = 500.0;
     pub const TREND_RETURN_SCORE_MULTIPLIER: f64 = 400.0;
-    pub const INDUSTRY_RETURN_SCORE_MULTIPLIER: f64 = 400.0;
     pub const RELATIVE_VOLUME_BASELINE: f64 = 0.5;
     pub const RELATIVE_VOLUME_SCORE_MULTIPLIER: f64 = 100.0;
     pub const PERCENT_SCALE: f64 = 100.0;
@@ -171,6 +170,12 @@ pub mod scoring {
     pub const SECTOR_BREADTH_WEIGHT: f64 = 0.20;
     pub const SECTOR_RANK_CHANGE_WEIGHT: f64 = 0.10;
 
+    pub const INDUSTRY_RELATIVE_SECTOR_WEIGHT: f64 = 0.30;
+    pub const INDUSTRY_RELATIVE_SPY_WEIGHT: f64 = 0.20;
+    pub const INDUSTRY_BREADTH_WEIGHT: f64 = 0.20;
+    pub const INDUSTRY_RELATIVE_VOLUME_WEIGHT: f64 = 0.15;
+    pub const INDUSTRY_HIGH_RATE_WEIGHT: f64 = 0.15;
+
     pub const STOCK_SECTOR_WEIGHT: f64 = 0.30;
     pub const STOCK_RELATIVE_STRENGTH_WEIGHT: f64 = 0.25;
     pub const STOCK_RELATIVE_VOLUME_WEIGHT: f64 = 0.20;
@@ -195,8 +200,9 @@ pub mod output_text {
     pub const SECTOR_TABLE_HEADER: &str = "| Rank | Sector | ETF | Score | 1D | 5D | 20D | 60D | Vs SPY | Rel Vol | Breadth 20D | Breadth 50D | Rank Change |";
     pub const SECTOR_TABLE_ALIGNMENT: &str =
         "|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|";
-    pub const INDUSTRY_TABLE_HEADER: &str = "| Rank | Industry / Theme | Sector | Score |";
-    pub const INDUSTRY_TABLE_ALIGNMENT: &str = "|---:|---|---|---:|";
+    pub const INDUSTRY_TABLE_HEADER: &str = "| Rank | Industry / Theme | Sector | Score | 5D | 20D | 60D | Vs Sector | Vs SPY | Rel Vol | Breadth 20D | Breadth 50D | 20D Highs | Members |";
+    pub const INDUSTRY_TABLE_ALIGNMENT: &str =
+        "|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|";
     pub const WATCHLIST_TABLE_HEADER: &str = "| Rank | Symbol | Name | Sector | Industry | Score | 20D | Rel Sector | Rel Vol | Trend | Catalyst |";
     pub const WATCHLIST_TABLE_ALIGNMENT: &str =
         "|---:|---|---|---|---|---:|---:|---:|---:|---|---|";

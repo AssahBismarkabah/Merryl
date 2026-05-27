@@ -51,10 +51,17 @@ fn historical_scoring_scores_multiple_dates_and_stores_rows() -> Result<()> {
         [],
         |row| row.get(0),
     )?;
+    let industry_components: String = conn.query_row(
+        "SELECT components_json FROM industry_scores LIMIT 1",
+        [],
+        |row| row.get(0),
+    )?;
 
     assert_eq!(score_dates as usize, history.len());
     assert_eq!(regime_rows as usize, history.len());
     assert!(stock_components.contains("relative_strength_component"));
+    assert!(industry_components.contains("relative_return_vs_sector"));
+    assert!(industry_components.contains("breadth_20d"));
 
     Ok(())
 }
@@ -77,6 +84,11 @@ fn scoring_a_past_date_does_not_use_future_prices() {
     assert_eq!(historical.date, target_date);
     assert_eq!(historical.sectors[0].sector, direct.sectors[0].sector);
     assert!((historical.sectors[0].return_20d - direct.sectors[0].return_20d).abs() < f64::EPSILON);
+    assert_eq!(
+        historical.industries[0].industry,
+        direct.industries[0].industry
+    );
+    assert!((historical.industries[0].score - direct.industries[0].score).abs() < f64::EPSILON);
     assert_eq!(historical.stocks[0].symbol, direct.stocks[0].symbol);
 }
 

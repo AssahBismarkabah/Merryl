@@ -149,11 +149,21 @@ fn top_industry_table(industry_scores: &[IndustryScore]) -> String {
             .take(scoring::TOP_INDUSTRY_REPORT_LIMIT)
             .map(|industry| {
                 format!(
-                    "| {} | {} | {} | {} |",
+                    "| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {:.0}% | {:.0}% | {:.0}% | {} |",
                     industry.rank,
                     industry.industry,
                     industry.sector,
-                    score(industry.score)
+                    score(industry.score),
+                    pct(industry.return_5d),
+                    pct(industry.return_20d),
+                    pct(industry.return_60d),
+                    pct(industry.relative_return_vs_sector),
+                    pct(industry.relative_return_vs_spy),
+                    multiple(industry.relative_volume),
+                    industry.breadth_20d,
+                    industry.breadth_50d,
+                    industry.high_20d_rate,
+                    industry.member_count
                 )
             }),
     );

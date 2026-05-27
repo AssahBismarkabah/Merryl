@@ -35,7 +35,7 @@ pub(super) fn score_market_from_histories(
 ) -> MarketScores {
     let regime = score_market_regime(date, histories);
     let sector_scores = score_sectors(date, symbols, histories, sector_maps);
-    let industry_scores = score_industries(date, symbols, histories);
+    let industry_scores = score_industries(date, symbols, histories, sector_maps);
     let stock_scores = score_stocks(date, symbols, histories, sector_maps, &sector_scores);
 
     MarketScores {

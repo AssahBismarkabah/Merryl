@@ -14,6 +14,7 @@ Merryl daily run
   -> fetch real daily OHLCV data
   -> score the valid historical market window
   -> store market regime, sector, industry, stock, and watchlist rows in SQLite
+  -> explain industry/theme strength with return, relative return, volume, breadth, and 20D-high components
   -> write Markdown and CSV outputs for the latest/requested score date
 
 Merryl backtest run
@@ -160,6 +161,12 @@ reports/backtests/YYYY-MM-DD_YYYY-MM-DD_backtest_report.md
 exports/backtests/YYYY-MM-DD_YYYY-MM-DD_backtest_summary.csv
 ```
 
+Phase 3 validation:
+
+```text
+docs/phase_3_backtest_validation_spec.md
+```
+
 Generated database/report/export files are ignored by git.
 
 ## Output Format Policy
@@ -188,8 +195,18 @@ Do not treat Markdown or CSV as the system-of-record.
 - Market regime V1 uses broad ETF price proxies only: SPY, QQQ, IWM, and DIA.
 - The first valid score date in a fetched window has no prior rank-change baseline.
 - Catalyst and earnings fields are preserved as `pending_source` until a source is connected.
-- Industry scoring currently uses a simple 20-day return proxy and should be expanded later.
+- Industry scoring now uses transparent price, relative return, volume, breadth, and 20D-high components, but it still does not include news/catalyst or industry ETF/fund-flow confirmation.
 - Backtesting validates score behavior, not trade profitability. It does not model transaction costs, slippage, taxes, position sizing, portfolio constraints, or maximum adverse/favorable excursion yet.
+
+## Current Next Step
+
+The Phase 3 validation checkpoint found that stock scoring has useful forward behavior, sector scoring is mixed, and the industry/theme layer needed hardening before dashboard work. The industry/theme scoring hardening pass is now implemented.
+
+Next implementation priority:
+
+```text
+Review the hardened industry/theme output, then decide whether Phase 4 should start with a minimal local dashboard/API slice or whether industry-specific validation should be added first.
+```
 
 ## Guardrails
 

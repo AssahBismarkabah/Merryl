@@ -28,6 +28,16 @@ fn daily_report_contains_documented_sections() {
         sector: "Technology".to_string(),
         score: 88.0,
         rank: 1,
+        return_5d: 0.05,
+        return_20d: 0.12,
+        return_60d: 0.18,
+        relative_return_vs_sector: 0.04,
+        relative_return_vs_spy: 0.06,
+        relative_volume: 1.8,
+        breadth_20d: 80.0,
+        breadth_50d: 70.0,
+        high_20d_rate: 60.0,
+        member_count: 4,
         components_json: "{}".to_string(),
     }];
     let stocks = vec![stock("NVDA", 1, 91.0, 2.2), stock("AMD", 2, 84.0, 1.6)];
@@ -57,6 +67,7 @@ fn daily_report_contains_documented_sections() {
     }
     assert!(report.contains("## New Leaders"));
     assert!(report.contains("| 1 | NVDA |"));
+    assert!(report.contains("| 1 | Semiconductors | Technology | 88.0 | 5.00% | 12.00% |"));
 }
 
 fn sector(name: &str, etf: &str, rank: usize, score: f64, rank_change: f64) -> SectorScore {

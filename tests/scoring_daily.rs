@@ -75,6 +75,18 @@ fn daily_scoring_produces_sector_and_stock_rankings() {
 
     assert_eq!(scores.sectors.len(), 2);
     assert!(!scores.industries.is_empty());
+    assert!(
+        scores
+            .industries
+            .iter()
+            .any(|industry| industry.components_json.contains("relative_volume"))
+    );
+    assert!(
+        scores
+            .industries
+            .iter()
+            .any(|industry| industry.relative_return_vs_sector != 0.0)
+    );
     assert!(scores.stocks.iter().any(|stock| stock.symbol == "MSFT"));
     assert_eq!(scores.sectors[0].rank, 1);
     assert_eq!(scores.stocks[0].rank, 1);
