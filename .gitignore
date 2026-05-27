@@ -19,7 +19,9 @@
 /data/*.db-shm
 /data/*.db-wal
 /reports/*.md
+/reports/backtests/
 /exports/*.csv
+/exports/backtests/
 
 # Local secrets
 .env

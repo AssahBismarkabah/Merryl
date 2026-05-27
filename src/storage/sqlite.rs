@@ -24,6 +24,7 @@ pub struct DbCounts {
     pub industry_scores: i64,
     pub stock_scores: i64,
     pub watchlist_rows: i64,
+    pub backtest_results: i64,
 }
 
 impl Database {
@@ -51,6 +52,7 @@ impl Database {
             industry_scores: self.count_table("industry_scores")?,
             stock_scores: self.count_table("stock_scores")?,
             watchlist_rows: self.count_table("watchlists")?,
+            backtest_results: self.count_table("backtest_results")?,
         })
     }
 

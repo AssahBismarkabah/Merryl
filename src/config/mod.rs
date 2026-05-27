@@ -12,6 +12,8 @@ pub mod paths {
     pub const DB_PATH: &str = "data/market.db";
     pub const REPORTS_DIR: &str = "reports";
     pub const EXPORTS_DIR: &str = "exports";
+    pub const BACKTEST_REPORTS_DIR: &str = "reports/backtests";
+    pub const BACKTEST_EXPORTS_DIR: &str = "exports/backtests";
     pub const DAILY_WORKFLOW_CONFIG: &str = "config/workflows/daily.toml";
 
     pub const REQUIRED_DOCS: &[&str] = &[
@@ -34,6 +36,18 @@ pub mod paths {
 
     pub fn stock_watchlist_export_path(date: &str) -> PathBuf {
         PathBuf::from(format!("{EXPORTS_DIR}/{date}_stock_watchlist.csv"))
+    }
+
+    pub fn backtest_report_path(from_date: &str, to_date: &str) -> PathBuf {
+        PathBuf::from(format!(
+            "{BACKTEST_REPORTS_DIR}/{from_date}_{to_date}_backtest_report.md"
+        ))
+    }
+
+    pub fn backtest_summary_export_path(from_date: &str, to_date: &str) -> PathBuf {
+        PathBuf::from(format!(
+            "{BACKTEST_EXPORTS_DIR}/{from_date}_{to_date}_backtest_summary.csv"
+        ))
     }
 }
 
@@ -138,6 +152,8 @@ pub mod scoring {
     pub const TOP_INDUSTRY_REPORT_LIMIT: usize = 10;
     pub const HIGH_RELATIVE_VOLUME_REPORT_LIMIT: usize = 10;
     pub const CATALYST_PENDING_SOURCE: &str = "pending_source";
+    pub const BACKTEST_HORIZONS: &[usize] = &[1, 5, 10, 20, 60];
+    pub const BACKTEST_DECILES: usize = 10;
 
     pub const REGIME_RISK_ON_THRESHOLD: f64 = 60.0;
     pub const REGIME_RISK_OFF_THRESHOLD: f64 = 40.0;

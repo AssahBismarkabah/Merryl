@@ -1,5 +1,14 @@
 name = "backtest"
-status = "planned_after_scoring_history"
+status = "implemented_phase_3"
 purpose = "Validate whether sector and stock scores predict future relative returns."
+command = "merryl run backtest --from YYYY-MM-DD --to YYYY-MM-DD"
 
 guardrail = "Required before dashboard polish or any trust in signal quality."
+data_source = "SQLite only; read historical scores and daily prices already produced by the daily workflow."
+outputs = [
+  "reports/backtests/YYYY-MM-DD_YYYY-MM-DD_backtest_report.md",
+  "exports/backtests/YYYY-MM-DD_YYYY-MM-DD_backtest_summary.csv",
+  "backtest_results.metrics_json"
+]
+horizons = [1, 5, 10, 20, 60]
+deciles = 10

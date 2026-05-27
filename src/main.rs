@@ -29,6 +29,12 @@ enum RunWorkflow {
         #[arg(long, default_value = "latest")]
         date: String,
     },
+    Backtest {
+        #[arg(long)]
+        from: String,
+        #[arg(long)]
+        to: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -43,13 +49,25 @@ fn main() -> Result<()> {
         Commands::Run { workflow } => match workflow {
             RunWorkflow::Daily { date } => {
                 let result = merryl::workflows::run_daily(&date)?;
-                println!("Daily market rotation run completed.");
+                println!("Daily market rotation run:");
                 println!("date: {}", result.date);
                 println!("database: {}", result.database.display());
                 println!("report: {}", result.report.display());
                 println!("sector export: {}", result.sector_export.display());
                 println!("watchlist export: {}", result.watchlist_export.display());
                 println!("historical score dates: {}", result.historical_score_dates);
+            }
+            RunWorkflow::Backtest { from, to } => {
+                let result = merryl::workflows::run_backtest(&from, &to)?;
+                println!("Backtest run:");
+                println!("from: {}", result.from_date);
+                println!("to: {}", result.to_date);
+                println!("database: {}", result.database.display());
+                println!("report: {}", result.report.display());
+                println!("summary export: {}", result.summary_export.display());
+                println!("sector observations: {}", result.sector_observation_count);
+                println!("stock observations: {}", result.stock_observation_count);
+                println!("backtest result id: {}", result.backtest_result_id);
             }
         },
         Commands::Status => {

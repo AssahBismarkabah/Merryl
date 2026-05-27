@@ -302,6 +302,26 @@ impl Database {
         tx.commit()?;
         Ok(())
     }
+
+    pub fn insert_backtest_result(
+        &self,
+        run_name: &str,
+        from_date: &str,
+        to_date: &str,
+        config_json: &str,
+        metrics_json: &str,
+    ) -> Result<i64> {
+        self.conn.execute(
+            r#"
+            INSERT INTO backtest_results (
+                run_name, from_date, to_date, config_json, metrics_json
+            )
+            VALUES (?1, ?2, ?3, ?4, ?5)
+            "#,
+            params![run_name, from_date, to_date, config_json, metrics_json],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
 }
 
 fn sector_components_json(score: &SectorScore) -> String {

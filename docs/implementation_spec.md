@@ -2,7 +2,7 @@
 
 Version: 0.1  
 Date: 2026-05-26  
-Status: Phase 1 implementation notes
+Status: Daily scoring and Phase 3 backtesting implementation notes
 
 ## Current Slice
 
@@ -15,6 +15,14 @@ Merryl daily run
   -> score the valid historical market window
   -> store market regime, sector, industry, stock, and watchlist rows in SQLite
   -> write Markdown and CSV outputs for the latest/requested score date
+
+Merryl backtest run
+  -> read historical scores and daily prices from SQLite
+  -> calculate forward 1D, 5D, 10D, 20D, and 60D returns from future trading bars
+  -> group daily sector and stock scores into deciles
+  -> summarize hit rate, average return, median return, and relative return behavior
+  -> store metrics in backtest_results
+  -> write Markdown and CSV backtest summaries
 ```
 
 The implementation does not generate fake market candles. If real data credentials are missing, the daily run stops.
@@ -88,6 +96,12 @@ Run the daily workflow:
 cargo run -- run daily --date latest
 ```
 
+Run the backtest workflow:
+
+```text
+cargo run -- run backtest --from YYYY-MM-DD --to YYYY-MM-DD
+```
+
 Check stored data counts:
 
 ```text
@@ -139,6 +153,13 @@ exports/YYYY-MM-DD_sector_scores.csv
 exports/YYYY-MM-DD_stock_watchlist.csv
 ```
 
+Backtest outputs:
+
+```text
+reports/backtests/YYYY-MM-DD_YYYY-MM-DD_backtest_report.md
+exports/backtests/YYYY-MM-DD_YYYY-MM-DD_backtest_summary.csv
+```
+
 Generated database/report/export files are ignored by git.
 
 ## Output Format Policy
@@ -146,6 +167,8 @@ Generated database/report/export files are ignored by git.
 SQLite is the canonical local store for Merryl.
 
 The daily workflow stores historical score rows for every valid date in the fetched window. A valid score date has at least 60 benchmark bars available, matching the longest current scoring lookback.
+
+The backtest workflow uses only stored SQLite data. It does not fetch new prices and does not change scoring formulas.
 
 Markdown and CSV are Phase 0 outputs:
 
@@ -166,7 +189,7 @@ Do not treat Markdown or CSV as the system-of-record.
 - The first valid score date in a fetched window has no prior rank-change baseline.
 - Catalyst and earnings fields are preserved as `pending_source` until a source is connected.
 - Industry scoring currently uses a simple 20-day return proxy and should be expanded later.
-- Backtesting is not implemented yet.
+- Backtesting validates score behavior, not trade profitability. It does not model transaction costs, slippage, taxes, position sizing, portfolio constraints, or maximum adverse/favorable excursion yet.
 
 ## Guardrails
 
