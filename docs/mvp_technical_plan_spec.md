@@ -6,7 +6,7 @@ Status: Technical plan before implementation
 Source documents:
 
 - `market_rotation_system_spec.md`
-- `phase_0_decisions.md`
+- `phase_0_decisions_spec.md`
 
 ## 1. Purpose
 
@@ -44,7 +44,7 @@ The first build starts with daily US equity data, but the architecture must rema
 
 ## 2.1 Source Traceability And Preservation
 
-This document does not replace `market_rotation_system_spec.md` or `phase_0_decisions.md`. It translates them into a build plan.
+This document does not replace `market_rotation_system_spec.md` or `phase_0_decisions_spec.md`. It translates them into a build plan.
 
 The technical plan must preserve the complete original flow:
 
@@ -400,7 +400,7 @@ Recommended structure:
 ```text
 Merryl/
   market_rotation_system_spec.md
-  phase_0_decisions.md
+  phase_0_decisions_spec.md
   mvp_technical_plan.md
   Cargo.toml
   README.md
@@ -926,6 +926,14 @@ pending_source
 
 This keeps the "why is it moving?" question alive without blocking the MVP.
 
+Current implementation update:
+
+```text
+recent_news:N
+```
+
+is used when Alpaca News returns recent headlines for a current watchlist symbol. Structured earnings calendar data remains not connected.
+
 ## 11. Reports
 
 The first report should be Markdown plus CSV exports.
@@ -951,7 +959,7 @@ Required sections:
 ## Top Stocks Worth Charting
 ## New Leaders
 ## High Relative Volume Names
-## Catalyst / Earnings Flags
+## Catalyst / News Flags
 ## Notes For Chart Review
 ```
 
@@ -1120,7 +1128,7 @@ Tasks:
 11. Generate top 20-50 stock watchlist.
 12. Generate watchlist CSV.
 13. Add watchlist section to Markdown report.
-14. Carry catalyst fields as `pending_source` if no source exists yet.
+14. Carry catalyst fields as `pending_source` if no source exists yet, or `recent_news:N` when recent news is connected.
 
 Phase 2 acceptance:
 

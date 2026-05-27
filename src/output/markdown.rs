@@ -1,7 +1,9 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::config::{APP_NAME, output_text, scoring};
-use crate::domain::models::{IndustryScore, MarketRegimeScore, SectorScore, StockScore};
+use crate::domain::models::{
+    IndustryScore, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
+};
 
 use super::formatting::{multiple, pct, score};
 
@@ -11,6 +13,7 @@ pub fn daily_report_markdown(
     sector_scores: &[SectorScore],
     industry_scores: &[IndustryScore],
     stock_scores: &[StockScore],
+    events: &[MarketEvent],
     previous_watchlist_symbols: &HashSet<String>,
 ) -> String {
     [
@@ -24,7 +27,7 @@ pub fn daily_report_markdown(
         watchlist_table(stock_scores),
         new_leaders(stock_scores, previous_watchlist_symbols),
         high_relative_volume_table(stock_scores),
-        catalyst_flags(stock_scores),
+        catalyst_flags(stock_scores, events),
         notes_for_chart_review(),
         explanation_list(stock_scores),
     ]
@@ -273,31 +276,62 @@ fn high_relative_volume_table(stock_scores: &[StockScore]) -> String {
     rows.join("\n")
 }
 
-fn catalyst_flags(stock_scores: &[StockScore]) -> String {
+fn catalyst_flags(stock_scores: &[StockScore], events: &[MarketEvent]) -> String {
     let flagged: Vec<&StockScore> = stock_scores
         .iter()
         .filter(|stock| stock.catalyst_status != scoring::CATALYST_PENDING_SOURCE)
+        .take(scoring::REPORT_WATCHLIST_LIMIT)
         .collect();
 
     if flagged.is_empty() {
         return format!(
-            "{}\n{}",
+            "{}\n{}\n{}",
             section_heading(output_text::CATALYST_SECTION),
+            output_text::CATALYST_SOURCE_NOTE,
             output_text::CATALYST_PENDING_NOTE
         );
     }
 
+    let headlines_by_symbol = event_headlines_by_symbol(events);
     let mut rows = vec![
         section_heading(output_text::CATALYST_SECTION),
-        "| Symbol | Catalyst / Earnings Status |".to_string(),
-        "|---|---|".to_string(),
+        output_text::CATALYST_SOURCE_NOTE.to_string(),
     ];
-    rows.extend(
-        flagged
-            .into_iter()
-            .map(|stock| format!("| {} | {} |", stock.symbol, stock.catalyst_status)),
-    );
+    for stock in flagged {
+        let headline = headlines_by_symbol
+            .get(&stock.symbol)
+            .map(|event| event.headline.as_str())
+            .unwrap_or("recent news found");
+        let source = headlines_by_symbol
+            .get(&stock.symbol)
+            .map(|event| event.source.as_str())
+            .unwrap_or("alpaca_news");
+        let date = headlines_by_symbol
+            .get(&stock.symbol)
+            .map(|event| event.event_date.as_str())
+            .unwrap_or(&stock.date);
+        rows.push(format!(
+            "- **{}** `{}` — {} from {}.\n  {}",
+            stock.symbol,
+            stock.catalyst_status,
+            date,
+            source,
+            clean_markdown_line(headline)
+        ));
+    }
     rows.join("\n")
+}
+
+fn event_headlines_by_symbol(events: &[MarketEvent]) -> HashMap<String, &MarketEvent> {
+    let mut by_symbol = HashMap::new();
+    for event in events {
+        by_symbol.entry(event.symbol.clone()).or_insert(event);
+    }
+    by_symbol
+}
+
+fn clean_markdown_line(value: &str) -> String {
+    value.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 fn notes_for_chart_review() -> String {

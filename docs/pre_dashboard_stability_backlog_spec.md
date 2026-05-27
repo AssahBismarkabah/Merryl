@@ -1,8 +1,8 @@
 # Pre-Dashboard Stability Backlog
 
-Version: 0.6
+Version: 0.9
 Date: 2026-05-27
-Status: PDB-1, PDB-2, PDB-3, and PDB-3.5 complete; PDB-4 is next before Phase 4 dashboard
+Status: PDB-1 through PDB-4 complete; PDB-5 is next
 Related documents:
 
 - `docs/market_rotation_system_spec.md`
@@ -14,6 +14,8 @@ Related documents:
 - `docs/sector_score_review_spec.md`
 - `docs/market_regime_v1_spec.md`
 - `docs/sector_formula_decision_checkpoint_spec.md`
+- `docs/spec_completeness_gate_spec.md`
+- `docs/catalyst_earnings_source_spec.md`
 
 ## 1. Purpose
 
@@ -67,6 +69,8 @@ PDB-1 industry-specific validation: complete
 PDB-2 sector score review: complete
 PDB-3 market regime V1 review: complete
 PDB-3.5 sector formula decision checkpoint: complete
+Spec completeness gate: complete
+PDB-4 catalyst/news source: complete
 latest backtest result id: 7
 ```
 
@@ -93,9 +97,10 @@ These items should be addressed before full dashboard work.
 |---|---|---|---|---|---|
 | PDB-1 | Industry-specific validation | Complete | The industry/theme bridge was hardened, but we had not tested whether stronger industry groups improve stock outcomes. | Extended backtest analysis to compare stock behavior by industry score decile. | `docs/industry_specific_validation_spec.md` records that stronger industries/themes improved stock forward behavior versus weaker industries/themes in the tested window. |
 | PDB-2 | Sector score review | Complete | Phase 3 showed sector decile behavior is mixed. Sector ranking is core to the market map. | Analyzed sector score components and identified where the issue is weights, horizon mix, breadth, relative volume, and rank-change design. | `docs/sector_score_review_spec.md` records the decision to keep sector ranking as map-only / not yet a proven forward-return predictor. |
-| PDB-3 | Market regime V1 labeling or modest hardening | Complete | The spec expects regime context, but current V1 used only broad ETF proxies. | Labeled regime clearly as lightweight V1 and added existing-data ETF proxies TLT, GLD, and USO for context. | `docs/market_regime_v1_spec.md` records that users should not mistake regime V1 for a full macro model. |
+| PDB-3 | Market regime coverage labeling or modest hardening | Complete | The spec expects regime context, but current implementation uses ETF proxies instead of full macro sources. | Replaced vague regime wording with precise coverage: SPY, QQQ, IWM, DIA, TLT, GLD, and USO are included; VIX, DXY, US10Y, macro calendar, credit, and liquidity data are not yet included. | `docs/market_regime_v1_spec.md` records the current coverage and missing sources. |
 | PDB-3.5 | Sector formula decision checkpoint | Complete | PDB-2 found that `SECTOR_RANK_CHANGE_WEIGHT` existed, but scoring used a neutral placeholder. PDB-3 was complete, so this could not be pushed forward silently. | Tested Option B2: remove neutral rank-change contribution, renormalize remaining sector weights, keep `rank_change` stored/reported only. | `docs/sector_formula_decision_checkpoint_spec.md` records the accepted decision and validation result. |
-| PDB-4 | Catalyst/earnings decision | Next | The original spec preserves the question "why is this moving?" Current values are `pending_source`. | Decide whether to connect a real source now or keep it deferred with explicit report wording. Avoid fake catalyst inference. | The report and docs make the catalyst state explicit and do not imply unavailable data exists. |
+| PDB-3.6 | Spec completeness gate | Complete | The project had accumulated reduced-scope, placeholder, and deferred labels that could drift from the main spec if not audited. | Classified every reduced/placeholder area as required now, acceptable first-version scope, deferred by original spec, or incorrect drift. | `docs/spec_completeness_gate_spec.md` records the classification and confirms PDB-4 as the next required implementation task. |
+| PDB-4 | Catalyst/earnings decision | Complete | The original spec preserves the question "why is this moving?" Current values were all `pending_source`. | Connected real recent news through Alpaca News using the existing Alpaca key. Kept structured earnings calendar explicitly not connected. Avoided fake catalyst inference. | `docs/catalyst_earnings_source_spec.md` records the source decision; reports show real recent-news headlines where available and do not imply earnings calendar data exists. |
 | PDB-5 | Backtest scope clarity | Pending | Current backtest validates score behavior, not trade profitability. | Keep a clear document/report note explaining what the backtest proves and does not prove. | No output suggests the scores are direct trade entries or profitability claims. |
 | PDB-6 | Data quality and reproducibility check | Pending | Dashboard will depend on confidence in stored data and regenerated reports. | Add or run checks for required symbols, price coverage, score-date coverage, and idempotent workflow writes. | `doctor`, `status`, or tests can reveal missing core data before report/dashboard use. |
 
@@ -115,7 +120,7 @@ These items are real future needs, but they should not block the first controlle
 | Sharpe/Sortino and full risk analytics | After portfolio simulation is scoped | These metrics need portfolio assumptions. |
 | Russell 1000/Russell 3000/all liquid US stocks | Later universe expansion | S&P 500 is the controlled first universe. Expansion should come after core logic is stable. |
 | Custom AI theme classification | Later enrichment | GICS sector/industry is the current standard mapping. |
-| Full macro engine | Later regime expansion | Market regime V1 can remain lightweight if clearly labeled. |
+| Full macro engine | Later regime expansion | Current regime coverage uses explicit ETF proxies; full macro sources are not required before PDB-4. |
 
 ## 6. What Is Not A Blocker
 
@@ -133,9 +138,8 @@ They should stay documented, but they do not need to stop the next controlled im
 
 Recommended pre-dashboard order:
 
-1. PDB-4: Catalyst/earnings decision.
-2. PDB-5: Backtest scope clarity.
-3. PDB-6: Data quality and reproducibility check.
+1. PDB-5: Backtest scope clarity.
+2. PDB-6: Data quality and reproducibility check.
 
 Reason:
 
@@ -148,7 +152,7 @@ Phase 4 dashboard can start when:
 
 - Industry-specific validation has a written result.
 - Sector score review has a written decision.
-- Market regime V1 is clearly labeled or modestly hardened.
+- Market regime coverage is clearly labeled with included and missing data sources.
 - Catalyst/earnings status is explicit and not misleading.
 - Backtest outputs clearly say score behavior is not trade profitability.
 - Status/doctor/tests can catch missing core data.
@@ -209,9 +213,9 @@ docs/sector_score_review_spec.md
 Decision:
 
 ```text
-Do not change sector weights yet.
-Do not force rank_change into the sector score yet.
-Revisit sector scoring after market regime V1 is clearly labeled or modestly hardened.
+Do not change sector weights further in this pass.
+Do not force rank_change back into the sector score yet.
+Revisit sector scoring after catalyst/earnings is no longer ambiguous and backtest scope is clearer.
 Daily reports label sector ranking as a map-only attention layer.
 ```
 
@@ -220,7 +224,7 @@ PDB-3 is complete.
 Result:
 
 ```text
-Market Regime V1 is explicitly labeled as lightweight context.
+Market regime coverage is explicitly labeled with included and missing sources.
 The data universe now includes TLT, GLD, and USO as existing-data ETF proxies.
 Regime output records those proxy returns in components_json.
 ```
@@ -256,16 +260,47 @@ Evidence is recorded in:
 docs/sector_formula_decision_checkpoint_spec.md
 ```
 
+PDB-3.6 is complete.
+
+Reason:
+
+```text
+The project had accumulated reduced-scope labels such as pending_source, map-only, and deferred.
+Those labels have now been audited against the main spec so we do not build a smaller product than intended.
+```
+
+Evidence is recorded in:
+
+```text
+docs/spec_completeness_gate_spec.md
+```
+
 ## 10. Current Next Work
+
+PDB-4 is complete.
+
+Result:
+
+```text
+Recent news catalysts are connected through Alpaca News.
+Structured earnings calendar data is not connected yet.
+Stock rows with recent news show recent_news:N.
+```
+
+Evidence is recorded in:
+
+```text
+docs/catalyst_earnings_source_spec.md
+```
 
 The next implementation task should be:
 
 ```text
-PDB-4: Catalyst/earnings decision
+PDB-5: Backtest scope clarity
 ```
 
 Expected output:
 
-- A clear decision to connect a real catalyst/earnings source now or keep it deferred.
-- Daily report wording that does not imply catalyst data exists when it is still `pending_source`.
-- No fake catalyst inference.
+- Clear report wording that backtests validate score behavior, not trade profitability.
+- A decision on which additional backtest metrics can be computed before dashboard without trade-entry assumptions.
+- No output that implies scores are direct trade entries or profit claims.

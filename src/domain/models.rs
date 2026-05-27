@@ -26,6 +26,17 @@ pub struct DailyPrice {
 }
 
 #[derive(Debug, Clone)]
+pub struct MarketEvent {
+    pub symbol: String,
+    pub sector: Option<String>,
+    pub event_date: String,
+    pub event_type: String,
+    pub headline: String,
+    pub source: String,
+    pub url: Option<String>,
+}
+
+#[derive(Debug, Clone)]
 pub struct SectorMap {
     pub sector: String,
     pub sector_etf: String,

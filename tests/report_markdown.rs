@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 
-use merryl::domain::models::{IndustryScore, MarketRegimeScore, SectorScore, StockScore};
+use merryl::domain::models::{
+    IndustryScore, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
+};
 use merryl::output::daily_report_markdown;
 
 #[test]
@@ -40,7 +42,19 @@ fn daily_report_contains_documented_sections() {
         member_count: 4,
         components_json: "{}".to_string(),
     }];
-    let stocks = vec![stock("NVDA", 1, 91.0, 2.2), stock("AMD", 2, 84.0, 1.6)];
+    let stocks = vec![
+        stock("NVDA", 1, 91.0, 2.2, "recent_news:1"),
+        stock("AMD", 2, 84.0, 1.6, "pending_source"),
+    ];
+    let events = vec![MarketEvent {
+        symbol: "NVDA".to_string(),
+        sector: Some("Technology".to_string()),
+        event_date: "2026-05-26".to_string(),
+        event_type: "news".to_string(),
+        headline: "NVDA announces new AI platform".to_string(),
+        source: "alpaca_news:benzinga".to_string(),
+        url: Some("https://example.com/nvda".to_string()),
+    }];
     let previous_watchlist = HashSet::from(["AMD".to_string()]);
     let report = daily_report_markdown(
         "2026-05-26",
@@ -48,6 +62,7 @@ fn daily_report_contains_documented_sections() {
         &sectors,
         &industries,
         &stocks,
+        &events,
         &previous_watchlist,
     );
 
@@ -60,14 +75,17 @@ fn daily_report_contains_documented_sections() {
         "## Top Stocks Worth Charting",
         "## New Leaders",
         "## High Relative Volume Names",
-        "## Catalyst / Earnings Flags",
+        "## Catalyst / News Flags",
         "## Notes For Chart Review",
     ] {
         assert!(report.contains(section), "missing section {section}");
     }
     assert!(report.contains("## New Leaders"));
-    assert!(report.contains("Market Regime is lightweight V1 context."));
+    assert!(report.contains("Market regime coverage: daily ETF price proxies"));
     assert!(report.contains("Sector ranking is a market-map and attention layer."));
+    assert!(report.contains("Recent news source: Alpaca News."));
+    assert!(report.contains("- **NVDA** `recent_news:1`"));
+    assert!(report.contains("NVDA announces new AI platform"));
     assert!(report.contains("| 1 | NVDA |"));
     assert!(report.contains("| 1 | Semiconductors | Technology | 88.0 | 5.00% | 12.00% |"));
 }
@@ -92,7 +110,13 @@ fn sector(name: &str, etf: &str, rank: usize, score: f64, rank_change: f64) -> S
     }
 }
 
-fn stock(symbol: &str, rank: usize, score: f64, relative_volume: f64) -> StockScore {
+fn stock(
+    symbol: &str,
+    rank: usize,
+    score: f64,
+    relative_volume: f64,
+    catalyst_status: &str,
+) -> StockScore {
     StockScore {
         date: "2026-05-26".to_string(),
         rank,
@@ -111,7 +135,7 @@ fn stock(symbol: &str, rank: usize, score: f64, relative_volume: f64) -> StockSc
         relative_volume,
         avg_dollar_volume: 100_000_000.0,
         trend_state: "above_20d_50d".to_string(),
-        catalyst_status: "pending_source".to_string(),
+        catalyst_status: catalyst_status.to_string(),
         components_json: "{}".to_string(),
         explanation: format!("{symbol} explanation"),
     }

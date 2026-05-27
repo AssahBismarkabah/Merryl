@@ -1,8 +1,8 @@
 # Market Regime V1 Review
 
-Version: 0.1  
+Version: 0.2
 Date: 2026-05-27  
-Status: PDB-3 complete; regime remains lightweight V1 with explicit wording
+Status: PDB-3 complete; ETF-proxy regime coverage is explicitly documented
 
 Related documents:
 
@@ -24,7 +24,7 @@ Question:
 Can the current market regime layer be shown without users mistaking it for a full macro model?
 ```
 
-The answer is yes, if it is explicitly labeled as lightweight V1 and modestly hardened with available ETF proxies.
+The answer is yes, if the report states the exact regime coverage and missing macro sources instead of using vague reduced-scope wording.
 
 ## 2. Decision
 
@@ -33,8 +33,8 @@ Keep Market Regime V1.
 Decision:
 
 ```text
-Market Regime V1 is lightweight context.
-It is not a full macro model.
+Market regime coverage uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, and USO.
+It does not yet include VIX, DXY, US10Y, macro calendar, credit, or liquidity data.
 It is not a trading signal.
 It should help frame the top-down map before sector, industry/theme, and stock review.
 ```
@@ -61,7 +61,7 @@ context_label
 The daily report now says:
 
 ```text
-Market Regime is lightweight V1 context. It uses daily ETF price proxies, not a full macro model or a trading signal.
+Market regime coverage: daily ETF price proxies SPY, QQQ, IWM, DIA, TLT, GLD, and USO. Not yet included: VIX, DXY, US10Y, macro calendar, credit, or liquidity data.
 ```
 
 ## 4. What Did Not Change
@@ -87,7 +87,7 @@ The new TLT, GLD, and USO values add context and report transparency first. They
 
 ## 5. Current Context Labels
 
-Market Regime V1 may add a context suffix when simple ETF proxy thresholds are met:
+The market regime label may add a context suffix when simple ETF proxy thresholds are met:
 
 ```text
 Inflation-sensitive: GLD and USO are both up at least 3% over 20 trading bars.
@@ -99,7 +99,7 @@ These labels are intentionally simple. They are not a substitute for macro data,
 
 ## 6. Still Deferred
 
-These remain outside V1:
+These remain outside current regime coverage:
 
 - VIX trend.
 - DXY trend.
@@ -123,7 +123,7 @@ Charts and risk planning still decide trade timing.
 
 ## 8. Next Work
 
-PDB-3 is complete.
+PDB-3 and PDB-3.6 are complete.
 
 Verification run:
 
@@ -145,7 +145,7 @@ context_label
 The next pre-dashboard item is:
 
 ```text
-PDB-4: Catalyst/earnings decision
+PDB-5: Backtest scope clarity
 ```
 
-This is the next place where the product can accidentally imply data it does not yet have.
+PDB-3.6 decided that current ETF-proxy regime coverage is acceptable for the first build when the wording is precise. PDB-4 connected recent news catalysts through Alpaca News. Additional macro sources are post-MVP macro expansion.

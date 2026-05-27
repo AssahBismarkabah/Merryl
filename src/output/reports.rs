@@ -4,7 +4,9 @@ use std::fs;
 use anyhow::{Context, Result};
 
 use crate::config::paths;
-use crate::domain::models::{IndustryScore, MarketRegimeScore, SectorScore, StockScore};
+use crate::domain::models::{
+    IndustryScore, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
+};
 
 use super::csv::{write_sector_csv, write_watchlist_csv};
 use super::markdown::daily_report_markdown;
@@ -16,6 +18,7 @@ pub fn write_daily_outputs(
     sector_scores: &[SectorScore],
     industry_scores: &[IndustryScore],
     stock_scores: &[StockScore],
+    events: &[MarketEvent],
     previous_watchlist_symbols: &HashSet<String>,
 ) -> Result<ReportPaths> {
     fs::create_dir_all(paths::REPORTS_DIR).context("failed to create reports directory")?;
@@ -30,6 +33,7 @@ pub fn write_daily_outputs(
             sector_scores,
             industry_scores,
             stock_scores,
+            events,
             previous_watchlist_symbols,
         ),
     )

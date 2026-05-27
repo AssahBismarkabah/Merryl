@@ -207,10 +207,14 @@ PDB-3 market regime V1 review is complete.
 
 PDB-3.5 sector formula decision checkpoint is complete.
 
+PDB-3.6 spec completeness gate is complete.
+
+PDB-4 catalyst/news source decision is complete.
+
 The next pre-dashboard item is:
 
 ```text
-PDB-4: Catalyst/earnings decision
+PDB-5: Backtest scope clarity
 ```
 
-The sector formula decision is closed for this pass. Sector ranking remains map-only until stronger evidence exists.
+The sector formula decision is closed for this pass, and the broader market-map completeness gate accepted sector ranking as a map layer. Recent news catalysts are connected through Alpaca News; structured earnings calendar data remains not connected.

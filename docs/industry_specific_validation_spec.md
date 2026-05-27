@@ -158,10 +158,14 @@ PDB-3 market regime V1 review is also complete.
 
 PDB-3.5 sector formula decision checkpoint is also complete.
 
+PDB-3.6 spec completeness gate is also complete.
+
+PDB-4 catalyst/news source decision is also complete.
+
 The next pre-dashboard item is:
 
 ```text
-PDB-4: Catalyst/earnings decision
+PDB-5: Backtest scope clarity
 ```
 
-Catalyst and earnings status should be made explicit before Phase 4 dashboard work begins.
+The current GICS industry/theme coverage was audited against the main spec and accepted for the first build. Recent news catalysts are connected through Alpaca News; structured earnings calendar data remains not connected.

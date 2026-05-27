@@ -62,18 +62,25 @@ pub mod market_data {
 
     pub const ALPACA_DATA_URL: &str = "https://data.alpaca.markets";
     pub const ALPACA_BARS_PATH: &str = "/v2/stocks/bars";
+    pub const ALPACA_NEWS_PATH: &str = "/v1beta1/news";
     pub const ALPACA_KEY_HEADER: &str = "APCA-API-KEY-ID";
     pub const ALPACA_SECRET_HEADER: &str = "APCA-API-SECRET-KEY";
     pub const DEFAULT_ALPACA_FEED: &str = "iex";
     pub const DAILY_TIMEFRAME: &str = "1Day";
     pub const PRICE_ADJUSTMENT: &str = "all";
     pub const SORT_ASC: &str = "asc";
+    pub const SORT_DESC: &str = "desc";
     pub const ALPACA_PAGE_LIMIT: &str = "10000";
+    pub const ALPACA_NEWS_PAGE_LIMIT: &str = "50";
+    pub const ALPACA_NEWS_MAX_PAGES: usize = 4;
     pub const DEFAULT_LOOKBACK_DAYS: i64 = 420;
+    pub const NEWS_LOOKBACK_DAYS: i64 = 7;
     pub const ALPACA_BATCH_SIZE: usize = 25;
     pub const ALPACA_BATCH_SLEEP_MS: u64 = 350;
     pub const HTTP_TIMEOUT_SECONDS: u64 = 45;
     pub const SOURCE_PREFIX: &str = "alpaca";
+    pub const NEWS_EVENT_TYPE: &str = "news";
+    pub const NEWS_SOURCE_PREFIX: &str = "alpaca_news";
 
     pub fn http_timeout() -> Duration {
         Duration::from_secs(HTTP_TIMEOUT_SECONDS)
@@ -161,6 +168,7 @@ pub mod scoring {
     pub const TOP_INDUSTRY_REPORT_LIMIT: usize = 10;
     pub const HIGH_RELATIVE_VOLUME_REPORT_LIMIT: usize = 10;
     pub const CATALYST_PENDING_SOURCE: &str = "pending_source";
+    pub const CATALYST_RECENT_NEWS_PREFIX: &str = "recent_news";
     pub const BACKTEST_HORIZONS: &[usize] = &[1, 5, 10, 20, 60];
     pub const BACKTEST_DECILES: usize = 10;
 
@@ -201,7 +209,7 @@ pub mod output_text {
     pub const DAILY_REPORT_TITLE: &str = "Daily Market Rotation Report";
     pub const REPORT_RULE: &str = "Rule: this is a market rotation watchlist, not an automatic trade signal. Chart structure, invalidation, and risk define any trade.";
     pub const MARKET_REGIME_SECTION: &str = "Market Regime";
-    pub const MARKET_REGIME_V1_NOTE: &str = "Market Regime is lightweight V1 context. It uses daily ETF price proxies, not a full macro model or a trading signal.";
+    pub const MARKET_REGIME_V1_NOTE: &str = "Market regime coverage: daily ETF price proxies SPY, QQQ, IWM, DIA, TLT, GLD, and USO. Not yet included: VIX, DXY, US10Y, macro calendar, credit, or liquidity data.";
     pub const TOP_SECTORS_SECTION: &str = "Top Sectors";
     pub const WEAK_SECTORS_SECTION: &str = "Weak Sectors";
     pub const SECTOR_RANK_CHANGES_SECTION: &str = "Sector Rank Changes";
@@ -210,7 +218,7 @@ pub mod output_text {
     pub const WATCHLIST_SECTION: &str = "Top Stocks Worth Charting";
     pub const NEW_LEADERS_SECTION: &str = "New Leaders";
     pub const HIGH_RELATIVE_VOLUME_SECTION: &str = "High Relative Volume Names";
-    pub const CATALYST_SECTION: &str = "Catalyst / Earnings Flags";
+    pub const CATALYST_SECTION: &str = "Catalyst / News Flags";
     pub const NOTES_SECTION: &str = "Notes For Chart Review";
     pub const EXPLANATION_SECTION: &str = "Why These Names";
     pub const SECTOR_TABLE_HEADER: &str = "| Rank | Sector | ETF | Score | 1D | 5D | 20D | 60D | Vs SPY | Rel Vol | Breadth 20D | Breadth 50D | Rank Change |";
@@ -231,7 +239,9 @@ pub mod output_text {
         "No prior dated watchlist exists yet; this run establishes the leadership baseline.";
     pub const NO_NEW_LEADERS: &str =
         "No new names entered the top watchlist compared with the prior dated run.";
-    pub const CATALYST_PENDING_NOTE: &str = "Catalyst and earnings sources are not connected yet; current values remain pending_source.";
+    pub const CATALYST_SOURCE_NOTE: &str =
+        "Recent news source: Alpaca News. Earnings calendar is not connected yet.";
+    pub const CATALYST_PENDING_NOTE: &str = "No recent Alpaca news found for the current top watchlist; earnings calendar remains not connected.";
     pub const CHART_REVIEW_NOTES: &[&str] = &[
         "Use this report to choose what to chart first, not to enter trades automatically.",
         "Confirm chart structure, invalidation level, liquidity, and earnings risk before any trade.",

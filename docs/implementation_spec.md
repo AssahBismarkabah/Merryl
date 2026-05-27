@@ -145,7 +145,7 @@ Top Industries Or Themes
 Top Stocks Worth Charting
 New Leaders
 High Relative Volume Names
-Catalyst / Earnings Flags
+Catalyst / News Flags
 Notes For Chart Review
 Why These Names
 ```
@@ -194,6 +194,18 @@ Market regime V1 review:
 docs/market_regime_v1_spec.md
 ```
 
+Spec completeness gate:
+
+```text
+docs/spec_completeness_gate_spec.md
+```
+
+Catalyst and earnings source decision:
+
+```text
+docs/catalyst_earnings_source_spec.md
+```
+
 Pre-dashboard stability backlog:
 
 ```text
@@ -225,26 +237,28 @@ Do not treat Markdown or CSV as the system-of-record.
 
 ## Current Limitations
 
-- Market regime V1 is lightweight context, not a full macro model. It uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, and USO. VIX, DXY, US10Y, macro surprises, liquidity indicators, and richer rates data remain deferred until a real source is chosen.
+- Market regime coverage uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, and USO. VIX, DXY, US10Y, macro calendar, credit, liquidity indicators, and richer rates data remain deferred until a real source is chosen.
 - The first valid score date in a fetched window has no prior rank-change baseline.
-- Catalyst and earnings fields are preserved as `pending_source` until a source is connected.
+- Recent news catalysts are connected through Alpaca News for the current top watchlist. Watchlist rows with recent news show `recent_news:N`. Structured earnings calendar data is not connected yet.
 - Sector ranking is useful as a market-map and attention layer, but PDB-2 labels it as map-only / not yet a proven forward-return predictor. PDB-3.5 removed the neutral rank-change placeholder from sector scoring. Current rank-change is stored and reported, but it is not a scoring component.
 - Industry scoring now uses transparent price, relative return, volume, breadth, and 20D-high components. Industry-specific validation is supportive, but it still does not include news/catalyst or industry ETF/fund-flow confirmation.
 - Backtesting validates score behavior, not trade profitability. It does not model transaction costs, slippage, taxes, position sizing, portfolio constraints, or maximum adverse/favorable excursion yet.
 
 ## Current Next Step
 
-The Phase 3 validation checkpoint found that stock scoring has useful forward behavior, sector scoring is mixed, and the industry/theme layer needed hardening before dashboard work. The industry/theme scoring hardening pass is implemented. PDB-1 industry-specific validation, PDB-2 sector score review, PDB-3 market regime V1 review, and PDB-3.5 sector formula decision checkpoint are complete.
+The Phase 3 validation checkpoint found that stock scoring has useful forward behavior, sector scoring is mixed, and the industry/theme layer needed hardening before dashboard work. The industry/theme scoring hardening pass is implemented. PDB-1 industry-specific validation, PDB-2 sector score review, PDB-3 market regime V1 review, PDB-3.5 sector formula decision checkpoint, PDB-3.6 spec completeness gate, and PDB-4 catalyst/news connection are complete.
+
+PDB-3.6 confirmed that the first-build boundaries are aligned with the source specs when they are stated precisely: S&P 500 anchor universe, daily data, GICS industries, SPDR sector ETFs, Alpaca daily prices, Markdown/CSV outputs, and ETF-proxy regime coverage are acceptable first-build scope. PDB-4 connects real recent news catalyst context while keeping structured earnings calendar data explicit as not connected.
 
 Next implementation priority:
 
 ```text
-PDB-4: Catalyst/earnings decision.
+PDB-5: Backtest scope clarity.
 ```
 
 This comes from `docs/pre_dashboard_stability_backlog_spec.md`.
 
-The goal is to ensure users cannot mistake unavailable catalyst/earnings data for real connected context. Do not start the full Phase 4 dashboard before this checkpoint and the other pre-dashboard blockers are either resolved or explicitly accepted as visible V1 limitations.
+The goal is to clarify what the current backtest proves and what it does not prove before dashboard work starts. Do not start the full Phase 4 dashboard before PDB-5 and PDB-6 are either resolved or explicitly accepted with precise source/coverage wording.
 
 ## Guardrails
 

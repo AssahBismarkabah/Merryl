@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::thread;
 
@@ -8,9 +8,9 @@ use reqwest::blocking::Client;
 use serde::Deserialize;
 
 use crate::config::{USER_AGENT, market_data};
-use crate::domain::models::{DailyPrice, IndustryMap, SectorMap, Symbol};
+use crate::domain::models::{DailyPrice, IndustryMap, MarketEvent, SectorMap, Symbol};
 
-use super::provider::DailyOhlcvProvider;
+use super::provider::{CatalystEventProvider, DailyOhlcvProvider};
 use super::sector_map::sector_maps;
 use super::universe::{etf_symbols, fetch_sp500_symbols, industry_maps};
 
@@ -165,6 +165,81 @@ impl AlpacaProvider {
         query
     }
 
+    fn fetch_news_batch(
+        &self,
+        symbols: &[String],
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+    ) -> Result<Vec<MarketEvent>> {
+        if symbols.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let mut events = Vec::new();
+        let mut next_page_token: Option<String> = None;
+
+        for _ in 0..market_data::ALPACA_NEWS_MAX_PAGES {
+            let query = self.news_query(symbols, start_date, end_date, &next_page_token);
+            let response = self
+                .client
+                .get(format!(
+                    "{}{}",
+                    self.base_url,
+                    market_data::ALPACA_NEWS_PATH
+                ))
+                .header(market_data::ALPACA_KEY_HEADER, &self.key_id)
+                .header(market_data::ALPACA_SECRET_HEADER, &self.secret_key)
+                .query(&query)
+                .send()
+                .with_context(|| format!("failed to fetch Alpaca news for {}", symbols.join(",")))?
+                .error_for_status()
+                .with_context(|| format!("Alpaca news request failed for {}", symbols.join(",")))?
+                .json::<AlpacaNewsResponse>()
+                .context("failed to parse Alpaca news response")?;
+
+            events.extend(response_events(response.news, symbols)?);
+
+            match response.next_page_token {
+                Some(token) if !token.is_empty() => {
+                    next_page_token = Some(token);
+                }
+                _ => break,
+            }
+        }
+
+        Ok(events)
+    }
+
+    fn news_query(
+        &self,
+        symbols: &[String],
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+        next_page_token: &Option<String>,
+    ) -> Vec<(String, String)> {
+        let mut query = vec![
+            ("symbols".to_string(), symbols.join(",")),
+            (
+                "start".to_string(),
+                start_date.format("%Y-%m-%d").to_string(),
+            ),
+            ("end".to_string(), end_date.format("%Y-%m-%d").to_string()),
+            ("sort".to_string(), market_data::SORT_DESC.to_string()),
+            (
+                "limit".to_string(),
+                market_data::ALPACA_NEWS_PAGE_LIMIT.to_string(),
+            ),
+            ("include_content".to_string(), "false".to_string()),
+            ("exclude_contentless".to_string(), "false".to_string()),
+        ];
+
+        if let Some(token) = next_page_token {
+            query.push(("page_token".to_string(), token.clone()));
+        }
+
+        query
+    }
+
     fn response_prices(
         &self,
         bars_by_symbol: HashMap<String, Vec<AlpacaBar>>,
@@ -225,6 +300,18 @@ impl DailyOhlcvProvider for AlpacaProvider {
     }
 }
 
+impl CatalystEventProvider for AlpacaProvider {
+    fn recent_news_events(
+        &self,
+        symbols: &[String],
+        end_date: NaiveDate,
+    ) -> Result<Vec<MarketEvent>> {
+        let start_date = end_date - ChronoDuration::days(market_data::NEWS_LOOKBACK_DAYS);
+        let request_end_date = end_date + ChronoDuration::days(1);
+        self.fetch_news_batch(symbols, start_date, request_end_date)
+    }
+}
+
 fn alpaca_date(timestamp: &str) -> Result<String> {
     let parsed = DateTime::parse_from_rfc3339(timestamp)
         .with_context(|| format!("invalid Alpaca timestamp: {timestamp}"))?;
@@ -249,4 +336,48 @@ struct AlpacaBar {
     l: f64,
     c: f64,
     v: f64,
+}
+
+#[derive(Debug, Deserialize)]
+struct AlpacaNewsResponse {
+    news: Vec<AlpacaNewsArticle>,
+    next_page_token: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AlpacaNewsArticle {
+    created_at: String,
+    headline: String,
+    source: String,
+    url: Option<String>,
+    #[serde(default)]
+    symbols: Vec<String>,
+}
+
+fn response_events(
+    articles: Vec<AlpacaNewsArticle>,
+    requested_symbols: &[String],
+) -> Result<Vec<MarketEvent>> {
+    let requested: HashSet<&str> = requested_symbols.iter().map(String::as_str).collect();
+    let mut events = Vec::new();
+
+    for article in articles {
+        let event_date = alpaca_date(&article.created_at)?;
+        for symbol in article.symbols {
+            if !requested.contains(symbol.as_str()) {
+                continue;
+            }
+            events.push(MarketEvent {
+                symbol,
+                sector: None,
+                event_date: event_date.clone(),
+                event_type: market_data::NEWS_EVENT_TYPE.to_string(),
+                headline: article.headline.clone(),
+                source: format!("{}:{}", market_data::NEWS_SOURCE_PREFIX, article.source),
+                url: article.url.clone(),
+            });
+        }
+    }
+
+    Ok(events)
 }

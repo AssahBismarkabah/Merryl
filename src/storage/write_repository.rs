@@ -2,10 +2,10 @@ use anyhow::Result;
 use rusqlite::params;
 use serde_json::json;
 
-use crate::config::scoring::REPORT_WATCHLIST_LIMIT;
+use crate::config::{market_data, scoring::REPORT_WATCHLIST_LIMIT};
 use crate::domain::models::{
-    DailyPrice, IndustryMap, IndustryScore, MarketRegimeScore, SectorMap, SectorScore, StockScore,
-    Symbol,
+    DailyPrice, IndustryMap, IndustryScore, MarketEvent, MarketRegimeScore, SectorMap, SectorScore,
+    StockScore, Symbol,
 };
 
 use super::sqlite::Database;
@@ -296,6 +296,53 @@ impl Database {
                     &score.symbol,
                     score.score,
                     &score.explanation,
+                ])?;
+            }
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn replace_recent_news_events(
+        &mut self,
+        from_date: &str,
+        to_date: &str,
+        events: &[MarketEvent],
+    ) -> Result<()> {
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            r#"
+            DELETE FROM events
+            WHERE event_date BETWEEN ?1 AND ?2
+              AND event_type = ?3
+              AND source LIKE ?4
+            "#,
+            params![
+                from_date,
+                to_date,
+                market_data::NEWS_EVENT_TYPE,
+                format!("{}:%", market_data::NEWS_SOURCE_PREFIX),
+            ],
+        )?;
+        {
+            let mut stmt = tx.prepare(
+                r#"
+                INSERT INTO events (
+                    symbol, sector, event_date, event_type, headline, source, url
+                )
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+                "#,
+            )?;
+
+            for event in events {
+                stmt.execute(params![
+                    &event.symbol,
+                    event.sector.as_deref(),
+                    &event.event_date,
+                    &event.event_type,
+                    &event.headline,
+                    &event.source,
+                    event.url.as_deref(),
                 ])?;
             }
         }

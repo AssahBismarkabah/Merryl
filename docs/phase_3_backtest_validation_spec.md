@@ -164,9 +164,9 @@ The current `implementation_spec.md` limitations are not equal in priority.
 
 | Limitation | Phase 4 blocker? | Reason |
 |---|---:|---|
-| Market regime V1 is lightweight | Addressed for V1 | PDB-3 labels regime as lightweight context and adds existing-data ETF proxies TLT, GLD, and USO. It still must not be presented as a full macro model. |
+| Market regime coverage is ETF-proxy based | Addressed for first build | PDB-3 and PDB-3.6 state the exact coverage: SPY, QQQ, IWM, DIA, TLT, GLD, and USO are included; VIX, DXY, US10Y, macro calendar, credit, and liquidity data are not yet included. It still must not be presented as a full macro model. |
 | First valid score date has no prior rank-change baseline | No | This is expected for rolling historical windows. It affects only the first scored date. |
-| Catalyst and earnings are `pending_source` | Partial | Acceptable if visibly labeled. It weakens the "why is this moving?" layer until a source is connected. |
+| Catalyst/news source | Addressed for recent news | PDB-4 connects real Alpaca News headlines for current watchlist symbols. Structured earnings calendar data remains explicitly not connected. |
 | Industry/theme bridge | No | Hardened and validated in PDB-1. It should stay as an attention and confirmation layer, not a trade signal. |
 | Sector score is mixed | Partial | Reviewed in PDB-2. Keep it as map-only until stronger evidence or regime-aware validation exists. |
 | Backtest is not trade profitability | No | Merryl is not an auto-trading system. This limitation should remain explicit. |
@@ -183,8 +183,8 @@ Current reason to keep holding full dashboard work:
 The stock layer is useful.
 The industry/theme layer is useful enough to preserve.
 The sector layer is still map-only / not yet a proven forward-return predictor.
-The current market regime label is lightweight V1 and is now explicit.
-The catalyst/earnings layer is still pending_source and must be made explicit before dashboard work.
+The current market regime coverage is ETF-proxy based and now explicit.
+The catalyst/news layer is connected for recent Alpaca News. Structured earnings calendar data remains explicitly not connected.
 ```
 
 If we build the dashboard immediately, we risk visualizing pending catalyst/earnings data and mixed sector behavior as if they are mature signals.
@@ -269,7 +269,7 @@ Daily run works.
 Historical scoring works.
 Stock ranking works well enough to preserve.
 Backtesting works.
-Market regime is explicitly labeled as lightweight V1 context.
+Market regime coverage is explicitly labeled with included and missing data sources.
 Sector score needs more evidence and possibly refinement.
 Sector ranking is map-only / not yet a proven forward-return predictor.
 Sector formula no longer includes a neutral rank-change placeholder.
@@ -314,7 +314,7 @@ PDB-3 market regime V1 review is complete.
 Result:
 
 ```text
-Market Regime V1 is explicit lightweight context and includes TLT, GLD, and USO ETF proxy context.
+Market regime coverage explicitly includes SPY, QQQ, IWM, DIA, TLT, GLD, and USO ETF proxy context, and names the missing macro sources.
 ```
 
 The result is recorded in:
@@ -347,7 +347,7 @@ docs/pre_dashboard_stability_backlog_spec.md
 The locked next implementation checkpoint is:
 
 ```text
-PDB-4: Catalyst/earnings decision
+PDB-5: Backtest scope clarity
 ```
 
-This should ensure users cannot mistake `pending_source` catalyst/earnings placeholders for real connected data.
+This should clarify what current backtests prove before dashboard work continues.
