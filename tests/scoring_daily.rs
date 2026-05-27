@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use chrono::{Duration, NaiveDate};
 
 use merryl::domain::models::{DailyPrice, SectorMap, Symbol};
-use merryl::scoring::{latest_date, score_market};
+use merryl::scoring::{apply_sector_rank_changes, latest_date, score_market};
 
 #[test]
 fn latest_date_uses_max_available_price_date() {
@@ -17,6 +19,15 @@ fn latest_date_uses_max_available_price_date() {
 fn daily_scoring_produces_sector_and_stock_rankings() {
     let symbols = vec![
         symbol("SPY", "SPDR S&P 500 ETF Trust", "broad_etf", None, None),
+        symbol("QQQ", "Invesco QQQ Trust", "broad_etf", None, None),
+        symbol("IWM", "iShares Russell 2000 ETF", "broad_etf", None, None),
+        symbol(
+            "DIA",
+            "SPDR Dow Jones Industrial Average ETF",
+            "broad_etf",
+            None,
+            None,
+        ),
         symbol(
             "XLK",
             "Technology Select Sector SPDR",
@@ -52,18 +63,35 @@ fn daily_scoring_produces_sector_and_stock_rankings() {
     ];
     let mut prices = Vec::new();
     prices.extend(series("SPY", 100.0, 0.0010, 1_000_000.0));
+    prices.extend(series("QQQ", 100.0, 0.0020, 1_000_000.0));
+    prices.extend(series("IWM", 100.0, 0.0015, 1_000_000.0));
+    prices.extend(series("DIA", 100.0, 0.0008, 1_000_000.0));
     prices.extend(series("XLK", 120.0, 0.0020, 1_000_000.0));
     prices.extend(series("XLF", 90.0, 0.0005, 1_000_000.0));
     prices.extend(series("MSFT", 200.0, 0.0030, 1_000_000.0));
     prices.extend(series("JPM", 150.0, 0.0008, 1_000_000.0));
 
-    let (sectors, industries, stocks) = score_market("2026-03-11", &symbols, &prices, &sector_maps);
+    let mut scores = score_market("2026-03-11", &symbols, &prices, &sector_maps);
 
-    assert_eq!(sectors.len(), 2);
-    assert!(!industries.is_empty());
-    assert!(stocks.iter().any(|stock| stock.symbol == "MSFT"));
-    assert_eq!(sectors[0].rank, 1);
-    assert_eq!(stocks[0].rank, 1);
+    assert_eq!(scores.sectors.len(), 2);
+    assert!(!scores.industries.is_empty());
+    assert!(scores.stocks.iter().any(|stock| stock.symbol == "MSFT"));
+    assert_eq!(scores.sectors[0].rank, 1);
+    assert_eq!(scores.stocks[0].rank, 1);
+    assert!(!scores.regime.label.is_empty());
+
+    let previous_ranks = HashMap::from([
+        ("Technology".to_string(), 2usize),
+        ("Financials".to_string(), 1usize),
+    ]);
+    apply_sector_rank_changes(&mut scores.sectors, &previous_ranks);
+
+    let technology = scores
+        .sectors
+        .iter()
+        .find(|sector| sector.sector == "Technology")
+        .expect("Technology sector score");
+    assert_eq!(technology.rank_change, 1.0);
 }
 
 fn series(symbol: &str, base: f64, daily_return: f64, volume: f64) -> Vec<DailyPrice> {

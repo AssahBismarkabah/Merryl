@@ -39,6 +39,20 @@ pub struct IndustryMap {
     pub description: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct MarketRegimeScore {
+    pub date: String,
+    pub label: String,
+    pub score: f64,
+    pub spy_return_20d: f64,
+    pub spy_return_60d: f64,
+    pub qqq_relative_return_vs_spy: f64,
+    pub iwm_relative_return_vs_spy: f64,
+    pub dia_relative_return_vs_spy: f64,
+    pub components_json: String,
+    pub explanation: String,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct SectorScore {
     pub date: String,

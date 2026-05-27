@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::config::scoring as scoring_config;
 use crate::config::universe::ASSET_STOCK;
 use crate::domain::models::{SectorMap, SectorScore, Symbol};
@@ -86,6 +88,18 @@ pub fn score_sectors(
         score.rank = idx + scoring_config::FIRST_RANK;
     }
     scores
+}
+
+pub fn apply_sector_rank_changes(
+    scores: &mut [SectorScore],
+    previous_ranks: &HashMap<String, usize>,
+) {
+    for score in scores {
+        score.rank_change = previous_ranks
+            .get(&score.sector)
+            .map(|previous_rank| *previous_rank as f64 - score.rank as f64)
+            .unwrap_or(scoring_config::ZERO_RANK_CHANGE);
+    }
 }
 
 fn sector_breadth(

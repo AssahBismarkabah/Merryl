@@ -4,7 +4,8 @@ use serde_json::json;
 
 use crate::config::scoring::REPORT_WATCHLIST_LIMIT;
 use crate::domain::models::{
-    DailyPrice, IndustryMap, IndustryScore, SectorMap, SectorScore, StockScore, Symbol,
+    DailyPrice, IndustryMap, IndustryScore, MarketRegimeScore, SectorMap, SectorScore, StockScore,
+    Symbol,
 };
 
 use super::sqlite::Database;
@@ -125,6 +126,42 @@ impl Database {
             }
         }
         tx.commit()?;
+        Ok(())
+    }
+
+    pub fn replace_market_regime(&mut self, regime: &MarketRegimeScore) -> Result<()> {
+        self.conn.execute(
+            r#"
+            INSERT INTO market_regime_scores (
+                date, label, score, spy_return_20d, spy_return_60d,
+                qqq_relative_return_vs_spy, iwm_relative_return_vs_spy,
+                dia_relative_return_vs_spy, components_json, explanation
+            )
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+            ON CONFLICT(date) DO UPDATE SET
+                label = excluded.label,
+                score = excluded.score,
+                spy_return_20d = excluded.spy_return_20d,
+                spy_return_60d = excluded.spy_return_60d,
+                qqq_relative_return_vs_spy = excluded.qqq_relative_return_vs_spy,
+                iwm_relative_return_vs_spy = excluded.iwm_relative_return_vs_spy,
+                dia_relative_return_vs_spy = excluded.dia_relative_return_vs_spy,
+                components_json = excluded.components_json,
+                explanation = excluded.explanation
+            "#,
+            params![
+                &regime.date,
+                &regime.label,
+                regime.score,
+                regime.spy_return_20d,
+                regime.spy_return_60d,
+                regime.qqq_relative_return_vs_spy,
+                regime.iwm_relative_return_vs_spy,
+                regime.dia_relative_return_vs_spy,
+                &regime.components_json,
+                &regime.explanation,
+            ],
+        )?;
         Ok(())
     }
 

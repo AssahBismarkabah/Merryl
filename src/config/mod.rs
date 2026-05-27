@@ -102,6 +102,9 @@ pub mod universe {
 
 pub mod scoring {
     pub const BENCHMARK_SYMBOL: &str = "SPY";
+    pub const GROWTH_SYMBOL: &str = "QQQ";
+    pub const SMALL_CAP_SYMBOL: &str = "IWM";
+    pub const INDUSTRIAL_SYMBOL: &str = "DIA";
     pub const RETURN_1D: usize = 1;
     pub const RETURN_5D: usize = 5;
     pub const RETURN_20D: usize = 20;
@@ -130,7 +133,21 @@ pub mod scoring {
     pub const STOCK_WATCHLIST_LIMIT: usize = 50;
     pub const REPORT_WATCHLIST_LIMIT: usize = 25;
     pub const EXPLANATION_LIMIT: usize = 10;
+    pub const TOP_SECTOR_REPORT_LIMIT: usize = 5;
+    pub const WEAK_SECTOR_REPORT_LIMIT: usize = 5;
+    pub const TOP_INDUSTRY_REPORT_LIMIT: usize = 10;
+    pub const HIGH_RELATIVE_VOLUME_REPORT_LIMIT: usize = 10;
     pub const CATALYST_PENDING_SOURCE: &str = "pending_source";
+
+    pub const REGIME_RISK_ON_THRESHOLD: f64 = 60.0;
+    pub const REGIME_RISK_OFF_THRESHOLD: f64 = 40.0;
+    pub const REGIME_SPY_TREND_WEIGHT: f64 = 0.40;
+    pub const REGIME_QQQ_RELATIVE_WEIGHT: f64 = 0.25;
+    pub const REGIME_IWM_RELATIVE_WEIGHT: f64 = 0.25;
+    pub const REGIME_DIA_RELATIVE_WEIGHT: f64 = 0.10;
+    pub const REGIME_SPY_60D_WEIGHT: f64 = 0.40;
+    pub const REGIME_RELATIVE_SCORE_MULTIPLIER: f64 = 500.0;
+    pub const REGIME_TREND_SCORE_MULTIPLIER: f64 = 400.0;
 
     pub const SECTOR_RELATIVE_RETURN_WEIGHT: f64 = 0.30;
     pub const SECTOR_TREND_WEIGHT: f64 = 0.20;
@@ -148,13 +165,38 @@ pub mod scoring {
 pub mod output_text {
     pub const DAILY_REPORT_TITLE: &str = "Daily Market Rotation Report";
     pub const REPORT_RULE: &str = "Rule: this is a market rotation watchlist, not an automatic trade signal. Chart structure, invalidation, and risk define any trade.";
-    pub const SECTOR_SECTION: &str = "Sector Rotation";
-    pub const WATCHLIST_SECTION: &str = "Top Stock Watchlist";
+    pub const MARKET_REGIME_SECTION: &str = "Market Regime";
+    pub const TOP_SECTORS_SECTION: &str = "Top Sectors";
+    pub const WEAK_SECTORS_SECTION: &str = "Weak Sectors";
+    pub const SECTOR_RANK_CHANGES_SECTION: &str = "Sector Rank Changes";
+    pub const TOP_INDUSTRIES_SECTION: &str = "Top Industries Or Themes";
+    pub const WATCHLIST_SECTION: &str = "Top Stocks Worth Charting";
+    pub const NEW_LEADERS_SECTION: &str = "New Leaders";
+    pub const HIGH_RELATIVE_VOLUME_SECTION: &str = "High Relative Volume Names";
+    pub const CATALYST_SECTION: &str = "Catalyst / Earnings Flags";
+    pub const NOTES_SECTION: &str = "Notes For Chart Review";
     pub const EXPLANATION_SECTION: &str = "Why These Names";
-    pub const SECTOR_TABLE_HEADER: &str = "| Rank | Sector | ETF | Score | 1D | 5D | 20D | 60D | Rel Vol | Breadth 20D | Breadth 50D |";
+    pub const SECTOR_TABLE_HEADER: &str = "| Rank | Sector | ETF | Score | 1D | 5D | 20D | 60D | Vs SPY | Rel Vol | Breadth 20D | Breadth 50D | Rank Change |";
     pub const SECTOR_TABLE_ALIGNMENT: &str =
-        "|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|";
+        "|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|";
+    pub const INDUSTRY_TABLE_HEADER: &str = "| Rank | Industry / Theme | Sector | Score |";
+    pub const INDUSTRY_TABLE_ALIGNMENT: &str = "|---:|---|---|---:|";
     pub const WATCHLIST_TABLE_HEADER: &str = "| Rank | Symbol | Name | Sector | Industry | Score | 20D | Rel Sector | Rel Vol | Trend | Catalyst |";
     pub const WATCHLIST_TABLE_ALIGNMENT: &str =
         "|---:|---|---|---|---|---:|---:|---:|---:|---|---|";
+    pub const HIGH_RELATIVE_VOLUME_TABLE_HEADER: &str =
+        "| Rank | Symbol | Sector | Score | Rel Vol | 20D | Rel Sector |";
+    pub const HIGH_RELATIVE_VOLUME_TABLE_ALIGNMENT: &str = "|---:|---|---|---:|---:|---:|---:|";
+    pub const NO_PRIOR_RANK_HISTORY: &str =
+        "No prior dated sector ranking exists yet; rank changes will appear after multiple runs.";
+    pub const NO_PRIOR_WATCHLIST_HISTORY: &str =
+        "No prior dated watchlist exists yet; this run establishes the leadership baseline.";
+    pub const NO_NEW_LEADERS: &str =
+        "No new names entered the top watchlist compared with the prior dated run.";
+    pub const CATALYST_PENDING_NOTE: &str = "Catalyst and earnings sources are not connected yet; current values remain pending_source.";
+    pub const CHART_REVIEW_NOTES: &[&str] = &[
+        "Use this report to choose what to chart first, not to enter trades automatically.",
+        "Confirm chart structure, invalidation level, liquidity, and earnings risk before any trade.",
+        "Treat sector and industry context as the reason to focus attention; price action still decides timing.",
+    ];
 }

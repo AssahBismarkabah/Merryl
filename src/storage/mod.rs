@@ -1,3 +1,4 @@
+mod read_repository;
 mod schema;
 mod sqlite;
 mod write_repository;

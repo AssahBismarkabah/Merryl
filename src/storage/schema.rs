@@ -68,6 +68,19 @@ CREATE TABLE IF NOT EXISTS macro_series (
     PRIMARY KEY (series, date)
 );
 
+CREATE TABLE IF NOT EXISTS market_regime_scores (
+    date TEXT PRIMARY KEY,
+    label TEXT NOT NULL,
+    score REAL NOT NULL,
+    spy_return_20d REAL NOT NULL,
+    spy_return_60d REAL NOT NULL,
+    qqq_relative_return_vs_spy REAL NOT NULL,
+    iwm_relative_return_vs_spy REAL NOT NULL,
+    dia_relative_return_vs_spy REAL NOT NULL,
+    components_json TEXT NOT NULL,
+    explanation TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     symbol TEXT,

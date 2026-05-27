@@ -5,7 +5,7 @@ use chrono::Duration as ChronoDuration;
 
 use crate::data::{AlpacaProvider, DailyOhlcvProvider, default_end_date};
 use crate::output::write_daily_outputs;
-use crate::scoring::{latest_date, score_market};
+use crate::scoring::{apply_sector_rank_changes, latest_date, score_market};
 use crate::storage::{Database, default_db_path};
 
 use super::date_args::parse_date_arg;
@@ -40,29 +40,41 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         None => latest_date(&prices).context("could not determine latest date from price data")?,
     };
 
-    let (sector_scores, industry_scores, stock_scores) =
-        score_market(&score_date, &symbols, &prices, &sector_maps);
-
-    if sector_scores.is_empty() {
-        bail!("no sector scores were produced for {score_date}");
-    }
-    if stock_scores.is_empty() {
-        bail!("no stock watchlist rows were produced for {score_date}");
-    }
-
     let db_path = default_db_path();
     let mut db = Database::open(&db_path)?;
     db.migrate()?;
+
+    let previous_sector_ranks = db.latest_sector_ranks_before(&score_date)?;
+    let previous_watchlist_symbols = db.latest_watchlist_symbols_before(&score_date)?;
+
+    let mut scores = score_market(&score_date, &symbols, &prices, &sector_maps);
+    apply_sector_rank_changes(&mut scores.sectors, &previous_sector_ranks);
+
+    if scores.sectors.is_empty() {
+        bail!("no sector scores were produced for {score_date}");
+    }
+    if scores.stocks.is_empty() {
+        bail!("no stock watchlist rows were produced for {score_date}");
+    }
+
     db.upsert_symbols(&symbols)?;
     db.upsert_sector_maps(&sector_maps)?;
     db.upsert_industry_maps(&industry_maps)?;
     db.upsert_prices(&prices)?;
-    db.replace_sector_scores(&score_date, &sector_scores)?;
-    db.replace_industry_scores(&score_date, &industry_scores)?;
-    db.replace_stock_scores(&score_date, &stock_scores)?;
-    db.replace_watchlist(&score_date, &stock_scores)?;
+    db.replace_market_regime(&scores.regime)?;
+    db.replace_sector_scores(&score_date, &scores.sectors)?;
+    db.replace_industry_scores(&score_date, &scores.industries)?;
+    db.replace_stock_scores(&score_date, &scores.stocks)?;
+    db.replace_watchlist(&score_date, &scores.stocks)?;
 
-    let outputs = write_daily_outputs(&score_date, &sector_scores, &stock_scores)?;
+    let outputs = write_daily_outputs(
+        &score_date,
+        &scores.regime,
+        &scores.sectors,
+        &scores.industries,
+        &scores.stocks,
+        &previous_watchlist_symbols,
+    )?;
 
     Ok(RunDailyResult {
         date: score_date,
