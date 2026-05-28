@@ -133,53 +133,67 @@ function renderView(view: DashboardView, data: DashboardSnapshot) {
             <ViewHeader title="Market Regime" />
             {data.regime ? (
               <SimpleTable
-                columns={["Group", "Metric", "Value"]}
+                columns={["Area", "Metric", "Value", "Signal"]}
                 rows={[
                   [
                     <DataTag tone="accent">Context</DataTag>,
                     "Regime",
-                    <strong className="metricCell">{data.regime.label}</strong>
+                    <strong className="metricCell">{data.regime.label}</strong>,
+                    <DataTag tone="accent">Current</DataTag>
                   ],
-                  [<DataTag tone="accent">Context</DataTag>, "Score", number(data.regime.score)],
+                  [
+                    <DataTag tone="accent">Context</DataTag>,
+                    "Score",
+                    number(data.regime.score),
+                    <ScoreTag score={data.regime.score} />
+                  ],
                   [
                     <DataTag tone="muted">Benchmark</DataTag>,
                     "SPY 20D",
-                    <ToneValue value={data.regime.spy_return_20d} />
+                    <ToneValue value={data.regime.spy_return_20d} />,
+                    <MoveTag value={data.regime.spy_return_20d} />
                   ],
                   [
                     <DataTag tone="muted">Benchmark</DataTag>,
                     "SPY 60D",
-                    <ToneValue value={data.regime.spy_return_60d} />
+                    <ToneValue value={data.regime.spy_return_60d} />,
+                    <MoveTag value={data.regime.spy_return_60d} />
                   ],
                   [
                     <DataTag tone="muted">Relative</DataTag>,
                     "QQQ vs SPY",
-                    <ToneValue value={data.regime.qqq_relative_return_vs_spy} />
+                    <ToneValue value={data.regime.qqq_relative_return_vs_spy} />,
+                    <MoveTag value={data.regime.qqq_relative_return_vs_spy} />
                   ],
                   [
                     <DataTag tone="muted">Relative</DataTag>,
                     "IWM vs SPY",
-                    <ToneValue value={data.regime.iwm_relative_return_vs_spy} />
+                    <ToneValue value={data.regime.iwm_relative_return_vs_spy} />,
+                    <MoveTag value={data.regime.iwm_relative_return_vs_spy} />
                   ],
                   [
                     <DataTag tone="muted">Relative</DataTag>,
                     "DIA vs SPY",
-                    <ToneValue value={data.regime.dia_relative_return_vs_spy} />
+                    <ToneValue value={data.regime.dia_relative_return_vs_spy} />,
+                    <MoveTag value={data.regime.dia_relative_return_vs_spy} />
                   ],
                   [
                     <DataTag tone="muted">Intermarket</DataTag>,
                     "TLT 20D",
-                    <ToneValue value={data.regime.tlt_return_20d} />
+                    <ToneValue value={data.regime.tlt_return_20d} />,
+                    <MoveTag value={data.regime.tlt_return_20d} />
                   ],
                   [
                     <DataTag tone="muted">Intermarket</DataTag>,
                     "GLD 20D",
-                    <ToneValue value={data.regime.gld_return_20d} />
+                    <ToneValue value={data.regime.gld_return_20d} />,
+                    <MoveTag value={data.regime.gld_return_20d} />
                   ],
                   [
                     <DataTag tone="muted">Intermarket</DataTag>,
                     "USO 20D",
-                    <ToneValue value={data.regime.uso_return_20d} />
+                    <ToneValue value={data.regime.uso_return_20d} />,
+                    <MoveTag value={data.regime.uso_return_20d} />
                   ]
                 ]}
               />
@@ -192,7 +206,7 @@ function renderView(view: DashboardView, data: DashboardSnapshot) {
     case "sectors":
       return (
         <div className="viewSurface">
-          <ViewHeader title="Sector Rotation" />
+          <ViewHeader title="Sector Rotation" note="Map-only rotation layer" />
           <DataTable data={data.sectors} columns={sectorColumns} />
         </div>
       );
@@ -309,7 +323,7 @@ function renderView(view: DashboardView, data: DashboardSnapshot) {
           </section>
 
           <section className="detailSection">
-            <ViewHeader title="Known Limits" />
+            <ViewHeader title="Coverage Limits" />
             <SimpleTable
               columns={["Area", "Current State", "Next"]}
               rows={data.limitations.map((item) => limitRow(item))}
@@ -361,6 +375,26 @@ function DataTag({ children, tone }: { children: ReactNode; tone: "accent" | "mu
 function ToneValue({ value }: { value: number }) {
   const className = value > 0 ? "positive" : value < 0 ? "negative" : "neutral";
   return <span className={className}>{percent(value)}</span>;
+}
+
+function ScoreTag({ score }: { score: number }) {
+  if (score > 50) {
+    return <DataTag tone="accent">Above 50</DataTag>;
+  }
+  if (score < 50) {
+    return <DataTag tone="muted">Below 50</DataTag>;
+  }
+  return <DataTag tone="muted">Neutral</DataTag>;
+}
+
+function MoveTag({ value }: { value: number }) {
+  if (value > 0) {
+    return <DataTag tone="accent">Up</DataTag>;
+  }
+  if (value < 0) {
+    return <DataTag tone="muted">Down</DataTag>;
+  }
+  return <DataTag tone="muted">Flat</DataTag>;
 }
 
 function limitRow(item: string): ReactNode[] {

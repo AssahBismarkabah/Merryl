@@ -1,8 +1,8 @@
 # Phase 4.1 Dashboard Stabilization Spec
 
-Version: 0.2
+Version: 0.3
 Date: 2026-05-28
-Status: In progress; selected-date review and dashboard data-fidelity tests are implemented
+Status: In progress; selected-date review, dashboard data-fidelity tests, and daily review ergonomics are implemented
 
 Related documents:
 
@@ -176,6 +176,14 @@ Done when:
 - No view is mostly instructional text.
 - No major table or chip overflows on narrow viewport.
 
+Current implementation status:
+
+- Overview now summarizes the market map as one row per layer instead of repeating full watchlist or leadership tables.
+- Regime uses compact metric/status rows and leaves broader macro coverage limits in Validation.
+- Sector Rotation is labeled as a map-only rotation layer.
+- Validation uses compact Backtest Review, Data Health, and Coverage Limits tables.
+- Narrow browser checks found and fixed Validation table containment so horizontal scroll stays inside table wrappers.
+
 ### 5.4 Visual Verification
 
 Goal:
@@ -223,9 +231,9 @@ Recommended order:
 
 1. Add tests for selected-date dashboard loading and dashboard data fidelity. Complete.
 2. Add a compact scored-date selector using the existing dates API. Complete.
-3. Tighten overview/regime/validation wording and layout only where needed.
-4. Verify desktop and narrow browser layouts.
-5. Update status documentation after implementation.
+3. Tighten overview/regime/validation wording and layout only where needed. Complete.
+4. Verify desktop and narrow browser layouts. In progress; production build and narrow browser checks for Overview/Regime/Validation are complete.
+5. Update status documentation after implementation. Complete for this pass.
 
 Do not start with new charts or new data sources.
 

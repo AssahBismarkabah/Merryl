@@ -313,10 +313,13 @@ The first read-only dashboard/API slice from `docs/pre_dashboard_stability_backl
 
 The stabilization plan is recorded in `docs/phase_4_dashboard_stabilization_spec.md`.
 
-First Phase 4.1 implementation slice:
+Phase 4.1 implementation completed so far:
 
 ```text
-selected-date dashboard loading + dashboard data-fidelity tests + compact Market date selector
+selected-date dashboard loading
+  -> dashboard data-fidelity tests
+  -> compact Market date selector
+  -> Overview/Regime/Validation ergonomics pass
 ```
 
 The dashboard must remain a reader over the controlled market-map chain first. Do not add alerts, portfolio simulation, intraday execution, options flow, or advanced data-provider expansion in the first dashboard slice.

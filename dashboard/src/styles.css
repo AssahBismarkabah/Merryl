@@ -294,6 +294,7 @@ h3 {
 }
 
 .viewSurface {
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
@@ -362,6 +363,11 @@ h3 {
   min-width: 250px;
 }
 
+.overviewLeadCell {
+  min-width: 210px;
+  white-space: normal;
+}
+
 .overviewChartBlock {
   margin: 14px 10px;
   padding: 20px;
@@ -389,6 +395,7 @@ h3 {
 }
 
 .detailSection {
+  min-width: 0;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--border);
 }
@@ -399,10 +406,13 @@ h3 {
 
 .validationStack {
   display: grid;
+  min-width: 0;
 }
 
 .tableWrap {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
   background: var(--bg);
 }
