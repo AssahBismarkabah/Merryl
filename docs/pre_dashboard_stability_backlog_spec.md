@@ -307,7 +307,7 @@ Result:
 
 ```text
 Recent news catalysts are connected through Alpaca News.
-Structured earnings calendar data is not connected yet.
+Phase 5C later connects Alpha Vantage Earnings Calendar and SEC EDGAR filing events.
 Stock rows with recent news show recent_news:N.
 ```
 

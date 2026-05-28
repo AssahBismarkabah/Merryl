@@ -3,14 +3,17 @@ use std::path::PathBuf;
 use anyhow::{Context, Result, bail};
 use chrono::{Duration as ChronoDuration, NaiveDate};
 
-use crate::config::{market_data, scoring as scoring_config};
+use crate::config::market_data;
 use crate::data::{
-    AlpacaProvider, CatalystEventProvider, DailyOhlcvProvider, FredProvider, MacroSeriesProvider,
-    default_end_date,
+    AlpacaProvider, AlphaVantageProvider, CatalystEventProvider, DailyOhlcvProvider,
+    EarningsCalendarProvider, FilingEventProvider, FredProvider, MacroSeriesProvider,
+    SecEdgarProvider, default_end_date,
 };
 use crate::domain::models::{MarketEvent, StockScore};
 use crate::output::{DailyReportInput, write_daily_outputs};
-use crate::scoring::{latest_date, previous_watchlist_symbols_for_date, score_market_history};
+use crate::scoring::{
+    apply_catalyst_status, latest_date, previous_watchlist_symbols_for_date, score_market_history,
+};
 use crate::storage::{Database, default_db_path};
 
 use super::date_args::parse_date_arg;
@@ -24,6 +27,9 @@ pub struct RunDailyResult {
     pub watchlist_export: PathBuf,
     pub historical_score_dates: usize,
     pub macro_observations: usize,
+    pub news_events: usize,
+    pub earnings_events: usize,
+    pub filing_events: usize,
 }
 
 pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
@@ -34,6 +40,8 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
 
     let provider = AlpacaProvider::from_env()?;
     let macro_provider = FredProvider::from_env()?;
+    let earnings_provider = AlphaVantageProvider::from_env()?;
+    let filing_provider = SecEdgarProvider::from_env()?;
     let symbols = provider.symbols()?;
     let sector_maps = provider.sector_maps();
     let industry_maps = provider.industry_maps(&symbols);
@@ -84,10 +92,24 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         .map(|stock| stock.symbol.clone())
         .collect::<Vec<_>>();
     let mut recent_events = provider.recent_news_events(&watchlist_symbols, report_date_value)?;
+    let mut earnings_events = earnings_provider.upcoming_earnings_events(&watchlist_symbols)?;
+    let mut filing_events =
+        filing_provider.recent_filing_events(&watchlist_symbols, report_date_value)?;
+    let mut structured_events = Vec::new();
+    structured_events.extend(earnings_events.clone());
+    structured_events.extend(filing_events.clone());
+    let mut all_events = Vec::new();
+    all_events.extend(recent_events.clone());
+    all_events.extend(earnings_events.clone());
+    all_events.extend(filing_events.clone());
 
     if let Some(scores) = score_history.last_mut() {
         attach_event_sectors(&mut recent_events, &scores.stocks);
-        apply_recent_news_status(&mut scores.stocks, &recent_events);
+        attach_event_sectors(&mut earnings_events, &scores.stocks);
+        attach_event_sectors(&mut filing_events, &scores.stocks);
+        attach_event_sectors(&mut structured_events, &scores.stocks);
+        attach_event_sectors(&mut all_events, &scores.stocks);
+        apply_catalyst_status(&mut scores.stocks, &all_events);
     }
 
     db.upsert_symbols(&symbols)?;
@@ -103,6 +125,7 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         db.replace_watchlist(&scores.date, &scores.stocks)?;
     }
     db.replace_recent_news_events(&news_start_date, &news_end_date, &recent_events)?;
+    db.upsert_structured_events(&structured_events)?;
 
     let scores = score_history
         .last()
@@ -114,7 +137,7 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         sector_scores: &scores.sectors,
         industry_scores: &scores.industries,
         stock_scores: &scores.stocks,
-        events: &recent_events,
+        events: &all_events,
         macro_observations: &macro_observations,
         previous_watchlist_symbols: &previous_watchlist_symbols,
     })?;
@@ -127,6 +150,9 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         watchlist_export: outputs.watchlist_export,
         historical_score_dates: score_history.len(),
         macro_observations: macro_observations.len(),
+        news_events: recent_events.len(),
+        earnings_events: earnings_events.len(),
+        filing_events: filing_events.len(),
     })
 }
 
@@ -137,19 +163,6 @@ fn attach_event_sectors(events: &mut [MarketEvent], stock_scores: &[StockScore])
             .find(|stock| stock.symbol == event.symbol)
         {
             event.sector = Some(stock.sector.clone());
-        }
-    }
-}
-
-fn apply_recent_news_status(stock_scores: &mut [StockScore], events: &[MarketEvent]) {
-    for score in stock_scores {
-        let count = events
-            .iter()
-            .filter(|event| event.symbol == score.symbol)
-            .count();
-        if count > 0 {
-            score.catalyst_status =
-                format!("{}:{}", scoring_config::CATALYST_RECENT_NEWS_PREFIX, count);
         }
     }
 }

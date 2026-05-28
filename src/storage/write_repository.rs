@@ -372,9 +372,11 @@ impl Database {
             let mut stmt = tx.prepare(
                 r#"
                 INSERT INTO events (
-                    symbol, sector, event_date, event_type, headline, source, url
+                    symbol, sector, event_date, event_time, event_type, headline, source, url,
+                    source_event_id, effective_date, processed_at, fetched_at, actual, estimate,
+                    surprise, fiscal_period, raw_json, quality_status
                 )
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)
                 "#,
             )?;
 
@@ -383,10 +385,90 @@ impl Database {
                     &event.symbol,
                     event.sector.as_deref(),
                     &event.event_date,
+                    event.metadata.event_time.as_deref(),
                     &event.event_type,
                     &event.headline,
                     &event.source,
                     event.url.as_deref(),
+                    event.metadata.source_event_id.as_deref(),
+                    event.metadata.effective_date.as_deref(),
+                    event.metadata.processed_at.as_deref(),
+                    event.metadata.fetched_at.as_deref(),
+                    event.metadata.actual,
+                    event.metadata.estimate,
+                    event.metadata.surprise,
+                    event.metadata.fiscal_period.as_deref(),
+                    event.metadata.raw_json.as_deref().unwrap_or("{}"),
+                    &event.metadata.quality_status,
+                ])?;
+            }
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn upsert_structured_events(&mut self, events: &[MarketEvent]) -> Result<()> {
+        let tx = self.conn.transaction()?;
+        {
+            let mut stmt = tx.prepare(
+                r#"
+                INSERT INTO events (
+                    symbol, sector, event_date, event_time, event_type, headline, source, url,
+                    source_event_id, effective_date, processed_at, fetched_at, actual, estimate,
+                    surprise, fiscal_period, raw_json, quality_status
+                )
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)
+                ON CONFLICT(source, source_event_id)
+                WHERE source_event_id IS NOT NULL AND source_event_id != ''
+                DO UPDATE SET
+                    symbol = excluded.symbol,
+                    sector = excluded.sector,
+                    event_date = excluded.event_date,
+                    event_time = excluded.event_time,
+                    event_type = excluded.event_type,
+                    headline = excluded.headline,
+                    url = excluded.url,
+                    effective_date = excluded.effective_date,
+                    processed_at = excluded.processed_at,
+                    fetched_at = excluded.fetched_at,
+                    actual = excluded.actual,
+                    estimate = excluded.estimate,
+                    surprise = excluded.surprise,
+                    fiscal_period = excluded.fiscal_period,
+                    raw_json = excluded.raw_json,
+                    quality_status = excluded.quality_status,
+                    inserted_at = CURRENT_TIMESTAMP
+                "#,
+            )?;
+
+            for event in events {
+                if event
+                    .metadata
+                    .source_event_id
+                    .as_deref()
+                    .is_none_or(str::is_empty)
+                {
+                    continue;
+                }
+                stmt.execute(params![
+                    &event.symbol,
+                    event.sector.as_deref(),
+                    &event.event_date,
+                    event.metadata.event_time.as_deref(),
+                    &event.event_type,
+                    &event.headline,
+                    &event.source,
+                    event.url.as_deref(),
+                    event.metadata.source_event_id.as_deref(),
+                    event.metadata.effective_date.as_deref(),
+                    event.metadata.processed_at.as_deref(),
+                    event.metadata.fetched_at.as_deref(),
+                    event.metadata.actual,
+                    event.metadata.estimate,
+                    event.metadata.surprise,
+                    event.metadata.fiscal_period.as_deref(),
+                    event.metadata.raw_json.as_deref().unwrap_or("{}"),
+                    &event.metadata.quality_status,
                 ])?;
             }
         }

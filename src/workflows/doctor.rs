@@ -3,7 +3,7 @@ use std::path::Path;
 use anyhow::Result;
 
 use crate::config::{macro_data, paths, quality, scoring, universe};
-use crate::data::{AlpacaProvider, FredProvider};
+use crate::data::{AlpacaProvider, AlphaVantageProvider, FredProvider, SecEdgarProvider};
 use crate::storage::{
     DataQualitySnapshot, Database, RequiredMacroCoverage, RequiredPriceCoverage,
     RequiredSymbolCoverage, default_db_path,
@@ -25,6 +25,8 @@ pub fn doctor_for_db_path(db_path: &Path) -> Result<Vec<String>> {
 
     checks.extend(AlpacaProvider::env_status());
     checks.extend(FredProvider::env_status());
+    checks.extend(AlphaVantageProvider::env_status());
+    checks.extend(SecEdgarProvider::env_status());
     checks.push(path_check(paths::DAILY_WORKFLOW_CONFIG));
     checks.push(generated_path_check(db_path));
     checks.push(generated_path_check(paths::REPORTS_DIR));

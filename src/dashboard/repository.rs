@@ -113,7 +113,7 @@ fn limitations() -> Vec<String> {
         "Watchlist rows are not automatic trade signals.".to_string(),
         "Sector ranking is a market-map and attention layer, not a proven standalone forward-return signal.".to_string(),
         "Market regime scoring still uses ETF proxies SPY, QQQ, IWM, DIA, TLT, GLD, and USO; FRED macro context is stored separately and is not part of scoring yet.".to_string(),
-        "Structured earnings calendar data is not connected yet.".to_string(),
+        "Catalyst/event context is source-backed where available: Alpaca News, Alpha Vantage Earnings Calendar, and SEC EDGAR submissions. It is not a scoring input.".to_string(),
         "Backtests validate score behavior, not trade profitability.".to_string(),
     ]
 }

@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::config::{APP_NAME, macro_data, output_text, scoring};
+use crate::config::{APP_NAME, event_data, macro_data, market_data, output_text, scoring};
 use crate::domain::models::{
     IndustryScore, MacroObservation, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
 };
@@ -367,42 +367,87 @@ fn catalyst_flags(stock_scores: &[StockScore], events: &[MarketEvent]) -> String
         );
     }
 
-    let headlines_by_symbol = event_headlines_by_symbol(events);
+    let events_by_symbol = events_by_symbol(events);
     let mut rows = vec![
         section_heading(output_text::CATALYST_SECTION),
         output_text::CATALYST_SOURCE_NOTE.to_string(),
     ];
     for stock in flagged {
-        let headline = headlines_by_symbol
-            .get(&stock.symbol)
-            .map(|event| event.headline.as_str())
-            .unwrap_or("recent news found");
-        let source = headlines_by_symbol
-            .get(&stock.symbol)
-            .map(|event| event.source.as_str())
-            .unwrap_or("alpaca_news");
-        let date = headlines_by_symbol
-            .get(&stock.symbol)
-            .map(|event| event.event_date.as_str())
-            .unwrap_or(&stock.date);
         rows.push(format!(
-            "- **{}** `{}` — {} from {}.\n  {}",
-            stock.symbol,
-            stock.catalyst_status,
-            date,
-            source,
-            clean_markdown_line(headline)
+            "- **{}** `{}`",
+            stock.symbol, stock.catalyst_status
         ));
+        if let Some(symbol_events) = events_by_symbol.get(&stock.symbol) {
+            rows.extend(event_detail_lines(symbol_events));
+        }
     }
     rows.join("\n")
 }
 
-fn event_headlines_by_symbol(events: &[MarketEvent]) -> HashMap<String, &MarketEvent> {
+fn events_by_symbol(events: &[MarketEvent]) -> HashMap<String, Vec<&MarketEvent>> {
     let mut by_symbol = HashMap::new();
     for event in events {
-        by_symbol.entry(event.symbol.clone()).or_insert(event);
+        by_symbol
+            .entry(event.symbol.clone())
+            .or_insert_with(Vec::new)
+            .push(event);
     }
     by_symbol
+}
+
+fn event_detail_lines(events: &[&MarketEvent]) -> Vec<String> {
+    let mut lines = Vec::new();
+
+    if let Some(news) = latest_event(events, market_data::NEWS_EVENT_TYPE) {
+        lines.push(format!(
+            "  - News {} from {}: {}",
+            news.event_date,
+            news.source,
+            clean_markdown_line(&news.headline)
+        ));
+    }
+    if let Some(earnings) = earliest_event(events, event_data::EVENT_TYPE_EARNINGS) {
+        let estimate = earnings
+            .metadata
+            .estimate
+            .map(|value| format!(" estimate {value:.2}"))
+            .unwrap_or_default();
+        lines.push(format!(
+            "  - Earnings calendar {}{}.",
+            earnings.event_date, estimate
+        ));
+    }
+    if let Some(filing) = latest_event(events, event_data::EVENT_TYPE_FILING) {
+        let link = filing
+            .url
+            .as_deref()
+            .map(|url| format!(" ({url})"))
+            .unwrap_or_default();
+        lines.push(format!(
+            "  - SEC filing {}: {}{}",
+            filing.event_date,
+            clean_markdown_line(&filing.headline),
+            link
+        ));
+    }
+
+    lines
+}
+
+fn earliest_event<'a>(events: &[&'a MarketEvent], event_type: &str) -> Option<&'a MarketEvent> {
+    events
+        .iter()
+        .copied()
+        .filter(|event| event.event_type == event_type)
+        .min_by(|left, right| left.event_date.cmp(&right.event_date))
+}
+
+fn latest_event<'a>(events: &[&'a MarketEvent], event_type: &str) -> Option<&'a MarketEvent> {
+    events
+        .iter()
+        .copied()
+        .filter(|event| event.event_type == event_type)
+        .max_by(|left, right| left.event_date.cmp(&right.event_date))
 }
 
 fn clean_markdown_line(value: &str) -> String {

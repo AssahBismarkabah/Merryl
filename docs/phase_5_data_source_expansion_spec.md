@@ -13,6 +13,7 @@ Related documents:
 - `docs/sector_score_review_spec.md`
 - `docs/market_regime_v1_spec.md`
 - `docs/catalyst_earnings_source_spec.md`
+- `docs/phase_5c_structured_catalyst_source_spec.md`
 - `docs/phase_4_dashboard_stabilization_spec.md`
 
 ## 1. Purpose
@@ -69,7 +70,8 @@ This section records current candidate source facts checked on 2026-05-28. Acces
 | Alpaca News | Historical/real-time news under the Market Data API. | Keep current recent-news context; do not treat news count as full catalyst intelligence. |
 | FRED API | Economic series observations, release dates, and many macro/credit/rates series. | First candidate for macro/regime expansion because it is official, broad, and aligned with the current `macro_series` schema. |
 | SEC EDGAR APIs | Company submissions and XBRL company facts; SEC states these APIs require no API keys and are updated as filings disseminate. | First candidate for filing/fundamental context, not for real-time catalyst scoring. |
-| Finnhub Earnings Calendar | Historical and upcoming earnings calendar; also has economic calendar/economic data endpoints, with some premium access. | Candidate for structured earnings calendar if access/pricing is acceptable. |
+| Alpha Vantage Earnings Calendar | Upcoming earnings calendar endpoint available with a free API key and daily free-call limits. | First candidate for Phase 5C structured earnings context because it can be used without paid access. |
+| Finnhub Earnings Calendar | Historical and upcoming earnings calendar; also has economic calendar/economic data endpoints, with some premium access. | Not the first Phase 5C source under the no-paid-source constraint; revisit only if free access is confirmed and Alpha Vantage is unsuitable. |
 | ETF Global via Massive/Polygon partner API | ETF fund-flow endpoint with processed/effective dates and daily updates. | Candidate for sector/industry ETF fund-flow confirmation; likely paid and should not be first unless budget is approved. |
 | Massive/Polygon market data | REST APIs for stocks/options/futures/indices/economy and ETF Global partner datasets. | Candidate if Merryl needs a broader paid provider across several Phase 5 layers. |
 | Cboe DataShop | Official marketplace for options, equities, ETFs, indices, futures, and historical/intraday datasets, including Open-Close Volume Summary and Option EOD Summary. | Candidate for later options activity confirmation; paid/complex and not first implementation. |
@@ -80,6 +82,8 @@ Primary source URLs:
 - Alpaca market data overview: `https://docs.alpaca.markets/us/v1.1/docs/about-market-data-api`
 - FRED API documentation: `https://fred.stlouisfed.org/docs/api/fred/series/series_observations.html`
 - SEC EDGAR API documentation: `https://www.sec.gov/edgar/sec-api-documentation`
+- Alpha Vantage support/free key and limits: `https://www.alphavantage.co/support/`
+- Alpha Vantage earnings calendar docs: `https://www.alphavantage.co/documentation/`
 - Finnhub earnings calendar docs: `https://finnhub.io/docs/api/earnings-calendar`
 - Finnhub economic calendar docs: `https://finnhub.io/docs/api/economic-calendar`
 - ETF Global fund flows API via Massive: `https://massive.com/docs/rest/partners/etf-global/fundflows`
@@ -177,10 +181,10 @@ Recent news context
   + analyst/upgrades/regulatory event flags later if source is available
 ```
 
-First candidate sources:
+First candidate sources under the no-paid-source constraint:
 
 ```text
-Finnhub Earnings Calendar
+Alpha Vantage Earnings Calendar
 SEC EDGAR submissions/company facts
 Alpaca News remains the current recent-news provider
 ```
@@ -463,10 +467,10 @@ Purpose:
 Turn catalyst awareness from recent-news-only into structured event context.
 ```
 
-First candidates:
+First candidates under the no-paid-source constraint:
 
 ```text
-Finnhub earnings calendar
+Alpha Vantage earnings calendar
 SEC EDGAR submissions
 ```
 
@@ -556,6 +560,7 @@ Reason:
 
 - It improves the "why is this moving?" question.
 - It directly improves watchlist review without changing the core score.
+- It can start with free sources: existing Alpaca News, Alpha Vantage Earnings Calendar, and SEC EDGAR submissions.
 
 Do not start Phase 5 with ETF fund flows, options flow, intraday data, or universe expansion unless the user explicitly chooses those after reviewing cost and complexity.
 
@@ -610,6 +615,42 @@ Next checkpoint before any macro scoring change:
 
 ```text
 Create a regime/macro validation document that compares ETF-proxy regime behavior with FRED-aware context over historical scored dates.
+```
+
+## 7.2 Implemented Phase 5C Boundary
+
+Planning and first implementation recorded on 2026-05-28:
+
+```text
+docs/phase_5c_structured_catalyst_source_spec.md
+```
+
+The Phase 5C implementation decision is:
+
+- Use free sources only.
+- Keep existing Alpaca News for recent headline context.
+- Use Alpha Vantage Earnings Calendar as the first structured earnings source with a free API key.
+- Use SEC EDGAR submissions as the first filing-event source.
+- Do not use Finnhub, Polygon/Massive, ETF Global, Cboe DataShop, options flow, or fund-flow vendors in the first Phase 5C implementation.
+- Do not change sector, industry, stock, or regime score weights.
+- Do not add a new public CLI command.
+
+Phase 5C is a catalyst/event-context upgrade, not a scoring rewrite.
+
+Implemented components:
+
+- `src/data/alpha_vantage.rs`
+- `src/data/sec_edgar.rs`
+- additive `events` provenance columns and source-event idempotency index
+- structured catalyst status composition
+- `Catalyst / Event Flags` report section
+- doctor/status source visibility
+- tests for parsers, migration, idempotency, status composition, and report output
+
+Current live-data note:
+
+```text
+Phase 5C live daily verification passed on 2026-05-28 with Alpaca News, Alpha Vantage Earnings Calendar, and SEC EDGAR submissions connected.
 ```
 
 ## 8. Data Model Requirements

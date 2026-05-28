@@ -2,7 +2,7 @@
 
 Version: 0.1
 Date: 2026-05-27
-Status: PDB-4 complete; recent news connected, earnings calendar not connected
+Status: PDB-4 complete; Phase 5C later connected structured earnings-calendar and SEC filing-event context
 
 Related documents:
 
@@ -12,6 +12,7 @@ Related documents:
 - `docs/implementation_spec.md`
 - `docs/pre_dashboard_stability_backlog_spec.md`
 - `docs/spec_completeness_gate_spec.md`
+- `docs/phase_5c_structured_catalyst_source_spec.md`
 
 ## 1. Purpose
 
@@ -52,8 +53,8 @@ Official docs: https://docs.alpaca.markets/us/docs/streaming-real-time-news
 Earnings calendar note:
 
 ```text
-Structured earnings calendar data remains not connected.
-If needed later, choose a separate provider such as Alpha Vantage, Finnhub, Polygon, or another licensed fundamentals/calendar source.
+At PDB-4 time, structured earnings calendar data was not connected.
+Phase 5C later selected Alpha Vantage as the free first structured earnings-calendar source.
 ```
 
 ## 3. What Changed
@@ -72,13 +73,13 @@ recent_news:N
 
 where `N` is the number of recent news events found for that symbol.
 
-The daily report now shows:
+At PDB-4 time, the daily report showed:
 
 ```text
 Catalyst / News Flags
 ```
 
-The section includes source coverage and the latest headline for flagged symbols.
+After Phase 5C, the report section is `Catalyst / Event Flags`.
 
 ## 4. What This Does Not Claim
 
@@ -109,17 +110,35 @@ and adds a real "why might this be moving?" clue without expanding into a full a
 
 ## 6. Future Phase
 
+The Phase 5C implementation document is now:
+
+```text
+docs/phase_5c_structured_catalyst_source_spec.md
+```
+
+The Phase 5C source decision stayed free-source first:
+
+```text
+Alpaca News
+  -> existing recent-news context
+
+Alpha Vantage Earnings Calendar
+  -> upcoming earnings-date context if a free API key is provided
+
+SEC EDGAR submissions
+  -> recent filing-event context
+```
+
 Future catalyst/earnings expansion can add:
 
-- structured earnings calendar.
 - earnings result and guidance parsing.
 - analyst upgrades/downgrades.
-- SEC filings.
+- richer SEC filing interpretation.
 - FDA/regulatory events.
 - mergers/acquisitions.
 - headline classification and relevance scoring.
 
-Those should be handled as a later enrichment phase, not mixed into PDB-4.
+Those should be handled as later enrichment phases, not mixed into PDB-4 or the first Phase 5C source connection.
 
 ## 7. Done When
 
@@ -131,3 +150,10 @@ PDB-4 is done when:
 - the report no longer claims earnings calendar data exists. Complete.
 - earnings calendar remains explicitly not connected. Complete.
 - catalyst/news does not change scoring formulas. Complete.
+
+Later Phase 5C update:
+
+- Alpha Vantage Earnings Calendar is connected as upcoming earnings-date context.
+- SEC EDGAR submissions are connected as recent filing-event context.
+- The report section is now `Catalyst / Event Flags`.
+- Catalyst/event context still does not change scoring formulas.

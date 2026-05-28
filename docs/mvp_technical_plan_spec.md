@@ -930,9 +930,17 @@ Current implementation update:
 
 ```text
 recent_news:N
+earnings:YYYY-MM-DD
+filing:FORM
 ```
 
-is used when Alpaca News returns recent headlines for a current watchlist symbol. Structured earnings calendar data remains not connected.
+These labels are used when source-backed event context exists for a current watchlist symbol:
+
+- Alpaca News for recent headlines.
+- Alpha Vantage Earnings Calendar for upcoming earnings dates.
+- SEC EDGAR submissions for recent 8-K, 10-Q, and 10-K filing events.
+
+Event context remains explanation/review context only. It is not a stock score input.
 
 ## 11. Reports
 
@@ -959,7 +967,7 @@ Required sections:
 ## Top Stocks Worth Charting
 ## New Leaders
 ## High Relative Volume Names
-## Catalyst / News Flags
+## Catalyst / Event Flags
 ## Notes For Chart Review
 ```
 

@@ -1,7 +1,8 @@
 use std::collections::HashSet;
 
 use merryl::domain::models::{
-    IndustryScore, MacroObservation, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
+    IndustryScore, MacroObservation, MarketEvent, MarketEventMetadata, MarketRegimeScore,
+    SectorScore, StockScore,
 };
 use merryl::output::{DailyReportInput, daily_report_markdown};
 
@@ -46,15 +47,41 @@ fn daily_report_contains_documented_sections() {
         stock("NVDA", 1, 91.0, 2.2, "recent_news:1"),
         stock("AMD", 2, 84.0, 1.6, "pending_source"),
     ];
-    let events = vec![MarketEvent {
-        symbol: "NVDA".to_string(),
-        sector: Some("Technology".to_string()),
-        event_date: "2026-05-26".to_string(),
-        event_type: "news".to_string(),
-        headline: "NVDA announces new AI platform".to_string(),
-        source: "alpaca_news:benzinga".to_string(),
-        url: Some("https://example.com/nvda".to_string()),
-    }];
+    let events = vec![
+        MarketEvent {
+            symbol: "NVDA".to_string(),
+            sector: Some("Technology".to_string()),
+            event_date: "2026-05-26".to_string(),
+            event_type: "news".to_string(),
+            headline: "NVDA announces new AI platform".to_string(),
+            source: "alpaca_news:benzinga".to_string(),
+            url: Some("https://example.com/nvda".to_string()),
+            metadata: MarketEventMetadata::default(),
+        },
+        MarketEvent {
+            symbol: "NVDA".to_string(),
+            sector: Some("Technology".to_string()),
+            event_date: "2026-06-12".to_string(),
+            event_type: "earnings".to_string(),
+            headline: "Expected earnings for NVIDIA Corporation".to_string(),
+            source: "alpha_vantage:earnings_calendar".to_string(),
+            url: None,
+            metadata: MarketEventMetadata {
+                estimate: Some(5.25),
+                ..MarketEventMetadata::default()
+            },
+        },
+        MarketEvent {
+            symbol: "NVDA".to_string(),
+            sector: Some("Technology".to_string()),
+            event_date: "2026-05-25".to_string(),
+            event_type: "filing".to_string(),
+            headline: "8-K filed by NVIDIA Corporation".to_string(),
+            source: "sec_edgar:submissions".to_string(),
+            url: Some("https://www.sec.gov/Archives/test".to_string()),
+            metadata: MarketEventMetadata::default(),
+        },
+    ];
     let previous_watchlist = HashSet::from(["AMD".to_string()]);
     let macro_observations = [macro_observation(
         "VIXCLS",
@@ -82,7 +109,7 @@ fn daily_report_contains_documented_sections() {
         "## Top Stocks Worth Charting",
         "## New Leaders",
         "## High Relative Volume Names",
-        "## Catalyst / News Flags",
+        "## Catalyst / Event Flags",
         "## Notes For Chart Review",
     ] {
         assert!(report.contains(section), "missing section {section}");
@@ -95,9 +122,11 @@ fn daily_report_contains_documented_sections() {
             .contains("| VIXCLS | CBOE Volatility Index: VIX | Daily | 2026-05-26 | 1 | stored |")
     );
     assert!(report.contains("Sector ranking is a market-map and attention layer."));
-    assert!(report.contains("Recent news source: Alpaca News."));
+    assert!(report.contains("Event sources: Alpaca News, Alpha Vantage Earnings Calendar"));
     assert!(report.contains("- **NVDA** `recent_news:1`"));
     assert!(report.contains("NVDA announces new AI platform"));
+    assert!(report.contains("Earnings calendar 2026-06-12 estimate 5.25."));
+    assert!(report.contains("SEC filing 2026-05-25: 8-K filed by NVIDIA Corporation"));
     assert!(report.contains("| 1 | NVDA |"));
     assert!(report.contains("| 1 | Semiconductors | Technology | 88.0 | 5.00% | 12.00% |"));
 }

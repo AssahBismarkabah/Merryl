@@ -2,7 +2,7 @@
 
 Version: 0.2
 Date: 2026-05-28
-Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, and Phase 5A/B FRED macro ingestion foundation
+Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, Phase 5A/B FRED macro ingestion, and Phase 5C structured catalyst/event context
 
 ## Current Slice
 
@@ -14,10 +14,12 @@ Merryl daily run
   -> fetch real daily OHLCV data
   -> fetch real FRED macro series context
   -> score the valid historical market window
-  -> store macro observations, market regime, sector, industry, stock, and watchlist rows in SQLite
+  -> fetch recent Alpaca News, Alpha Vantage earnings calendar, and SEC EDGAR filing events for the current watchlist
+  -> store macro observations, event context, market regime, sector, industry, stock, and watchlist rows in SQLite
   -> explain Market Regime V1 with broad equity ETFs plus TLT, GLD, and USO context
   -> keep FRED macro data as context/provenance only until a separate scoring-validation checkpoint
   -> explain industry/theme strength with return, relative return, volume, breadth, and 20D-high components
+  -> label catalyst/event context as recent news, earnings date, filing event, or pending source
   -> write Markdown and CSV outputs for the latest/requested score date
 
 Merryl backtest run
@@ -35,6 +37,7 @@ Merryl doctor run
   -> verify required market symbols and sector maps exist
   -> verify required ETF price coverage and latest-date alignment
   -> verify FRED macro series coverage
+  -> verify Alpha Vantage key and SEC EDGAR source configuration
   -> verify historical score-date coverage
   -> verify latest regime, sector, industry, stock, and watchlist row coverage
 
@@ -54,7 +57,7 @@ Source code is grouped by responsibility:
 ```text
 src/config/      centralized constants, paths, env var names, defaults, scoring weights
 src/domain/      shared domain models
-src/data/        provider trait, Alpaca/FRED adapters, S&P 500 universe, sector ETF mapping
+src/data/        provider traits, Alpaca/FRED/Alpha Vantage/SEC adapters, S&P 500 universe, sector ETF mapping
 src/storage/     SQLite connection, schema migration, write repositories
 src/scoring/     indicators, sector scoring, industry scoring, stock scoring, market orchestration
 src/dashboard/   read-only dashboard DTOs, repositories, and local axum server
@@ -118,6 +121,31 @@ MERRYL_MACRO_LOOKBACK_DAYS=900
 ```
 
 FRED macro observations are stored in `macro_series` with provenance and coverage metadata. They are not part of the Market Regime V1 score yet.
+
+Current event/catalyst providers:
+
+```text
+Alpaca News
+Alpha Vantage Earnings Calendar
+SEC EDGAR submissions
+```
+
+Required environment variables:
+
+```text
+ALPHA_VANTAGE_API_KEY
+MERRYL_SEC_USER_AGENT=Merryl/0.1 your-email@example.com
+```
+
+Optional environment variables:
+
+```text
+ALPHA_VANTAGE_API_URL=https://www.alphavantage.co
+MERRYL_EARNINGS_CALENDAR_HORIZON=3month
+MERRYL_SEC_FILINGS_LOOKBACK_DAYS=14
+```
+
+Event rows are stored in `events` with source IDs, raw JSON, effective dates, fetched timestamps, quality status, and optional estimate/surprise fields. Catalyst/event context does not change any score formula.
 
 ## Commands
 
@@ -197,7 +225,7 @@ Top Industries Or Themes
 Top Stocks Worth Charting
 New Leaders
 High Relative Volume Names
-Catalyst / News Flags
+Catalyst / Event Flags
 Notes For Chart Review
 Why These Names
 ```
@@ -264,6 +292,12 @@ Catalyst and earnings source decision:
 docs/catalyst_earnings_source_spec.md
 ```
 
+Phase 5C structured catalyst source plan:
+
+```text
+docs/phase_5c_structured_catalyst_source_spec.md
+```
+
 Backtest scope clarity:
 
 ```text
@@ -321,7 +355,7 @@ Do not treat Markdown or CSV as the system-of-record.
 
 - Market regime scoring still uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, and USO. FRED macro series for volatility, rates, yield curve, inflation, employment, credit spread, dollar proxy, and liquidity context are stored, but they are not scoring inputs until a separate validation checkpoint.
 - The first valid score date in a fetched window has no prior rank-change baseline.
-- Recent news catalysts are connected through Alpaca News for the current top watchlist. Watchlist rows with recent news show `recent_news:N`. Structured earnings calendar data is not connected yet.
+- Event context is connected through Alpaca News, Alpha Vantage Earnings Calendar, and SEC EDGAR submissions for the current top watchlist. Watchlist rows can show `recent_news:N`, `earnings:YYYY-MM-DD`, `filing:FORM`, combined labels, or `pending_source`. This remains context only and is not a scoring input.
 - Sector ranking is useful as a market-map and attention layer, but PDB-2 labels it as map-only / not yet a proven forward-return predictor. PDB-3.5 removed the neutral rank-change placeholder from sector scoring. Current rank-change is stored and reported, but it is not a scoring component.
 - Industry scoring now uses transparent price, relative return, volume, breadth, and 20D-high components. Industry-specific validation is supportive, but it still does not include news/catalyst or industry ETF/fund-flow confirmation.
 - Backtesting validates score behavior, not trade profitability. Reports and stored metrics now include validation scope. It does not model transaction costs, slippage, taxes, position sizing, portfolio constraints, or portfolio P&L.
@@ -337,10 +371,12 @@ PDB-3.6 confirmed that the first-build boundaries are aligned with the source sp
 Current implementation priority:
 
 ```text
-Phase 5C structured earnings/catalyst source decision.
+Review Phase 5C source coverage quality, then decide the next validation-backed Phase 5 target.
 ```
 
 The first read-only dashboard/API slice from `docs/pre_dashboard_stability_backlog_spec.md` and `docs/phase_4_dashboard_api_spec.md` is implemented. Phase 4.1 dashboard stabilization is complete for the current pass. Phase 5 planning is recorded, and the first Phase 5A/B implementation is complete: FRED macro observations are fetched during the daily workflow, stored with provenance, counted in status, and checked by doctor/dashboard data health without changing scoring weights.
+
+The Phase 5C implementation is recorded in `docs/phase_5c_structured_catalyst_source_spec.md`. It keeps the no-paid-source constraint explicit: preserve Alpaca News, use Alpha Vantage Earnings Calendar only with a free API key, use SEC EDGAR submissions for filing events, and do not add Finnhub, Polygon/Massive, ETF Global, Cboe DataShop, options flow, fund flows, or scoring-weight changes in the first implementation.
 
 The stabilization plan is recorded in `docs/phase_4_dashboard_stabilization_spec.md`.
 

@@ -8,7 +8,9 @@ use reqwest::blocking::Client;
 use serde::Deserialize;
 
 use crate::config::{USER_AGENT, market_data};
-use crate::domain::models::{DailyPrice, IndustryMap, MarketEvent, SectorMap, Symbol};
+use crate::domain::models::{
+    DailyPrice, IndustryMap, MarketEvent, MarketEventMetadata, SectorMap, Symbol,
+};
 
 use super::provider::{CatalystEventProvider, DailyOhlcvProvider};
 use super::sector_map::sector_maps;
@@ -367,6 +369,21 @@ fn response_events(
             if !requested.contains(symbol.as_str()) {
                 continue;
             }
+            let metadata = MarketEventMetadata {
+                event_time: Some(article.created_at.clone()),
+                fetched_at: Some(Utc::now().to_rfc3339()),
+                raw_json: Some(
+                    serde_json::json!({
+                        "created_at": &article.created_at,
+                        "headline": &article.headline,
+                        "source": &article.source,
+                        "symbol": &symbol,
+                        "url": &article.url
+                    })
+                    .to_string(),
+                ),
+                ..MarketEventMetadata::default()
+            };
             events.push(MarketEvent {
                 symbol,
                 sector: None,
@@ -375,6 +392,7 @@ fn response_events(
                 headline: article.headline.clone(),
                 source: format!("{}:{}", market_data::NEWS_SOURCE_PREFIX, article.source),
                 url: article.url.clone(),
+                metadata,
             });
         }
     }

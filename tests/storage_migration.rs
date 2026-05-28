@@ -3,7 +3,8 @@ use rusqlite::Connection;
 use tempfile::tempdir;
 
 use merryl::domain::models::{
-    IndustryScore, MacroObservation, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
+    IndustryScore, MacroObservation, MarketEvent, MarketEventMetadata, MarketRegimeScore,
+    SectorScore, StockScore,
 };
 use merryl::storage::Database;
 
@@ -106,6 +107,7 @@ fn recent_news_events_replace_is_idempotent() -> Result<()> {
         headline: "NVDA announces new AI platform".to_string(),
         source: "alpaca_news:benzinga".to_string(),
         url: Some("https://example.com/nvda".to_string()),
+        metadata: MarketEventMetadata::default(),
     }];
 
     db.replace_recent_news_events("2026-05-20", "2026-05-27", &events)?;
@@ -116,6 +118,78 @@ fn recent_news_events_replace_is_idempotent() -> Result<()> {
     let count: i64 = conn.query_row("SELECT COUNT(*) FROM events", [], |row| row.get(0))?;
 
     assert_eq!(count, 1);
+
+    Ok(())
+}
+
+#[test]
+fn event_provenance_columns_migration_is_idempotent() -> Result<()> {
+    let dir = tempdir()?;
+    let db_path = dir.path().join("market.db");
+    let db = Database::open(&db_path)?;
+
+    db.migrate()?;
+    db.migrate()?;
+
+    let conn = Connection::open(db_path)?;
+    let mut stmt = conn.prepare("PRAGMA table_info(events)")?;
+    let columns = stmt
+        .query_map([], |row| row.get::<_, String>(1))?
+        .collect::<Result<Vec<_>, _>>()?;
+
+    for expected in [
+        "event_time",
+        "source_event_id",
+        "effective_date",
+        "processed_at",
+        "fetched_at",
+        "actual",
+        "estimate",
+        "surprise",
+        "fiscal_period",
+        "raw_json",
+        "quality_status",
+    ] {
+        assert!(
+            columns.iter().any(|column| column == expected),
+            "expected events column {expected}, got {columns:#?}"
+        );
+    }
+
+    let index_count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'idx_events_source_event_id'",
+        [],
+        |row| row.get(0),
+    )?;
+    assert_eq!(index_count, 1);
+
+    Ok(())
+}
+
+#[test]
+fn structured_event_upserts_are_idempotent() -> Result<()> {
+    let dir = tempdir()?;
+    let db_path = dir.path().join("market.db");
+    let mut db = Database::open(&db_path)?;
+    db.migrate()?;
+
+    let first = structured_event("2026-06-12", 2.14);
+    let second = structured_event("2026-06-12", 2.18);
+
+    db.upsert_structured_events(&[first])?;
+    db.upsert_structured_events(&[second])?;
+    drop(db);
+
+    let conn = Connection::open(db_path)?;
+    let count: i64 = conn.query_row("SELECT COUNT(*) FROM events", [], |row| row.get(0))?;
+    let estimate: f64 = conn.query_row(
+        "SELECT estimate FROM events WHERE source_event_id = 'alpha_vantage:earnings_calendar:MSFT:2026-06-12'",
+        [],
+        |row| row.get(0),
+    )?;
+
+    assert_eq!(count, 1);
+    assert_eq!(estimate, 2.18);
 
     Ok(())
 }
@@ -258,5 +332,24 @@ fn macro_observation(date: &str, value: f64) -> MacroObservation {
         realtime_end: date.to_string(),
         raw_json: format!(r#"{{"series_id":"VIXCLS","date":"{date}","value":"{value}"}}"#),
         quality_status: "ok".to_string(),
+    }
+}
+
+fn structured_event(date: &str, estimate: f64) -> MarketEvent {
+    MarketEvent {
+        symbol: "MSFT".to_string(),
+        sector: Some("Technology".to_string()),
+        event_date: date.to_string(),
+        event_type: "earnings".to_string(),
+        headline: "Expected earnings for Microsoft Corporation".to_string(),
+        source: "alpha_vantage:earnings_calendar".to_string(),
+        url: None,
+        metadata: MarketEventMetadata {
+            source_event_id: Some(format!("alpha_vantage:earnings_calendar:MSFT:{date}")),
+            effective_date: Some(date.to_string()),
+            estimate: Some(estimate),
+            raw_json: Some("{}".to_string()),
+            ..MarketEventMetadata::default()
+        },
     }
 }

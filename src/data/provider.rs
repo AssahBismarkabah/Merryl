@@ -20,6 +20,18 @@ pub trait CatalystEventProvider {
     ) -> Result<Vec<MarketEvent>>;
 }
 
+pub trait EarningsCalendarProvider {
+    fn upcoming_earnings_events(&self, symbols: &[String]) -> Result<Vec<MarketEvent>>;
+}
+
+pub trait FilingEventProvider {
+    fn recent_filing_events(
+        &self,
+        symbols: &[String],
+        end_date: NaiveDate,
+    ) -> Result<Vec<MarketEvent>>;
+}
+
 pub trait MacroSeriesProvider {
     fn macro_observations(&self, end_date: NaiveDate) -> Result<Vec<MacroObservation>>;
 }

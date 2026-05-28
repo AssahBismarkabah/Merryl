@@ -1,5 +1,7 @@
 use serde::Serialize;
 
+use crate::config::event_data;
+
 #[derive(Debug, Clone)]
 pub struct Symbol {
     pub symbol: String,
@@ -49,6 +51,40 @@ pub struct MarketEvent {
     pub headline: String,
     pub source: String,
     pub url: Option<String>,
+    pub metadata: MarketEventMetadata,
+}
+
+#[derive(Debug, Clone)]
+pub struct MarketEventMetadata {
+    pub event_time: Option<String>,
+    pub source_event_id: Option<String>,
+    pub effective_date: Option<String>,
+    pub processed_at: Option<String>,
+    pub fetched_at: Option<String>,
+    pub actual: Option<f64>,
+    pub estimate: Option<f64>,
+    pub surprise: Option<f64>,
+    pub fiscal_period: Option<String>,
+    pub raw_json: Option<String>,
+    pub quality_status: String,
+}
+
+impl Default for MarketEventMetadata {
+    fn default() -> Self {
+        Self {
+            event_time: None,
+            source_event_id: None,
+            effective_date: None,
+            processed_at: None,
+            fetched_at: None,
+            actual: None,
+            estimate: None,
+            surprise: None,
+            fiscal_period: None,
+            raw_json: None,
+            quality_status: event_data::QUALITY_OK.to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

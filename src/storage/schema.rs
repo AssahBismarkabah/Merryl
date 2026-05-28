@@ -93,10 +93,21 @@ CREATE TABLE IF NOT EXISTS events (
     symbol TEXT,
     sector TEXT,
     event_date TEXT NOT NULL,
+    event_time TEXT,
     event_type TEXT NOT NULL,
     headline TEXT NOT NULL,
     source TEXT NOT NULL,
     url TEXT,
+    source_event_id TEXT,
+    effective_date TEXT,
+    processed_at TEXT,
+    fetched_at TEXT,
+    actual REAL,
+    estimate REAL,
+    surprise REAL,
+    fiscal_period TEXT,
+    raw_json TEXT NOT NULL DEFAULT '{}',
+    quality_status TEXT NOT NULL DEFAULT 'ok',
     inserted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -227,6 +238,68 @@ impl Database {
             "macro_series",
             "quality_status",
             "ALTER TABLE macro_series ADD COLUMN quality_status TEXT NOT NULL DEFAULT 'ok'",
+        )?;
+        self.add_column_if_missing(
+            "events",
+            "event_time",
+            "ALTER TABLE events ADD COLUMN event_time TEXT",
+        )?;
+        self.add_column_if_missing(
+            "events",
+            "source_event_id",
+            "ALTER TABLE events ADD COLUMN source_event_id TEXT",
+        )?;
+        self.add_column_if_missing(
+            "events",
+            "effective_date",
+            "ALTER TABLE events ADD COLUMN effective_date TEXT",
+        )?;
+        self.add_column_if_missing(
+            "events",
+            "processed_at",
+            "ALTER TABLE events ADD COLUMN processed_at TEXT",
+        )?;
+        self.add_column_if_missing(
+            "events",
+            "fetched_at",
+            "ALTER TABLE events ADD COLUMN fetched_at TEXT",
+        )?;
+        self.add_column_if_missing(
+            "events",
+            "actual",
+            "ALTER TABLE events ADD COLUMN actual REAL",
+        )?;
+        self.add_column_if_missing(
+            "events",
+            "estimate",
+            "ALTER TABLE events ADD COLUMN estimate REAL",
+        )?;
+        self.add_column_if_missing(
+            "events",
+            "surprise",
+            "ALTER TABLE events ADD COLUMN surprise REAL",
+        )?;
+        self.add_column_if_missing(
+            "events",
+            "fiscal_period",
+            "ALTER TABLE events ADD COLUMN fiscal_period TEXT",
+        )?;
+        self.add_column_if_missing(
+            "events",
+            "raw_json",
+            "ALTER TABLE events ADD COLUMN raw_json TEXT NOT NULL DEFAULT '{}'",
+        )?;
+        self.add_column_if_missing(
+            "events",
+            "quality_status",
+            "ALTER TABLE events ADD COLUMN quality_status TEXT NOT NULL DEFAULT 'ok'",
+        )?;
+        self.conn.execute_batch(
+            r#"
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_events_source_event_id
+                ON events(source, source_event_id)
+                WHERE source_event_id IS NOT NULL AND source_event_id != '';
+            "#,
         )?;
         Ok(())
     }

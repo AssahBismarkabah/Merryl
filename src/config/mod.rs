@@ -172,6 +172,43 @@ pub mod macro_data {
     }
 }
 
+pub mod event_data {
+    use super::Duration;
+
+    pub const ALPHA_VANTAGE_API_KEY_ENV: &str = "ALPHA_VANTAGE_API_KEY";
+    pub const ALPHA_VANTAGE_API_URL_ENV: &str = "ALPHA_VANTAGE_API_URL";
+    pub const EARNINGS_CALENDAR_HORIZON_ENV: &str = "MERRYL_EARNINGS_CALENDAR_HORIZON";
+    pub const SEC_FILINGS_LOOKBACK_DAYS_ENV: &str = "MERRYL_SEC_FILINGS_LOOKBACK_DAYS";
+    pub const SEC_USER_AGENT_ENV: &str = "MERRYL_SEC_USER_AGENT";
+
+    pub const ALPHA_VANTAGE_API_URL: &str = "https://www.alphavantage.co";
+    pub const ALPHA_VANTAGE_QUERY_PATH: &str = "/query";
+    pub const ALPHA_VANTAGE_EARNINGS_CALENDAR_FUNCTION: &str = "EARNINGS_CALENDAR";
+    pub const DEFAULT_EARNINGS_CALENDAR_HORIZON: &str = "3month";
+    pub const ALPHA_VANTAGE_SOURCE_NAME: &str = "alpha_vantage:earnings_calendar";
+
+    pub const SEC_COMPANY_TICKERS_URL: &str = "https://www.sec.gov/files/company_tickers.json";
+    pub const SEC_SUBMISSIONS_URL: &str = "https://data.sec.gov/submissions";
+    pub const SEC_ARCHIVES_URL: &str = "https://www.sec.gov/Archives/edgar/data";
+    pub const SEC_SOURCE_NAME: &str = "sec_edgar:submissions";
+    pub const DEFAULT_SEC_FILINGS_LOOKBACK_DAYS: i64 = 14;
+    pub const SEC_REQUEST_SLEEP_MS: u64 = 120;
+
+    pub const EVENT_TYPE_EARNINGS: &str = "earnings";
+    pub const EVENT_TYPE_FILING: &str = "filing";
+    pub const QUALITY_OK: &str = "ok";
+    pub const HTTP_TIMEOUT_SECONDS: u64 = 45;
+    pub const SEC_TARGET_FORMS: &[&str] = &["8-K", "10-Q", "10-K"];
+
+    pub fn http_timeout() -> Duration {
+        Duration::from_secs(HTTP_TIMEOUT_SECONDS)
+    }
+
+    pub fn sec_request_sleep() -> Duration {
+        Duration::from_millis(SEC_REQUEST_SLEEP_MS)
+    }
+}
+
 pub mod universe {
     pub const SP500_WIKIPEDIA_URL: &str =
         "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies";
@@ -259,6 +296,9 @@ pub mod scoring {
     pub const HIGH_RELATIVE_VOLUME_REPORT_LIMIT: usize = 10;
     pub const CATALYST_PENDING_SOURCE: &str = "pending_source";
     pub const CATALYST_RECENT_NEWS_PREFIX: &str = "recent_news";
+    pub const CATALYST_EARNINGS_PREFIX: &str = "earnings";
+    pub const CATALYST_FILING_PREFIX: &str = "filing";
+    pub const CATALYST_SEPARATOR: &str = " | ";
     pub const BACKTEST_HORIZONS: &[usize] = &[1, 5, 10, 20, 60];
     pub const BACKTEST_DECILES: usize = 10;
 
@@ -317,7 +357,7 @@ pub mod output_text {
     pub const WATCHLIST_SECTION: &str = "Top Stocks Worth Charting";
     pub const NEW_LEADERS_SECTION: &str = "New Leaders";
     pub const HIGH_RELATIVE_VOLUME_SECTION: &str = "High Relative Volume Names";
-    pub const CATALYST_SECTION: &str = "Catalyst / News Flags";
+    pub const CATALYST_SECTION: &str = "Catalyst / Event Flags";
     pub const NOTES_SECTION: &str = "Notes For Chart Review";
     pub const EXPLANATION_SECTION: &str = "Why These Names";
     pub const SECTOR_TABLE_HEADER: &str = "| Rank | Sector | ETF | Score | 1D | 5D | 20D | 60D | Vs SPY | Rel Vol | Breadth 20D | Breadth 50D | Rank Change |";
@@ -341,9 +381,8 @@ pub mod output_text {
         "No prior dated watchlist exists yet; this run establishes the leadership baseline.";
     pub const NO_NEW_LEADERS: &str =
         "No new names entered the top watchlist compared with the prior dated run.";
-    pub const CATALYST_SOURCE_NOTE: &str =
-        "Recent news source: Alpaca News. Earnings calendar is not connected yet.";
-    pub const CATALYST_PENDING_NOTE: &str = "No recent Alpaca news found for the current top watchlist; earnings calendar remains not connected.";
+    pub const CATALYST_SOURCE_NOTE: &str = "Event sources: Alpaca News, Alpha Vantage Earnings Calendar, and SEC EDGAR submissions. These are context flags, not trade signals.";
+    pub const CATALYST_PENDING_NOTE: &str = "No news, earnings calendar, or recent SEC filing event found for the current top watchlist.";
     pub const CHART_REVIEW_NOTES: &[&str] = &[
         "Use this report to choose what to chart first, not to enter trades automatically.",
         "Confirm chart structure, invalidation level, liquidity, and earnings risk before any trade.",
