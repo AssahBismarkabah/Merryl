@@ -2,7 +2,7 @@
 
 Version: 0.2
 Date: 2026-05-27
-Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, and first Phase 4 dashboard/API slice
+Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, and Phase 5 data-source expansion planning
 
 ## Current Slice
 
@@ -257,6 +257,12 @@ Phase 4 dashboard/API plan:
 docs/phase_4_dashboard_api_spec.md
 ```
 
+Phase 5 data-source expansion plan:
+
+```text
+docs/phase_5_data_source_expansion_spec.md
+```
+
 Dashboard frontend:
 
 ```text
@@ -306,10 +312,10 @@ PDB-3.6 confirmed that the first-build boundaries are aligned with the source sp
 Current implementation priority:
 
 ```text
-Phase 4 dashboard stabilization and controlled improvement.
+Phase 5 data-source expansion planning.
 ```
 
-The first read-only dashboard/API slice from `docs/pre_dashboard_stability_backlog_spec.md` and `docs/phase_4_dashboard_api_spec.md` is implemented. The current work should keep the dashboard as a reader over existing SQLite results, improve clarity of the current views, keep known limitations visible, and avoid moving into Phase 5 data expansion until the current market-review surface is stable.
+The first read-only dashboard/API slice from `docs/pre_dashboard_stability_backlog_spec.md` and `docs/phase_4_dashboard_api_spec.md` is implemented. Phase 4.1 dashboard stabilization is complete for the current pass. Merryl should now move into Phase 5 planning by identifying each first-build proxy, deciding what concrete source-backed layer it should become, and choosing the next data-source implementation without changing the validated market-map flow.
 
 The stabilization plan is recorded in `docs/phase_4_dashboard_stabilization_spec.md`.
 
@@ -322,7 +328,9 @@ selected-date dashboard loading
   -> Overview/Regime/Validation ergonomics pass
 ```
 
-The dashboard must remain a reader over the controlled market-map chain first. Do not add alerts, portfolio simulation, intraday execution, options flow, or advanced data-provider expansion in the first dashboard slice.
+The Phase 5 planning reference is recorded in `docs/phase_5_data_source_expansion_spec.md`.
+
+The dashboard must remain a reader over the controlled market-map chain. Do not turn Merryl into a charting platform, trade execution surface, portfolio simulator, or alert engine while expanding data sources.
 
 ## Guardrails
 

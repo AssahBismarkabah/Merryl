@@ -504,10 +504,10 @@ Current acceptance status:
 
 - `merryl dashboard` is implemented.
 - Dashboard API reads from SQLite only.
-- Overview shows regime, top sectors, top industry, and top stock without duplicating the watchlist.
+- Overview shows the market map as one compact row per layer without duplicating the full watchlist or leadership tables.
 - Sidebar-selected views show sectors, industries, leadership, watchlist, and validation separately.
 - Data Health is surfaced from the same storage checks behind `doctor`.
-- Known limitations are visible in the UI.
+- Known limitations are visible through compact Validation status rows.
 - Tests cover API response shape and missing-data behavior.
 - Frontend production build is reproducible with `npm --prefix dashboard run build`.
 - No extra public CLI subcommands were added beyond `dashboard`.

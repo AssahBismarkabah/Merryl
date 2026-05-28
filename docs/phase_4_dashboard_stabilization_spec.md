@@ -1,8 +1,8 @@
 # Phase 4.1 Dashboard Stabilization Spec
 
-Version: 0.3
+Version: 0.4
 Date: 2026-05-28
-Status: In progress; selected-date review, dashboard data-fidelity tests, and daily review ergonomics are implemented
+Status: Phase 4.1 stabilization pass complete; selected-date review, dashboard data-fidelity tests, daily review ergonomics, and visual verification are implemented
 
 Related documents:
 
@@ -206,6 +206,13 @@ Done when:
 - Browser screenshots confirm overview, validation, and at least one dense table view.
 - `npm --prefix dashboard run build` passes.
 
+Current implementation status:
+
+- Production dashboard build passes.
+- Narrow browser checks covered Overview, Regime, and Validation.
+- Narrow checks found and fixed Validation table containment.
+- Desktop dashboard verification was reviewed and accepted visually.
+
 ### 5.5 Documentation Alignment
 
 Goal:
@@ -232,7 +239,7 @@ Recommended order:
 1. Add tests for selected-date dashboard loading and dashboard data fidelity. Complete.
 2. Add a compact scored-date selector using the existing dates API. Complete.
 3. Tighten overview/regime/validation wording and layout only where needed. Complete.
-4. Verify desktop and narrow browser layouts. In progress; production build and narrow browser checks for Overview/Regime/Validation are complete.
+4. Verify desktop and narrow browser layouts. Complete for this stabilization pass.
 5. Update status documentation after implementation. Complete for this pass.
 
 Do not start with new charts or new data sources.
@@ -265,4 +272,16 @@ The next milestone should be chosen deliberately from:
 - Universe expansion planning.
 - Regime/macro expansion planning.
 
-Do not assume Phase 5 starts automatically.
+Current selected next milestone:
+
+```text
+Phase 5 data-source expansion planning.
+```
+
+Planning reference:
+
+```text
+docs/phase_5_data_source_expansion_spec.md
+```
+
+Do not treat this as permission to add every advanced source at once. Phase 5 starts with proxy inventory, source selection, provenance, and validation gates.
