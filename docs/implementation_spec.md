@@ -311,6 +311,14 @@ Phase 4 dashboard stabilization and controlled improvement.
 
 The first read-only dashboard/API slice from `docs/pre_dashboard_stability_backlog_spec.md` and `docs/phase_4_dashboard_api_spec.md` is implemented. The current work should keep the dashboard as a reader over existing SQLite results, improve clarity of the current views, keep known limitations visible, and avoid moving into Phase 5 data expansion until the current market-review surface is stable.
 
+The stabilization plan is recorded in `docs/phase_4_dashboard_stabilization_spec.md`.
+
+First Phase 4.1 implementation slice:
+
+```text
+selected-date dashboard loading + dashboard data-fidelity tests + compact Market date selector
+```
+
 The dashboard must remain a reader over the controlled market-map chain first. Do not add alerts, portfolio simulation, intraday execution, options flow, or advanced data-provider expansion in the first dashboard slice.
 
 ## Guardrails

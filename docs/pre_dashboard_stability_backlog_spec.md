@@ -19,6 +19,7 @@ Related documents:
 - `docs/backtest_scope_clarity_spec.md`
 - `docs/data_quality_reproducibility_spec.md`
 - `docs/phase_4_dashboard_api_spec.md`
+- `docs/phase_4_dashboard_stabilization_spec.md`
 
 ## 1. Purpose
 

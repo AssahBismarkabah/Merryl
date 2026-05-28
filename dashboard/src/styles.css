@@ -208,7 +208,8 @@ h3 {
 
 .headerActions {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
   min-width: 0;
@@ -240,6 +241,48 @@ h3 {
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.dateControl {
+  display: grid;
+  min-width: 188px;
+  max-width: 190px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+
+.dateControl span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.dateControl select {
+  width: 100%;
+  margin-top: 2px;
+  padding: 0 20px 0 0;
+  border: 0;
+  color: var(--text-strong);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.dateControl:focus-within {
+  border-color: var(--accent);
+}
+
+.dateControl select:focus {
+  outline: 0;
+}
+
+.dateControl select:disabled {
+  color: var(--muted);
 }
 
 .eyebrow {
@@ -320,7 +363,7 @@ h3 {
 }
 
 .overviewChartBlock {
-  margin: 14px;
+  margin: 14px 10px;
   padding: 20px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -336,7 +379,7 @@ h3 {
 }
 
 .chartCanvasWrap {
-  height: 260px;
+  height: 292px;
 }
 
 .sectionTitle {
@@ -534,6 +577,12 @@ tbody tr:hover {
     width: 100%;
   }
 
+  .dateControl {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
   .iconButton {
     margin-top: 0;
   }
@@ -544,7 +593,7 @@ tbody tr:hover {
   }
 
   .overviewChartBlock {
-    margin: 14px;
+    margin: 14px 10px;
     padding: 20px;
   }
 }

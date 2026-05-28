@@ -12,6 +12,7 @@ Related documents:
 - `docs/implementation_spec.md`
 - `docs/pre_dashboard_stability_backlog_spec.md`
 - `docs/data_quality_reproducibility_spec.md`
+- `docs/phase_4_dashboard_stabilization_spec.md`
 
 ## 1. Purpose
 

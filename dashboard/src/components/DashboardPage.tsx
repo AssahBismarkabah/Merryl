@@ -16,11 +16,17 @@ import type { DashboardView } from "../view";
 
 export function DashboardPage({
   data,
+  dates,
   loading,
+  selectedDate,
+  onDateChange,
   onRefresh
 }: {
   data: DashboardSnapshot;
+  dates: string[];
   loading: boolean;
+  selectedDate: string;
+  onDateChange: (date: string) => void;
   onRefresh: () => void;
 }) {
   const [activeView, setActiveView] = useState<DashboardView>("overview");
@@ -41,6 +47,12 @@ export function DashboardPage({
           </div>
           <div className="headerActions">
             <HeaderChips data={data} />
+            <DateSelector
+              dates={dates}
+              disabled={loading}
+              selectedDate={selectedDate}
+              onChange={onDateChange}
+            />
             <button className="iconButton" type="button" onClick={onRefresh}>
               <RefreshCcw size={17} />
               <span>{loading ? "Loading" : "Refresh"}</span>
@@ -58,7 +70,6 @@ function HeaderChips({ data }: { data: DashboardSnapshot }) {
   const topSector = data.sectors[0];
   const topStock = data.stocks[0];
   const chips = [
-    ["Market date", data.score_date],
     ["Regime", data.regime ? `${data.regime.label} ${number(data.regime.score)}` : "Missing"],
     ["Sector", topSector ? `${topSector.sector} ${number(topSector.score)}` : "Missing"],
     ["Stock", topStock ? `${topStock.symbol} ${number(topStock.score)}` : "Missing"]
@@ -73,6 +84,36 @@ function HeaderChips({ data }: { data: DashboardSnapshot }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function DateSelector({
+  dates,
+  disabled,
+  selectedDate,
+  onChange
+}: {
+  dates: string[];
+  disabled: boolean;
+  selectedDate: string;
+  onChange: (date: string) => void;
+}) {
+  return (
+    <label className="dateControl">
+      <span>Market date</span>
+      <select
+        aria-label="Market date"
+        disabled={disabled || dates.length === 0}
+        value={selectedDate}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {dates.map((date) => (
+          <option key={date} value={date}>
+            {date}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
