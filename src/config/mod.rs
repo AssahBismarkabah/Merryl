@@ -368,6 +368,22 @@ pub mod scoring {
     pub const STOCK_LIQUIDITY_WEIGHT: f64 = 0.10;
 }
 
+pub mod classification {
+    pub const LEADING_SECTOR_MAX_RANK: usize = 3;
+    pub const LEADING_INDUSTRY_MAX_RANK: usize = 10;
+    pub const RELATIVE_STRENGTH_MIN_RETURN: f64 = 0.0;
+    pub const VOLUME_CONFIRMED_MIN_RELATIVE_VOLUME: f64 = 1.2;
+
+    pub const LABEL_SECTOR_LEADER: &str = "sector_leader";
+    pub const LABEL_INDUSTRY_LEADER: &str = "industry_leader";
+    pub const LABEL_RELATIVE_STRENGTH_LEADER: &str = "relative_strength_leader";
+    pub const LABEL_VOLUME_CONFIRMED: &str = "volume_confirmed";
+    pub const LABEL_NEW_LEADER: &str = "new_leader";
+    pub const LABEL_EVENT_CONTEXT: &str = "event_context";
+    pub const LABEL_EVENT_RISK: &str = "event_risk";
+    pub const LABEL_MACRO_CONFLICT_CONTEXT: &str = "macro_conflict_context";
+}
+
 pub mod quality {
     use super::scoring::RETURN_60D;
 
@@ -399,9 +415,9 @@ pub mod output_text {
     pub const INDUSTRY_TABLE_HEADER: &str = "| Rank | Industry / Theme | Sector | Score | 5D | 20D | 60D | Vs Sector | Vs SPY | Rel Vol | Breadth 20D | Breadth 50D | 20D Highs | Members |";
     pub const INDUSTRY_TABLE_ALIGNMENT: &str =
         "|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|";
-    pub const WATCHLIST_TABLE_HEADER: &str = "| Rank | Symbol | Name | Sector | Industry | Score | 20D | Rel Sector | Rel Vol | Trend | Catalyst |";
+    pub const WATCHLIST_TABLE_HEADER: &str = "| Rank | Symbol | Name | Sector | Industry | Score | 20D | Rel Sector | Rel Vol | Trend | Classification | Catalyst |";
     pub const WATCHLIST_TABLE_ALIGNMENT: &str =
-        "|---:|---|---|---|---|---:|---:|---:|---:|---|---|";
+        "|---:|---|---|---|---|---:|---:|---:|---:|---|---|---|";
     pub const MACRO_TABLE_HEADER: &str =
         "| Series | Name | Frequency | Latest | Observations | Status |";
     pub const MACRO_TABLE_ALIGNMENT: &str = "|---|---|---|---:|---:|---|";

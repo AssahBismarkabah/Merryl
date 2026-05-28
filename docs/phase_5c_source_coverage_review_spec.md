@@ -12,6 +12,7 @@ Related documents:
 - `docs/phase_5_data_source_expansion_spec.md`
 - `docs/phase_5b_macro_regime_validation_spec.md`
 - `docs/phase_5c_structured_catalyst_source_spec.md`
+- `docs/watchlist_convergence_review_spec.md`
 - `docs/implementation_spec.md`
 
 ## 1. Purpose
@@ -153,9 +154,9 @@ Rejected for now:
 - Do not add a new public CLI command for catalyst ingestion.
 - Do not present event flags as bullish or bearish trade signals.
 
-## 6. Next Phase 5 Target
+## 6. Follow-Up Targets
 
-The next validation-backed target should be macro/regime validation, not another paid or advanced source.
+The original next validation-backed target was macro/regime validation, not another paid or advanced source.
 
 Reason:
 
@@ -165,13 +166,14 @@ Reason:
 - The current largest source limitation remains Market Regime V1 using ETF price proxies only.
 - `docs/phase_5_data_source_expansion_spec.md` already requires a macro/regime validation checkpoint before any macro scoring change.
 
-Next target document:
+That target is now implemented and recorded in:
 
 ```text
 docs/phase_5b_macro_regime_validation_spec.md
+docs/market_regime_formula_decision_checkpoint_spec.md
 ```
 
-The next target should compare:
+The macro/regime follow-up compared:
 
 ```text
 ETF-proxy regime behavior
@@ -180,6 +182,14 @@ FRED-aware macro context over historical scored dates
 ```
 
 without changing scoring formulas first.
+
+Current next target:
+
+```text
+docs/watchlist_convergence_review_spec.md
+```
+
+The current target is to make the final watchlist classification/filtering surface explicit before adding another source or changing score formulas.
 
 ## 7. Non-Goals For The Next Step
 
@@ -203,4 +213,4 @@ This checkpoint is accepted because:
 - Latest scored top-25 and top-50 stocks had zero `pending_source` catalyst labels.
 - Event rows include `quality_status`.
 - The report labels event context as context, not a trade signal.
-- The next Phase 5 target is explicit and aligned with the source specs.
+- The next Phase 5 target is now superseded by `docs/watchlist_convergence_review_spec.md`, which keeps the work aligned with the final filtered watchlist.

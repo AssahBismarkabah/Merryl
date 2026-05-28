@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use crate::classification::WatchlistClassifier;
 use crate::config::{APP_NAME, event_data, macro_data, market_data, output_text, scoring};
 use crate::domain::models::{
     IndustryScore, MacroObservation, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
@@ -31,8 +32,8 @@ pub fn daily_report_markdown(input: &DailyReportInput<'_>) -> String {
         weak_sector_table(input.sector_scores),
         sector_rank_changes(input.sector_scores),
         top_industry_table(input.industry_scores),
-        watchlist_table(input.stock_scores),
-        new_leaders(input.stock_scores, input.previous_watchlist_symbols),
+        watchlist_table(input),
+        new_leaders(input),
         high_relative_volume_table(input.stock_scores),
         catalyst_flags(input.stock_scores, input.events),
         notes_for_chart_review(),
@@ -291,7 +292,14 @@ fn top_industry_table(industry_scores: &[IndustryScore]) -> String {
     rows.join("\n")
 }
 
-fn watchlist_table(stock_scores: &[StockScore]) -> String {
+fn watchlist_table(input: &DailyReportInput<'_>) -> String {
+    let classifier = WatchlistClassifier::new(
+        input.sector_scores,
+        input.industry_scores,
+        input.previous_watchlist_symbols,
+        &input.regime.label,
+        input.macro_context,
+    );
     let mut rows = vec![
         section_heading(output_text::WATCHLIST_SECTION),
         output_text::WATCHLIST_TABLE_HEADER.to_string(),
@@ -299,17 +307,18 @@ fn watchlist_table(stock_scores: &[StockScore]) -> String {
     ];
 
     rows.extend(
-        stock_scores
+        input
+            .stock_scores
             .iter()
             .take(scoring::REPORT_WATCHLIST_LIMIT)
-            .map(watchlist_row),
+            .map(|stock| watchlist_row(stock, &classifier.labels_for(stock))),
     );
     rows.join("\n")
 }
 
-fn watchlist_row(stock: &StockScore) -> String {
+fn watchlist_row(stock: &StockScore, labels: &[String]) -> String {
     format!(
-        "| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |",
+        "| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |",
         stock.rank,
         stock.symbol,
         stock.name,
@@ -320,15 +329,13 @@ fn watchlist_row(stock: &StockScore) -> String {
         pct(stock.relative_return_vs_sector),
         multiple(stock.relative_volume),
         stock.trend_state,
+        labels.join(", "),
         stock.catalyst_status,
     )
 }
 
-fn new_leaders(
-    stock_scores: &[StockScore],
-    previous_watchlist_symbols: &HashSet<String>,
-) -> String {
-    if previous_watchlist_symbols.is_empty() {
+fn new_leaders(input: &DailyReportInput<'_>) -> String {
+    if input.previous_watchlist_symbols.is_empty() {
         return format!(
             "{}\n{}",
             section_heading(output_text::NEW_LEADERS_SECTION),
@@ -336,10 +343,18 @@ fn new_leaders(
         );
     }
 
-    let new_names: Vec<&StockScore> = stock_scores
+    let classifier = WatchlistClassifier::new(
+        input.sector_scores,
+        input.industry_scores,
+        input.previous_watchlist_symbols,
+        &input.regime.label,
+        input.macro_context,
+    );
+    let new_names: Vec<&StockScore> = input
+        .stock_scores
         .iter()
         .take(scoring::REPORT_WATCHLIST_LIMIT)
-        .filter(|stock| !previous_watchlist_symbols.contains(&stock.symbol))
+        .filter(|stock| !input.previous_watchlist_symbols.contains(&stock.symbol))
         .collect();
 
     if new_names.is_empty() {
@@ -355,7 +370,11 @@ fn new_leaders(
         output_text::WATCHLIST_TABLE_HEADER.to_string(),
         output_text::WATCHLIST_TABLE_ALIGNMENT.to_string(),
     ];
-    rows.extend(new_names.into_iter().map(watchlist_row));
+    rows.extend(
+        new_names
+            .into_iter()
+            .map(|stock| watchlist_row(stock, &classifier.labels_for(stock))),
+    );
     rows.join("\n")
 }
 

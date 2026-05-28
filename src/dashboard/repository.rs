@@ -4,6 +4,7 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 use serde_json::Value;
 
+use crate::classification::WatchlistClassifier;
 use crate::config::{macro_data, scoring, universe};
 use crate::domain::models::{
     BacktestResultRow, IndustryScore, MarketRegimeScore, SectorScore, StockScore, WatchlistRow,
@@ -89,13 +90,29 @@ fn dashboard_for_date(db_path: &Path, db: &Database, date: &str) -> Result<Dashb
 
     let regime = db.market_regime_for_date(date)?;
     let macro_observations = db.macro_observations_through(date)?;
-    let regime = if let Some(regime) = regime {
-        let macro_context = macro_context_overlay(date, &regime.label, &macro_observations)?;
-        Some(regime_dto(regime, Some(macro_context)))
+    let macro_context = if let Some(regime) = regime.as_ref() {
+        Some(macro_context_overlay(
+            date,
+            &regime.label,
+            &macro_observations,
+        )?)
     } else {
         None
     };
     let watchlist = db.watchlist_for_date(date)?;
+    let previous_watchlist_symbols = db.latest_watchlist_symbols_before(date)?;
+    let classifier = WatchlistClassifier::new(
+        &sectors,
+        &industries,
+        &previous_watchlist_symbols,
+        regime
+            .as_ref()
+            .map(|regime| regime.label.as_str())
+            .unwrap_or_default(),
+        macro_context.as_ref(),
+    );
+    let watchlist = watchlist_dtos(&watchlist, &stocks, &classifier);
+    let regime = regime.map(|regime| regime_dto(regime, macro_context));
     let latest_backtest = db.latest_backtest_result()?;
     let data_quality = db.data_quality_snapshot(
         &universe::required_market_symbols(),
@@ -109,7 +126,7 @@ fn dashboard_for_date(db_path: &Path, db: &Database, date: &str) -> Result<Dashb
         regime,
         sectors: sectors.into_iter().map(sector_dto).collect(),
         industries: industries.into_iter().map(industry_dto).collect(),
-        watchlist: watchlist_dtos(&watchlist, &stocks),
+        watchlist,
         stocks: stocks.into_iter().map(stock_dto).collect(),
         latest_backtest: latest_backtest.map(backtest_dto).transpose()?,
         data_health: data_health_dto(db_path, data_quality),
@@ -224,7 +241,11 @@ fn stock_dto(stock: StockScore) -> StockDto {
     }
 }
 
-fn watchlist_dtos(watchlist: &[WatchlistRow], stocks: &[StockScore]) -> Vec<WatchlistDto> {
+fn watchlist_dtos(
+    watchlist: &[WatchlistRow],
+    stocks: &[StockScore],
+    classifier: &WatchlistClassifier<'_>,
+) -> Vec<WatchlistDto> {
     let stock_lookup: HashMap<&str, &StockScore> = stocks
         .iter()
         .map(|stock| (stock.symbol.as_str(), stock))
@@ -247,6 +268,9 @@ fn watchlist_dtos(watchlist: &[WatchlistRow], stocks: &[StockScore]) -> Vec<Watc
                 catalyst_status: stock
                     .map(|stock| stock.catalyst_status.clone())
                     .unwrap_or_else(|| scoring::CATALYST_PENDING_SOURCE.to_string()),
+                classifications: stock
+                    .map(|stock| classifier.labels_for(stock))
+                    .unwrap_or_default(),
                 reason: row.reason.clone(),
             }
         })

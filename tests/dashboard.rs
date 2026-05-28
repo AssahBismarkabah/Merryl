@@ -40,6 +40,16 @@ fn dashboard_snapshot_reads_latest_market_map() -> Result<()> {
     assert_eq!(snapshot.industries[0].industry, "Software");
     assert_eq!(snapshot.stocks[0].symbol, "MSFT");
     assert_eq!(snapshot.watchlist[0].name, "Microsoft Corporation");
+    assert!(
+        snapshot.watchlist[0]
+            .classifications
+            .contains(&"sector_leader".to_string())
+    );
+    assert!(
+        snapshot.watchlist[0]
+            .classifications
+            .contains(&"macro_conflict_context".to_string())
+    );
     assert!(snapshot.latest_backtest.is_none());
     assert_eq!(
         snapshot.data_health.latest_score_date.as_deref(),
@@ -101,6 +111,7 @@ async fn dashboard_api_returns_latest_snapshot_json() -> Result<()> {
         "rate_pressure"
     );
     assert_eq!(json["stocks"][0]["symbol"], "MSFT");
+    assert_eq!(json["watchlist"][0]["classifications"][0], "sector_leader");
 
     Ok(())
 }

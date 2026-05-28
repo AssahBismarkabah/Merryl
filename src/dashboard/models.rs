@@ -115,6 +115,7 @@ pub struct WatchlistDto {
     pub industry: String,
     pub score: f64,
     pub catalyst_status: String,
+    pub classifications: Vec<String>,
     pub reason: String,
 }
 

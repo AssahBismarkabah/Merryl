@@ -17,6 +17,7 @@ Related documents:
 - `docs/catalyst_earnings_source_spec.md`
 - `docs/phase_5c_structured_catalyst_source_spec.md`
 - `docs/phase_5c_source_coverage_review_spec.md`
+- `docs/watchlist_convergence_review_spec.md`
 - `docs/phase_4_dashboard_stabilization_spec.md`
 
 ## 1. Purpose
@@ -716,10 +717,10 @@ The coverage checkpoint accepted Phase 5C as source-backed context for the curre
 Current Phase 5 target:
 
 ```text
-Review the implemented macro overlay and Phase 5C catalyst coverage before considering any scoring formula change or paid source.
+Review the implemented final watchlist classification layer from `docs/watchlist_convergence_review_spec.md`.
 ```
 
-Do not move to paid ETF fund flows, options flow, intraday data, or universe expansion before a separate decision changes the order.
+Do not move to paid ETF fund flows, options flow, intraday data, universe expansion, or score-formula changes before the final classification/filtering output is reviewed.
 
 ## 8. Data Model Requirements
 

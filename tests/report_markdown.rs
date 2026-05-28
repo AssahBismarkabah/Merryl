@@ -132,6 +132,9 @@ fn daily_report_contains_documented_sections() {
     assert!(report.contains("they are not scoring inputs yet.\n\n| Series | Name | Frequency | Latest | Observations | Status |"));
     assert!(report.contains("Macro flags are as-of context only"));
     assert!(report.contains("rate_pressure"));
+    assert!(report.contains(
+        "sector_leader, industry_leader, relative_strength_leader, volume_confirmed, new_leader, event_context, macro_conflict_context"
+    ));
     assert!(
         report
             .contains("| VIXCLS | CBOE Volatility Index: VIX | Daily | 2026-05-26 | 1 | stored |")

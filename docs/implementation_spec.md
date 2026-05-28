@@ -325,6 +325,12 @@ Phase 5C source coverage review:
 docs/phase_5c_source_coverage_review_spec.md
 ```
 
+Watchlist convergence review:
+
+```text
+docs/watchlist_convergence_review_spec.md
+```
+
 Backtest scope clarity:
 
 ```text
@@ -398,7 +404,7 @@ PDB-3.6 confirmed that the first-build boundaries are aligned with the source sp
 Current implementation priority:
 
 ```text
-Review the implemented macro context overlay and Phase 5C catalyst coverage before any scoring formula change or paid source expansion.
+Review the implemented final watchlist classification layer from `docs/watchlist_convergence_review_spec.md`.
 ```
 
 The first read-only dashboard/API slice from `docs/pre_dashboard_stability_backlog_spec.md` and `docs/phase_4_dashboard_api_spec.md` is implemented. Phase 4.1 dashboard stabilization is complete for the current pass. Phase 5 planning is recorded, and the first Phase 5A/B implementation is complete: FRED macro observations are fetched during the daily workflow, stored with provenance, counted in status, and checked by doctor/dashboard data health without changing scoring weights.
@@ -406,6 +412,8 @@ The first read-only dashboard/API slice from `docs/pre_dashboard_stability_backl
 The Phase 5C implementation is recorded in `docs/phase_5c_structured_catalyst_source_spec.md`. It keeps the no-paid-source constraint explicit: preserve Alpaca News, use Alpha Vantage Earnings Calendar only with a free API key, use SEC EDGAR submissions for filing events, and do not add Finnhub, Polygon/Massive, ETF Global, Cboe DataShop, options flow, fund flows, or scoring-weight changes in the first implementation.
 
 The Phase 5C coverage checkpoint is recorded in `docs/phase_5c_source_coverage_review_spec.md`. It accepts Phase 5C as source-backed context for the current ranked stock surface, but it does not approve catalyst/event data as a score input.
+
+The watchlist convergence checkpoint is recorded in `docs/watchlist_convergence_review_spec.md`. It confirms the connected sources are converging toward the final filtered watchlist and implements explicit classification labels before any new provider, paid source, universe expansion, or scoring formula change.
 
 The Phase 5B macro/regime validation implementation is recorded in `docs/phase_5b_macro_regime_validation_spec.md`. It reuses `merryl run backtest --from YYYY-MM-DD --to YYYY-MM-DD`, writes macro/regime validation outputs, uses only stored SQLite data, and keeps Market Regime V1 scoring unchanged.
 

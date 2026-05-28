@@ -1,4 +1,5 @@
 pub mod backtest;
+pub mod classification;
 pub mod config;
 pub mod dashboard;
 pub mod data;
