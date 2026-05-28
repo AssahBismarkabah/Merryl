@@ -5,6 +5,7 @@ use merryl::domain::models::{
     SectorScore, StockScore,
 };
 use merryl::output::{DailyReportInput, daily_report_markdown};
+use merryl::validation::MacroContextOverlay;
 
 #[test]
 fn daily_report_contains_documented_sections() {
@@ -88,6 +89,15 @@ fn daily_report_contains_documented_sections() {
         "CBOE Volatility Index: VIX",
         "Daily",
     )];
+    let macro_context = MacroContextOverlay {
+        date: "2026-05-26".to_string(),
+        active_flags: vec!["rate_pressure".to_string()],
+        stale_series: Vec::new(),
+        covered_series_count: 1,
+        required_series_count: 11,
+        interpretation: "ETF-proxy regime is risk-on while macro stress flags are active."
+            .to_string(),
+    };
     let report = daily_report_markdown(&DailyReportInput {
         date: "2026-05-26",
         regime: &regime,
@@ -96,11 +106,13 @@ fn daily_report_contains_documented_sections() {
         stock_scores: &stocks,
         events: &events,
         macro_observations: &macro_observations,
+        macro_context: Some(&macro_context),
         previous_watchlist_symbols: &previous_watchlist,
     });
 
     for section in [
         "## Market Regime",
+        "## Macro Context Overlay",
         "## Macro Context Coverage",
         "## Top Sectors",
         "## Weak Sectors",
@@ -117,6 +129,9 @@ fn daily_report_contains_documented_sections() {
     assert!(report.contains("## New Leaders"));
     assert!(report.contains("Market regime score: daily ETF price proxies"));
     assert!(report.contains("FRED macro context is stored separately"));
+    assert!(report.contains("they are not scoring inputs yet.\n\n| Series | Name | Frequency | Latest | Observations | Status |"));
+    assert!(report.contains("Macro flags are as-of context only"));
+    assert!(report.contains("rate_pressure"));
     assert!(
         report
             .contains("| VIXCLS | CBOE Volatility Index: VIX | Daily | 2026-05-26 | 1 | stored |")

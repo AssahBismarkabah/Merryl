@@ -27,8 +27,19 @@ pub struct RegimeDto {
     pub tlt_return_20d: f64,
     pub gld_return_20d: f64,
     pub uso_return_20d: f64,
+    pub macro_context: Option<MacroContextDto>,
     pub components: Value,
     pub explanation: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MacroContextDto {
+    pub date: String,
+    pub active_flags: Vec<String>,
+    pub stale_series: Vec<String>,
+    pub covered_series_count: usize,
+    pub required_series_count: usize,
+    pub interpretation: String,
 }
 
 #[derive(Debug, Clone, Serialize)]

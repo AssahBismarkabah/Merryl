@@ -4,6 +4,7 @@ use crate::config::{APP_NAME, event_data, macro_data, market_data, output_text, 
 use crate::domain::models::{
     IndustryScore, MacroObservation, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
 };
+use crate::validation::MacroContextOverlay;
 
 use super::formatting::{multiple, pct, score};
 
@@ -15,6 +16,7 @@ pub struct DailyReportInput<'a> {
     pub stock_scores: &'a [StockScore],
     pub events: &'a [MarketEvent],
     pub macro_observations: &'a [MacroObservation],
+    pub macro_context: Option<&'a MacroContextOverlay>,
     pub previous_watchlist_symbols: &'a HashSet<String>,
 }
 
@@ -22,6 +24,7 @@ pub fn daily_report_markdown(input: &DailyReportInput<'_>) -> String {
     [
         report_header(input.date),
         market_regime(input.regime),
+        macro_context_overlay(input.macro_context),
         macro_context_coverage(input.macro_observations),
         sector_map_note(),
         top_sector_table(input.sector_scores),
@@ -60,6 +63,39 @@ fn market_regime(regime: &MarketRegimeScore) -> String {
     .join("\n\n")
 }
 
+fn macro_context_overlay(macro_context: Option<&MacroContextOverlay>) -> String {
+    let Some(context) = macro_context else {
+        return [
+            section_heading("Macro Context Overlay"),
+            "Macro context overlay unavailable for this report date.".to_string(),
+        ]
+        .join("\n\n");
+    };
+
+    let flags = if context.active_flags.is_empty() {
+        "none".to_string()
+    } else {
+        context.active_flags.join(", ")
+    };
+    let stale = if context.stale_series.is_empty() {
+        "none".to_string()
+    } else {
+        context.stale_series.join(", ")
+    };
+
+    [
+        section_heading("Macro Context Overlay"),
+        "Macro flags are as-of context only. They are not Market Regime V1 score inputs."
+            .to_string(),
+        format!(
+            "As-of {}: `{}` active macro flag(s). Coverage: {}/{} required series. Stale series: `{}`.",
+            context.date, flags, context.covered_series_count, context.required_series_count, stale
+        ),
+        context.interpretation.clone(),
+    ]
+    .join("\n\n")
+}
+
 fn sector_map_note() -> String {
     output_text::SECTOR_MAP_NOTE.to_string()
 }
@@ -71,6 +107,7 @@ fn macro_context_coverage(macro_observations: &[MacroObservation]) -> String {
     let mut rows = vec![
         section_heading(output_text::MACRO_CONTEXT_SECTION),
         output_text::MACRO_CONTEXT_NOTE.to_string(),
+        String::new(),
         output_text::MACRO_TABLE_HEADER.to_string(),
         output_text::MACRO_TABLE_ALIGNMENT.to_string(),
     ];

@@ -10,6 +10,7 @@ Related documents:
 - `docs/mvp_technical_plan_spec.md`
 - `docs/phase_0_decisions_spec.md`
 - `docs/market_regime_v1_spec.md`
+- `docs/market_regime_formula_decision_checkpoint_spec.md`
 - `docs/phase_5_data_source_expansion_spec.md`
 - `docs/phase_5c_source_coverage_review_spec.md`
 - `docs/implementation_spec.md`
@@ -288,4 +289,12 @@ FRED macro context is now validated as available and useful for review,
 but it is still not approved as a Market Regime V1 score input.
 ```
 
-The next decision is whether the validation result justifies a separate Market Regime formula decision document and a fresh backtest comparison.
+The next formula-change decision still requires a separate fresh comparison backtest.
+
+Decision recorded:
+
+```text
+docs/market_regime_formula_decision_checkpoint_spec.md
+```
+
+The decision keeps Market Regime V1 scoring unchanged. The accepted non-scoring macro context overlay is implemented in the daily report and dashboard API.

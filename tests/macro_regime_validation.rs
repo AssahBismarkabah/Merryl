@@ -5,7 +5,9 @@ use anyhow::Result;
 use merryl::config::macro_data;
 use merryl::domain::models::{MacroObservation, MarketRegimeScore, SectorScore};
 use merryl::output::write_macro_regime_validation_outputs;
-use merryl::validation::{MacroRegimeValidationInput, run_macro_regime_validation};
+use merryl::validation::{
+    MacroRegimeValidationInput, macro_context_overlay, run_macro_regime_validation,
+};
 
 #[test]
 fn macro_regime_validation_uses_as_of_context_and_flags_disagreements() -> Result<()> {
@@ -79,6 +81,52 @@ fn macro_regime_validation_does_not_use_future_macro_observations() -> Result<()
         0
     );
     assert_eq!(metrics.risk_on_with_stress_count, 0);
+
+    Ok(())
+}
+
+#[test]
+fn macro_context_overlay_does_not_use_future_macro_observations() -> Result<()> {
+    let mut macro_observations = observations_for_date(
+        "2026-01-02",
+        &[
+            ("VIXCLS", 15.0),
+            ("DGS10", 4.0),
+            ("DGS2", 3.5),
+            ("T10Y2Y", 0.5),
+            ("DFF", 4.0),
+            ("CPIAUCSL", 300.0),
+            ("UNRATE", 4.0),
+            ("PAYEMS", 100.0),
+            ("BAMLC0A0CM", 1.0),
+            ("DTWEXBGS", 100.0),
+            ("WALCL", 7000.0),
+        ],
+    );
+    macro_observations.extend(observations_for_date(
+        "2026-01-03",
+        &[
+            ("VIXCLS", 80.0),
+            ("DGS10", 5.0),
+            ("DGS2", 4.0),
+            ("T10Y2Y", -1.0),
+            ("DFF", 4.0),
+            ("CPIAUCSL", 400.0),
+            ("UNRATE", 8.0),
+            ("PAYEMS", 90.0),
+            ("BAMLC0A0CM", 5.0),
+            ("DTWEXBGS", 120.0),
+            ("WALCL", 6000.0),
+        ],
+    ));
+
+    let context = macro_context_overlay("2026-01-02", "risk_on", &macro_observations)?;
+
+    assert!(context.active_flags.is_empty());
+    assert_eq!(
+        context.interpretation,
+        "No active macro stress flags for this report date."
+    );
 
     Ok(())
 }

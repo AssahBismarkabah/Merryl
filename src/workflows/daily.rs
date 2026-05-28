@@ -15,6 +15,7 @@ use crate::scoring::{
     apply_catalyst_status, latest_date, previous_watchlist_symbols_for_date, score_market_history,
 };
 use crate::storage::{Database, default_db_path};
+use crate::validation::macro_context_overlay;
 
 use super::date_args::parse_date_arg;
 
@@ -130,6 +131,8 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
     let scores = score_history
         .last()
         .context("score history unexpectedly became empty")?;
+    let macro_context =
+        macro_context_overlay(&report_date, &scores.regime.label, &macro_observations)?;
 
     let outputs = write_daily_outputs(DailyReportInput {
         date: &report_date,
@@ -139,6 +142,7 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         stock_scores: &scores.stocks,
         events: &all_events,
         macro_observations: &macro_observations,
+        macro_context: Some(&macro_context),
         previous_watchlist_symbols: &previous_watchlist_symbols,
     })?;
 

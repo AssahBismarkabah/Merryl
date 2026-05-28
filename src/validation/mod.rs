@@ -94,6 +94,16 @@ pub struct MacroRegimeDisagreement {
     pub reason: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct MacroContextOverlay {
+    pub date: String,
+    pub active_flags: Vec<String>,
+    pub stale_series: Vec<String>,
+    pub covered_series_count: usize,
+    pub required_series_count: usize,
+    pub interpretation: String,
+}
+
 #[derive(Debug, Clone)]
 struct MacroDateSnapshot {
     date: String,
@@ -168,6 +178,36 @@ pub fn run_macro_regime_validation(
         flag_summaries,
         sector_leadership,
         disagreement_examples,
+    })
+}
+
+pub fn macro_context_overlay(
+    date: &str,
+    regime_label: &str,
+    macro_observations: &[MacroObservation],
+) -> Result<MacroContextOverlay> {
+    let observations_by_series = observations_by_series(macro_observations);
+    let score_date = parse_date(date)?;
+    let mut series = HashMap::new();
+    for (series_id, _, frequency, _) in macro_data::MACRO_SERIES {
+        if let Some(snapshot) =
+            as_of_series_snapshot(series_id, frequency, score_date, &observations_by_series)?
+        {
+            series.insert((*series_id).to_string(), snapshot);
+        }
+    }
+
+    let active_flags = active_flags(&series);
+    let stale_series = stale_series(&series);
+    let interpretation = overlay_interpretation(regime_label, &active_flags);
+
+    Ok(MacroContextOverlay {
+        date: date.to_string(),
+        active_flags,
+        stale_series,
+        covered_series_count: series.len(),
+        required_series_count: macro_data::MACRO_SERIES.len(),
+        interpretation,
     })
 }
 
@@ -492,6 +532,28 @@ fn disagreement_examples(snapshots: &[MacroDateSnapshot]) -> Vec<MacroRegimeDisa
         })
         .take(10)
         .collect()
+}
+
+fn stale_series(series: &HashMap<String, MacroSeriesSnapshot>) -> Vec<String> {
+    let mut stale: Vec<String> = series
+        .iter()
+        .filter(|(_, snapshot)| snapshot.stale)
+        .map(|(series, _)| series.clone())
+        .collect();
+    stale.sort();
+    stale
+}
+
+fn overlay_interpretation(regime_label: &str, active_flags: &[String]) -> String {
+    if is_risk_on(regime_label) && !active_flags.is_empty() {
+        "ETF-proxy regime is risk-on while macro stress flags are active.".to_string()
+    } else if is_defensive_or_mixed(regime_label) && active_flags.is_empty() {
+        "ETF-proxy regime is defensive or mixed while no macro stress flags are active.".to_string()
+    } else if active_flags.is_empty() {
+        "No active macro stress flags for this report date.".to_string()
+    } else {
+        "Macro stress flags are active; treat them as context, not score inputs.".to_string()
+    }
 }
 
 fn all_flags() -> [&'static str; 8] {

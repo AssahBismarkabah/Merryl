@@ -17,7 +17,7 @@ Merryl daily run
   -> fetch recent Alpaca News, Alpha Vantage earnings calendar, and SEC EDGAR filing events for the current watchlist
   -> store macro observations, event context, market regime, sector, industry, stock, and watchlist rows in SQLite
   -> explain Market Regime V1 with broad equity ETFs plus TLT, GLD, and USO context
-  -> keep FRED macro data as context/provenance only until a separate scoring-validation checkpoint
+  -> show as-of FRED macro flags as a non-scoring context overlay beside Market Regime V1
   -> explain industry/theme strength with return, relative return, volume, breadth, and 20D-high components
   -> label catalyst/event context as recent news, earnings date, filing event, or pending source
   -> write Markdown and CSV outputs for the latest/requested score date
@@ -218,6 +218,7 @@ Current report sections:
 
 ```text
 Market Regime
+Macro Context Overlay
 Macro Context Coverage
 Top Sectors
 Weak Sectors
@@ -286,6 +287,12 @@ Market regime V1 review:
 
 ```text
 docs/market_regime_v1_spec.md
+```
+
+Market regime formula decision checkpoint:
+
+```text
+docs/market_regime_formula_decision_checkpoint_spec.md
 ```
 
 Phase 5B macro regime validation:
@@ -391,7 +398,7 @@ PDB-3.6 confirmed that the first-build boundaries are aligned with the source sp
 Current implementation priority:
 
 ```text
-Review the Phase 5B macro/regime validation result, then decide whether a Market Regime V1 formula decision document is warranted before any scoring change.
+Review the implemented macro context overlay and Phase 5C catalyst coverage before any scoring formula change or paid source expansion.
 ```
 
 The first read-only dashboard/API slice from `docs/pre_dashboard_stability_backlog_spec.md` and `docs/phase_4_dashboard_api_spec.md` is implemented. Phase 4.1 dashboard stabilization is complete for the current pass. Phase 5 planning is recorded, and the first Phase 5A/B implementation is complete: FRED macro observations are fetched during the daily workflow, stored with provenance, counted in status, and checked by doctor/dashboard data health without changing scoring weights.
@@ -401,6 +408,8 @@ The Phase 5C implementation is recorded in `docs/phase_5c_structured_catalyst_so
 The Phase 5C coverage checkpoint is recorded in `docs/phase_5c_source_coverage_review_spec.md`. It accepts Phase 5C as source-backed context for the current ranked stock surface, but it does not approve catalyst/event data as a score input.
 
 The Phase 5B macro/regime validation implementation is recorded in `docs/phase_5b_macro_regime_validation_spec.md`. It reuses `merryl run backtest --from YYYY-MM-DD --to YYYY-MM-DD`, writes macro/regime validation outputs, uses only stored SQLite data, and keeps Market Regime V1 scoring unchanged.
+
+The Market Regime formula decision checkpoint is recorded in `docs/market_regime_formula_decision_checkpoint_spec.md`. It rejects an immediate scoring change, implements a non-scoring macro context overlay in the daily report and dashboard API, and requires a separate fresh comparison before macro data can alter Market Regime V1 scoring.
 
 The stabilization plan is recorded in `docs/phase_4_dashboard_stabilization_spec.md`.
 

@@ -5,8 +5,11 @@ use serde_json::Value;
 use tempfile::tempdir;
 use tower::ServiceExt;
 
+use merryl::config::macro_data;
 use merryl::dashboard::{load_dashboard_for_date, load_latest_dashboard, router};
-use merryl::domain::models::{IndustryScore, MarketRegimeScore, SectorScore, StockScore, Symbol};
+use merryl::domain::models::{
+    IndustryScore, MacroObservation, MarketRegimeScore, SectorScore, StockScore, Symbol,
+};
 use merryl::storage::Database;
 
 #[test]
@@ -23,6 +26,16 @@ fn dashboard_snapshot_reads_latest_market_map() -> Result<()> {
     assert_eq!(regime.tlt_return_20d, 0.01);
     assert_eq!(regime.gld_return_20d, 0.02);
     assert_eq!(regime.uso_return_20d, -0.03);
+    let macro_context = regime.macro_context.expect("macro context");
+    assert_eq!(macro_context.date, "2026-05-27");
+    assert_eq!(
+        macro_context.active_flags,
+        vec!["rate_pressure".to_string()]
+    );
+    assert_eq!(
+        macro_context.covered_series_count,
+        macro_data::MACRO_SERIES.len()
+    );
     assert_eq!(snapshot.sectors.len(), 1);
     assert_eq!(snapshot.industries[0].industry, "Software");
     assert_eq!(snapshot.stocks[0].symbol, "MSFT");
@@ -82,6 +95,11 @@ async fn dashboard_api_returns_latest_snapshot_json() -> Result<()> {
     assert_eq!(json["regime"]["tlt_return_20d"], 0.01);
     assert_eq!(json["regime"]["gld_return_20d"], 0.02);
     assert_eq!(json["regime"]["uso_return_20d"], -0.03);
+    assert_eq!(json["regime"]["macro_context"]["date"], "2026-05-27");
+    assert_eq!(
+        json["regime"]["macro_context"]["active_flags"][0],
+        "rate_pressure"
+    );
     assert_eq!(json["stocks"][0]["symbol"], "MSFT");
 
     Ok(())
@@ -177,6 +195,7 @@ fn seed_dashboard_fixture(db_path: &std::path::Path) -> Result<()> {
         symbol("MSFT", "Microsoft Corporation", "stock"),
         symbol("AMGN", "Amgen Inc.", "stock"),
     ])?;
+    db.upsert_macro_observations(&macro_observations())?;
 
     for date in ["2026-05-20", "2026-05-27"] {
         db.replace_market_regime(&market_regime_score(date))?;
@@ -187,6 +206,71 @@ fn seed_dashboard_fixture(db_path: &std::path::Path) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn macro_observations() -> Vec<MacroObservation> {
+    [
+        observations_for_date(
+            "2026-05-20",
+            &[
+                ("VIXCLS", 15.0),
+                ("DGS10", 4.0),
+                ("DGS2", 3.5),
+                ("T10Y2Y", 0.5),
+                ("DFF", 4.0),
+                ("CPIAUCSL", 300.0),
+                ("UNRATE", 4.0),
+                ("PAYEMS", 100.0),
+                ("BAMLC0A0CM", 1.0),
+                ("DTWEXBGS", 100.0),
+                ("WALCL", 7000.0),
+            ],
+        ),
+        observations_for_date(
+            "2026-05-27",
+            &[
+                ("VIXCLS", 16.0),
+                ("DGS10", 4.5),
+                ("DGS2", 3.4),
+                ("T10Y2Y", 0.4),
+                ("DFF", 4.0),
+                ("CPIAUCSL", 300.0),
+                ("UNRATE", 4.0),
+                ("PAYEMS", 100.0),
+                ("BAMLC0A0CM", 1.0),
+                ("DTWEXBGS", 100.0),
+                ("WALCL", 7000.0),
+            ],
+        ),
+    ]
+    .concat()
+}
+
+fn observations_for_date(date: &str, values: &[(&str, f64)]) -> Vec<MacroObservation> {
+    values
+        .iter()
+        .map(|(series, value)| macro_observation(series, date, *value))
+        .collect()
+}
+
+fn macro_observation(series: &str, date: &str, value: f64) -> MacroObservation {
+    let (_, series_name, frequency, units) = macro_data::MACRO_SERIES
+        .iter()
+        .find(|(candidate, _, _, _)| *candidate == series)
+        .expect("known macro series");
+    MacroObservation {
+        series: series.to_string(),
+        series_name: (*series_name).to_string(),
+        date: date.to_string(),
+        value,
+        source: format!("fred:{series}"),
+        frequency: (*frequency).to_string(),
+        units: (*units).to_string(),
+        realtime_start: date.to_string(),
+        realtime_end: date.to_string(),
+        raw_json: "{}".to_string(),
+        quality_status: "ok".to_string(),
+    }
 }
 
 fn symbol(ticker: &str, name: &str, asset_type: &str) -> Symbol {

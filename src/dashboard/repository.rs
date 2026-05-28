@@ -9,10 +9,12 @@ use crate::domain::models::{
     BacktestResultRow, IndustryScore, MarketRegimeScore, SectorScore, StockScore, WatchlistRow,
 };
 use crate::storage::{DataQualitySnapshot, Database};
+use crate::validation::{MacroContextOverlay, macro_context_overlay};
 
 use super::models::{
     BacktestDto, DashboardSnapshot, DataHealthDto, HealthDto, IndustryDto, LatestScoreCoverageDto,
-    MacroCoverageDto, PriceCoverageDto, RegimeDto, SectorDto, StockDto, WatchlistDto,
+    MacroContextDto, MacroCoverageDto, PriceCoverageDto, RegimeDto, SectorDto, StockDto,
+    WatchlistDto,
 };
 
 const RUN_DAILY_MESSAGE: &str =
@@ -86,6 +88,13 @@ fn dashboard_for_date(db_path: &Path, db: &Database, date: &str) -> Result<Dashb
     }
 
     let regime = db.market_regime_for_date(date)?;
+    let macro_observations = db.macro_observations_through(date)?;
+    let regime = if let Some(regime) = regime {
+        let macro_context = macro_context_overlay(date, &regime.label, &macro_observations)?;
+        Some(regime_dto(regime, Some(macro_context)))
+    } else {
+        None
+    };
     let watchlist = db.watchlist_for_date(date)?;
     let latest_backtest = db.latest_backtest_result()?;
     let data_quality = db.data_quality_snapshot(
@@ -97,7 +106,7 @@ fn dashboard_for_date(db_path: &Path, db: &Database, date: &str) -> Result<Dashb
     Ok(DashboardSnapshot {
         score_date: date.to_string(),
         limitations: limitations(),
-        regime: regime.map(regime_dto),
+        regime,
         sectors: sectors.into_iter().map(sector_dto).collect(),
         industries: industries.into_iter().map(industry_dto).collect(),
         watchlist: watchlist_dtos(&watchlist, &stocks),
@@ -118,7 +127,7 @@ fn limitations() -> Vec<String> {
     ]
 }
 
-fn regime_dto(regime: MarketRegimeScore) -> RegimeDto {
+fn regime_dto(regime: MarketRegimeScore, macro_context: Option<MacroContextOverlay>) -> RegimeDto {
     let components = json_value(&regime.components_json);
     RegimeDto {
         date: regime.date,
@@ -132,8 +141,20 @@ fn regime_dto(regime: MarketRegimeScore) -> RegimeDto {
         tlt_return_20d: json_f64(&components, "tlt_return_20d"),
         gld_return_20d: json_f64(&components, "gld_return_20d"),
         uso_return_20d: json_f64(&components, "uso_return_20d"),
+        macro_context: macro_context.map(macro_context_dto),
         components,
         explanation: regime.explanation,
+    }
+}
+
+fn macro_context_dto(context: MacroContextOverlay) -> MacroContextDto {
+    MacroContextDto {
+        date: context.date,
+        active_flags: context.active_flags,
+        stale_series: context.stale_series,
+        covered_series_count: context.covered_series_count,
+        required_series_count: context.required_series_count,
+        interpretation: context.interpretation,
     }
 }
 

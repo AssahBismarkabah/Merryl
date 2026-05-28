@@ -2,7 +2,7 @@
 
 Version: 0.2
 Date: 2026-05-28
-Status: Phase 5A/B macro ingestion and macro/regime validation complete; FRED remains context/provenance only
+Status: Phase 5A/B macro ingestion, macro/regime validation, non-scoring macro context overlay, and Phase 5C structured catalyst context complete
 
 Related documents:
 
@@ -12,6 +12,7 @@ Related documents:
 - `docs/implementation_spec.md`
 - `docs/sector_score_review_spec.md`
 - `docs/market_regime_v1_spec.md`
+- `docs/market_regime_formula_decision_checkpoint_spec.md`
 - `docs/phase_5b_macro_regime_validation_spec.md`
 - `docs/catalyst_earnings_source_spec.md`
 - `docs/phase_5c_structured_catalyst_source_spec.md`
@@ -154,7 +155,7 @@ Initial target series:
 Implementation stance:
 
 - Store macro series first.
-- Display/label macro coverage in dashboard/report.
+- Display/label macro coverage and as-of macro context flags in dashboard/report.
 - Do not change Market Regime V1 scoring until data freshness and historical coverage are validated.
 
 Acceptance before scoring changes:
@@ -648,6 +649,26 @@ Live validation summary:
 
 This validates macro context availability and disagreement visibility. It does not approve macro data as a scoring input.
 
+Formula decision checkpoint:
+
+```text
+docs/market_regime_formula_decision_checkpoint_spec.md
+```
+
+Decision:
+
+```text
+Do not change Market Regime V1 scoring yet.
+The non-scoring macro context overlay is implemented.
+```
+
+Implemented overlay result:
+
+- Daily reports include a `Macro Context Overlay` section beside Market Regime.
+- Dashboard API exposes the same context under `regime.macro_context`.
+- Macro flags are explicitly labeled as context, not Market Regime V1 score inputs.
+- Market Regime V1 score and label remain ETF-proxy based and unchanged.
+
 ## 7.2 Implemented Phase 5C Boundary
 
 Planning and first implementation recorded on 2026-05-28:
@@ -692,13 +713,13 @@ docs/phase_5c_source_coverage_review_spec.md
 
 The coverage checkpoint accepted Phase 5C as source-backed context for the current ranked stock surface. It did not approve any catalyst/event scoring-weight change.
 
-Next Phase 5 target:
+Current Phase 5 target:
 
 ```text
-Review the Phase 5B macro/regime validation result before changing Market Regime V1 scoring.
+Review the implemented macro overlay and Phase 5C catalyst coverage before considering any scoring formula change or paid source.
 ```
 
-Do not move to paid ETF fund flows, options flow, intraday data, or universe expansion before this macro/regime validation checkpoint unless a separate decision changes the order.
+Do not move to paid ETF fund flows, options flow, intraday data, or universe expansion before a separate decision changes the order.
 
 ## 8. Data Model Requirements
 
