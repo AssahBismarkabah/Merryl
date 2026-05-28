@@ -20,6 +20,8 @@ pub mod paths {
     pub const EXPORTS_DIR: &str = "exports";
     pub const BACKTEST_REPORTS_DIR: &str = "reports/backtests";
     pub const BACKTEST_EXPORTS_DIR: &str = "exports/backtests";
+    pub const VALIDATION_REPORTS_DIR: &str = "reports/validations";
+    pub const VALIDATION_EXPORTS_DIR: &str = "exports/validations";
     pub const DAILY_WORKFLOW_CONFIG: &str = "config/workflows/daily.toml";
 
     pub const REQUIRED_DOCS: &[&str] = &[
@@ -53,6 +55,18 @@ pub mod paths {
     pub fn backtest_summary_export_path(from_date: &str, to_date: &str) -> PathBuf {
         PathBuf::from(format!(
             "{BACKTEST_EXPORTS_DIR}/{from_date}_{to_date}_backtest_summary.csv"
+        ))
+    }
+
+    pub fn macro_regime_validation_report_path(from_date: &str, to_date: &str) -> PathBuf {
+        PathBuf::from(format!(
+            "{VALIDATION_REPORTS_DIR}/{from_date}_{to_date}_macro_regime_validation.md"
+        ))
+    }
+
+    pub fn macro_regime_validation_export_path(from_date: &str, to_date: &str) -> PathBuf {
+        PathBuf::from(format!(
+            "{VALIDATION_EXPORTS_DIR}/{from_date}_{to_date}_macro_regime_validation.csv"
         ))
     }
 }
@@ -170,6 +184,25 @@ pub mod macro_data {
     pub fn http_timeout() -> Duration {
         Duration::from_secs(HTTP_TIMEOUT_SECONDS)
     }
+}
+
+pub mod macro_validation {
+    pub const DAILY_MAX_AGE_DAYS: i64 = 7;
+    pub const WEEKLY_MAX_AGE_DAYS: i64 = 14;
+    pub const MONTHLY_MAX_AGE_DAYS: i64 = 45;
+    pub const VIX_STRESS_THRESHOLD: f64 = 20.0;
+    pub const YIELD_CURVE_INVERSION_THRESHOLD: f64 = 0.0;
+    pub const CPI_YOY_PRESSURE_THRESHOLD: f64 = 0.03;
+    pub const TREND_MIN_DELTA: f64 = 0.0;
+
+    pub const FLAG_VOLATILITY_STRESS: &str = "volatility_stress";
+    pub const FLAG_RATE_PRESSURE: &str = "rate_pressure";
+    pub const FLAG_YIELD_CURVE_INVERSION: &str = "yield_curve_inversion";
+    pub const FLAG_CREDIT_STRESS: &str = "credit_stress";
+    pub const FLAG_DOLLAR_PRESSURE: &str = "dollar_pressure";
+    pub const FLAG_LIQUIDITY_TIGHTENING: &str = "liquidity_tightening";
+    pub const FLAG_INFLATION_PRESSURE: &str = "inflation_pressure";
+    pub const FLAG_LABOR_COOLING: &str = "labor_cooling";
 }
 
 pub mod event_data {

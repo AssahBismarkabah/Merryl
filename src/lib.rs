@@ -6,4 +6,5 @@ pub mod domain;
 pub mod output;
 pub mod scoring;
 pub mod storage;
+pub mod validation;
 pub mod workflows;

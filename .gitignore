@@ -20,8 +20,10 @@
 /data/*.db-wal
 /reports/*.md
 /reports/backtests/
+/reports/validations/
 /exports/*.csv
 /exports/backtests/
+/exports/validations/
 
 # Dashboard frontend generated files
 /dashboard/node_modules/

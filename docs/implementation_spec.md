@@ -2,7 +2,7 @@
 
 Version: 0.2
 Date: 2026-05-28
-Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, Phase 5A/B FRED macro ingestion, and Phase 5C structured catalyst/event context
+Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, Phase 5A/B FRED macro ingestion and macro/regime validation, and Phase 5C structured catalyst/event context
 
 ## Current Slice
 
@@ -28,9 +28,10 @@ Merryl backtest run
   -> group daily sector and stock scores into deciles
   -> group sector forward behavior by same-day sector component decile
   -> group stock forward behavior by same-day industry/theme score decile
+  -> validate ETF-proxy regime labels against stored FRED macro context using as-of macro snapshots
   -> summarize hit rate, average return, median return, and relative return behavior
   -> store metrics in backtest_results
-  -> write Markdown and CSV backtest summaries
+  -> write Markdown and CSV backtest summaries plus macro/regime validation outputs
 
 Merryl doctor run
   -> verify required docs, workflow config, credentials, and generated paths
@@ -244,6 +245,13 @@ reports/backtests/YYYY-MM-DD_YYYY-MM-DD_backtest_report.md
 exports/backtests/YYYY-MM-DD_YYYY-MM-DD_backtest_summary.csv
 ```
 
+Macro/regime validation outputs:
+
+```text
+reports/validations/YYYY-MM-DD_YYYY-MM-DD_macro_regime_validation.md
+exports/validations/YYYY-MM-DD_YYYY-MM-DD_macro_regime_validation.csv
+```
+
 Phase 3 validation:
 
 ```text
@@ -280,6 +288,12 @@ Market regime V1 review:
 docs/market_regime_v1_spec.md
 ```
 
+Phase 5B macro regime validation:
+
+```text
+docs/phase_5b_macro_regime_validation_spec.md
+```
+
 Spec completeness gate:
 
 ```text
@@ -296,6 +310,12 @@ Phase 5C structured catalyst source plan:
 
 ```text
 docs/phase_5c_structured_catalyst_source_spec.md
+```
+
+Phase 5C source coverage review:
+
+```text
+docs/phase_5c_source_coverage_review_spec.md
 ```
 
 Backtest scope clarity:
@@ -353,7 +373,7 @@ Do not treat Markdown or CSV as the system-of-record.
 
 ## Current Limitations
 
-- Market regime scoring still uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, and USO. FRED macro series for volatility, rates, yield curve, inflation, employment, credit spread, dollar proxy, and liquidity context are stored, but they are not scoring inputs until a separate validation checkpoint.
+- Market regime scoring still uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, and USO. FRED macro series for volatility, rates, yield curve, inflation, employment, credit spread, dollar proxy, and liquidity context are stored and now have a macro/regime validation report, but they are not scoring inputs until a separate formula decision and fresh comparison backtest.
 - The first valid score date in a fetched window has no prior rank-change baseline.
 - Event context is connected through Alpaca News, Alpha Vantage Earnings Calendar, and SEC EDGAR submissions for the current top watchlist. Watchlist rows can show `recent_news:N`, `earnings:YYYY-MM-DD`, `filing:FORM`, combined labels, or `pending_source`. This remains context only and is not a scoring input.
 - Sector ranking is useful as a market-map and attention layer, but PDB-2 labels it as map-only / not yet a proven forward-return predictor. PDB-3.5 removed the neutral rank-change placeholder from sector scoring. Current rank-change is stored and reported, but it is not a scoring component.
@@ -371,12 +391,16 @@ PDB-3.6 confirmed that the first-build boundaries are aligned with the source sp
 Current implementation priority:
 
 ```text
-Review Phase 5C source coverage quality, then decide the next validation-backed Phase 5 target.
+Review the Phase 5B macro/regime validation result, then decide whether a Market Regime V1 formula decision document is warranted before any scoring change.
 ```
 
 The first read-only dashboard/API slice from `docs/pre_dashboard_stability_backlog_spec.md` and `docs/phase_4_dashboard_api_spec.md` is implemented. Phase 4.1 dashboard stabilization is complete for the current pass. Phase 5 planning is recorded, and the first Phase 5A/B implementation is complete: FRED macro observations are fetched during the daily workflow, stored with provenance, counted in status, and checked by doctor/dashboard data health without changing scoring weights.
 
 The Phase 5C implementation is recorded in `docs/phase_5c_structured_catalyst_source_spec.md`. It keeps the no-paid-source constraint explicit: preserve Alpaca News, use Alpha Vantage Earnings Calendar only with a free API key, use SEC EDGAR submissions for filing events, and do not add Finnhub, Polygon/Massive, ETF Global, Cboe DataShop, options flow, fund flows, or scoring-weight changes in the first implementation.
+
+The Phase 5C coverage checkpoint is recorded in `docs/phase_5c_source_coverage_review_spec.md`. It accepts Phase 5C as source-backed context for the current ranked stock surface, but it does not approve catalyst/event data as a score input.
+
+The Phase 5B macro/regime validation implementation is recorded in `docs/phase_5b_macro_regime_validation_spec.md`. It reuses `merryl run backtest --from YYYY-MM-DD --to YYYY-MM-DD`, writes macro/regime validation outputs, uses only stored SQLite data, and keeps Market Regime V1 scoring unchanged.
 
 The stabilization plan is recorded in `docs/phase_4_dashboard_stabilization_spec.md`.
 

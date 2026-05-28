@@ -6,8 +6,9 @@ use serde_json::json;
 
 use crate::backtest::{BacktestInput, run_backtest_analysis};
 use crate::config::scoring;
-use crate::output::write_backtest_outputs;
+use crate::output::{write_backtest_outputs, write_macro_regime_validation_outputs};
 use crate::storage::{Database, default_db_path};
+use crate::validation::{MacroRegimeValidationInput, run_macro_regime_validation};
 
 #[derive(Debug)]
 pub struct RunBacktestResult {
@@ -16,10 +17,13 @@ pub struct RunBacktestResult {
     pub database: PathBuf,
     pub report: PathBuf,
     pub summary_export: PathBuf,
+    pub macro_regime_validation_report: PathBuf,
+    pub macro_regime_validation_export: PathBuf,
     pub sector_observation_count: usize,
     pub sector_component_observation_count: usize,
     pub stock_observation_count: usize,
     pub industry_stock_observation_count: usize,
+    pub macro_regime_snapshot_count: usize,
     pub backtest_result_id: i64,
 }
 
@@ -45,12 +49,16 @@ pub fn run_backtest(from_arg: &str, to_arg: &str) -> Result<RunBacktestResult> {
     let stock_scores = db.stock_scores_between(&from_date, &to_date)?;
     let sector_maps = db.sector_maps()?;
     let prices = db.daily_prices()?;
+    let regime_scores = db.market_regimes_between(&from_date, &to_date)?;
+    let macro_observations = db.macro_observations_through(&to_date)?;
 
     if sector_scores.is_empty()
         || industry_scores.is_empty()
         || stock_scores.is_empty()
         || sector_maps.is_empty()
         || prices.is_empty()
+        || regime_scores.is_empty()
+        || macro_observations.is_empty()
     {
         bail!("missing historical scores or prices; run `merryl run daily --date latest` first");
     }
@@ -58,17 +66,26 @@ pub fn run_backtest(from_arg: &str, to_arg: &str) -> Result<RunBacktestResult> {
     let metrics = run_backtest_analysis(BacktestInput {
         from_date: from_date.clone(),
         to_date: to_date.clone(),
-        sector_scores,
+        sector_scores: sector_scores.clone(),
         industry_scores,
         stock_scores,
         sector_maps,
         prices,
     })?;
+    let macro_regime_metrics = run_macro_regime_validation(MacroRegimeValidationInput {
+        from_date: from_date.clone(),
+        to_date: to_date.clone(),
+        regime_scores,
+        sector_scores,
+        macro_observations,
+    })?;
     let outputs = write_backtest_outputs(&metrics)?;
+    let macro_regime_outputs = write_macro_regime_validation_outputs(&macro_regime_metrics)?;
     let run_name = format!("backtest_{}_{}", from_date, to_date);
     let config_json = json!({
         "horizons": scoring::BACKTEST_HORIZONS,
         "validation_scope": &metrics.validation_scope,
+        "macro_regime_validation_scope": &macro_regime_metrics.validation_scope,
         "relative_return_policy": {
             "sector": "sector ETF forward return minus SPY forward return",
             "sector_components": "sector ETF forward return grouped by same-day sector component decile",
@@ -90,10 +107,13 @@ pub fn run_backtest(from_arg: &str, to_arg: &str) -> Result<RunBacktestResult> {
         database: db_path,
         report: outputs.report,
         summary_export: outputs.summary_export,
+        macro_regime_validation_report: macro_regime_outputs.report,
+        macro_regime_validation_export: macro_regime_outputs.summary_export,
         sector_observation_count: metrics.sector_observation_count,
         sector_component_observation_count: metrics.sector_component_observation_count,
         stock_observation_count: metrics.stock_observation_count,
         industry_stock_observation_count: metrics.industry_stock_observation_count,
+        macro_regime_snapshot_count: macro_regime_metrics.macro_snapshot_count,
         backtest_result_id,
     })
 }

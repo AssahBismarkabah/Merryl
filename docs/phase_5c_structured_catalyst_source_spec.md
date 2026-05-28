@@ -10,6 +10,7 @@ Related documents:
 - `docs/mvp_technical_plan_spec.md`
 - `docs/phase_0_decisions_spec.md`
 - `docs/phase_5_data_source_expansion_spec.md`
+- `docs/phase_5c_source_coverage_review_spec.md`
 - `docs/catalyst_earnings_source_spec.md`
 - `docs/implementation_spec.md`
 
@@ -454,6 +455,14 @@ cargo run -- status
 ```
 
 `doctor` now reports the source status directly and does not expose API-key values.
+
+Post-implementation coverage review:
+
+```text
+docs/phase_5c_source_coverage_review_spec.md
+```
+
+The coverage review accepted Phase 5C as a source-backed event-context layer for the current scored stock surface. It did not approve any catalyst/event scoring-weight change.
 
 ## 13. Acceptance Criteria
 

@@ -4,8 +4,8 @@ use anyhow::Result;
 use rusqlite::{OptionalExtension, params};
 
 use crate::domain::models::{
-    BacktestResultRow, DailyPrice, IndustryScore, IndustryScoreSnapshot, MarketRegimeScore,
-    SectorMap, SectorScore, StockScore, WatchlistRow,
+    BacktestResultRow, DailyPrice, IndustryScore, IndustryScoreSnapshot, MacroObservation,
+    MarketRegimeScore, SectorMap, SectorScore, StockScore, WatchlistRow,
 };
 
 use super::sqlite::Database;
@@ -56,6 +56,39 @@ impl Database {
             )
             .optional()
             .map_err(Into::into)
+    }
+
+    pub fn market_regimes_between(
+        &self,
+        from_date: &str,
+        to_date: &str,
+    ) -> Result<Vec<MarketRegimeScore>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT date, label, score, spy_return_20d, spy_return_60d,
+                   qqq_relative_return_vs_spy, iwm_relative_return_vs_spy,
+                   dia_relative_return_vs_spy, components_json, explanation
+            FROM market_regime_scores
+            WHERE date BETWEEN ?1 AND ?2
+            ORDER BY date
+            "#,
+        )?;
+        let rows = stmt.query_map(params![from_date, to_date], |row| {
+            Ok(MarketRegimeScore {
+                date: row.get(0)?,
+                label: row.get(1)?,
+                score: row.get(2)?,
+                spy_return_20d: row.get(3)?,
+                spy_return_60d: row.get(4)?,
+                qqq_relative_return_vs_spy: row.get(5)?,
+                iwm_relative_return_vs_spy: row.get(6)?,
+                dia_relative_return_vs_spy: row.get(7)?,
+                components_json: row.get(8)?,
+                explanation: row.get(9)?,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
     pub fn sector_scores_for_date(&self, date: &str) -> Result<Vec<SectorScore>> {
@@ -331,6 +364,35 @@ impl Database {
                 adjusted_close: row.get(6)?,
                 volume: row.get(7)?,
                 source: row.get(8)?,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn macro_observations_through(&self, to_date: &str) -> Result<Vec<MacroObservation>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT series, series_name, date, value, source, frequency, units,
+                   realtime_start, realtime_end, raw_json, quality_status
+            FROM macro_series
+            WHERE date <= ?1
+            ORDER BY series, date
+            "#,
+        )?;
+        let rows = stmt.query_map(params![to_date], |row| {
+            Ok(MacroObservation {
+                series: row.get(0)?,
+                series_name: row.get(1)?,
+                date: row.get(2)?,
+                value: row.get(3)?,
+                source: row.get(4)?,
+                frequency: row.get(5)?,
+                units: row.get(6)?,
+                realtime_start: row.get(7)?,
+                realtime_end: row.get(8)?,
+                raw_json: row.get(9)?,
+                quality_status: row.get(10)?,
             })
         })?;
 

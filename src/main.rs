@@ -74,6 +74,14 @@ fn main() -> Result<()> {
                 println!("database: {}", result.database.display());
                 println!("report: {}", result.report.display());
                 println!("summary export: {}", result.summary_export.display());
+                println!(
+                    "macro regime validation report: {}",
+                    result.macro_regime_validation_report.display()
+                );
+                println!(
+                    "macro regime validation export: {}",
+                    result.macro_regime_validation_export.display()
+                );
                 println!("sector observations: {}", result.sector_observation_count);
                 println!(
                     "sector component observations: {}",
@@ -83,6 +91,10 @@ fn main() -> Result<()> {
                 println!(
                     "industry validation observations: {}",
                     result.industry_stock_observation_count
+                );
+                println!(
+                    "macro regime snapshots: {}",
+                    result.macro_regime_snapshot_count
                 );
                 println!("backtest result id: {}", result.backtest_result_id);
             }

@@ -1,8 +1,8 @@
 # Phase 5 Data Source Expansion Spec
 
-Version: 0.1
+Version: 0.2
 Date: 2026-05-28
-Status: Phase 5A/B first implementation complete; FRED macro ingestion is connected as context/provenance only
+Status: Phase 5A/B macro ingestion and macro/regime validation complete; FRED remains context/provenance only
 
 Related documents:
 
@@ -12,8 +12,10 @@ Related documents:
 - `docs/implementation_spec.md`
 - `docs/sector_score_review_spec.md`
 - `docs/market_regime_v1_spec.md`
+- `docs/phase_5b_macro_regime_validation_spec.md`
 - `docs/catalyst_earnings_source_spec.md`
 - `docs/phase_5c_structured_catalyst_source_spec.md`
+- `docs/phase_5c_source_coverage_review_spec.md`
 - `docs/phase_4_dashboard_stabilization_spec.md`
 
 ## 1. Purpose
@@ -614,8 +616,37 @@ What this does not change:
 Next checkpoint before any macro scoring change:
 
 ```text
-Create a regime/macro validation document that compares ETF-proxy regime behavior with FRED-aware context over historical scored dates.
+docs/phase_5b_macro_regime_validation_spec.md
 ```
+
+This checkpoint must compare ETF-proxy regime behavior with FRED-aware context over historical scored dates before any Market Regime V1 scoring change.
+
+Implemented macro/regime validation on 2026-05-28:
+
+- Reused `merryl run backtest --from YYYY-MM-DD --to YYYY-MM-DD`.
+- Added no new public CLI command.
+- Read stored `market_regime_scores`, `sector_scores`, and `macro_series` rows from SQLite.
+- Built as-of macro snapshots using only observations on or before each score date.
+- Wrote validation outputs under `reports/validations/` and `exports/validations/`.
+- Kept Market Regime V1 score weights unchanged.
+
+Live validation output:
+
+```text
+reports/validations/2025-07-01_2026-05-28_macro_regime_validation.md
+exports/validations/2025-07-01_2026-05-28_macro_regime_validation.csv
+```
+
+Live validation summary:
+
+| Metric | Value |
+|---|---:|
+| Macro regime snapshots | 229 |
+| Complete macro snapshots | 229 |
+| Missing macro snapshots | 0 |
+| Risk-on dates with active macro stress flags | 103 |
+
+This validates macro context availability and disagreement visibility. It does not approve macro data as a scoring input.
 
 ## 7.2 Implemented Phase 5C Boundary
 
@@ -652,6 +683,22 @@ Current live-data note:
 ```text
 Phase 5C live daily verification passed on 2026-05-28 with Alpaca News, Alpha Vantage Earnings Calendar, and SEC EDGAR submissions connected.
 ```
+
+Post-implementation coverage checkpoint:
+
+```text
+docs/phase_5c_source_coverage_review_spec.md
+```
+
+The coverage checkpoint accepted Phase 5C as source-backed context for the current ranked stock surface. It did not approve any catalyst/event scoring-weight change.
+
+Next Phase 5 target:
+
+```text
+Review the Phase 5B macro/regime validation result before changing Market Regime V1 scoring.
+```
+
+Do not move to paid ETF fund flows, options flow, intraday data, or universe expansion before this macro/regime validation checkpoint unless a separate decision changes the order.
 
 ## 8. Data Model Requirements
 
