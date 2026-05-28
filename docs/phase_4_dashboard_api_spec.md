@@ -263,9 +263,9 @@ Must show:
 - SPY 20D and 60D return
 - QQQ, IWM, DIA relative return vs SPY
 - TLT, GLD, USO context values from components JSON
-- coverage limits for missing VIX, DXY, US10Y, macro calendar, credit, and liquidity data in the Validation view
+- coverage limits for macro context that is stored but not part of regime scoring yet
 
-Implemented: regime label, score, SPY 20D/60D, QQQ/IWM/DIA relative return vs SPY, TLT/GLD/USO 20D context, and coverage limits in Validation.
+Implemented: regime label, score, SPY 20D/60D, QQQ/IWM/DIA relative return vs SPY, TLT/GLD/USO 20D context, and FRED macro coverage in Validation.
 
 ### 9.3 Sector Rotation
 

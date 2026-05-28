@@ -1,8 +1,8 @@
 # Market Regime V1 Review
 
 Version: 0.2
-Date: 2026-05-27  
-Status: PDB-3 complete; ETF-proxy regime coverage is explicitly documented
+Date: 2026-05-28
+Status: PDB-3 complete; ETF-proxy score remains, Phase 5 FRED macro context is stored separately
 
 Related documents:
 
@@ -33,8 +33,9 @@ Keep Market Regime V1.
 Decision:
 
 ```text
-Market regime coverage uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, and USO.
-It does not yet include VIX, DXY, US10Y, macro calendar, credit, or liquidity data.
+Market regime score uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, and USO.
+FRED macro series are stored separately as context/provenance after Phase 5A/B.
+FRED macro series are not yet scoring inputs.
 It is not a trading signal.
 It should help frame the top-down map before sector, industry/theme, and stock review.
 ```
@@ -61,7 +62,7 @@ context_label
 The daily report now says:
 
 ```text
-Market regime coverage: daily ETF price proxies SPY, QQQ, IWM, DIA, TLT, GLD, and USO. Not yet included: VIX, DXY, US10Y, macro calendar, credit, or liquidity data.
+Market regime score: daily ETF price proxies SPY, QQQ, IWM, DIA, TLT, GLD, and USO. FRED macro context is stored separately and is not part of scoring yet.
 ```
 
 ## 4. What Did Not Change
@@ -83,7 +84,7 @@ Reason:
 Changing regime weights before validation would be blind formula tuning.
 ```
 
-The new TLT, GLD, and USO values add context and report transparency first. They do not yet overhaul the score.
+The TLT, GLD, and USO values add ETF-proxy context and report transparency. FRED macro observations add source-backed context/provenance after Phase 5A/B. Neither layer has changed the core score weights.
 
 ## 5. Current Context Labels
 
@@ -95,21 +96,17 @@ Rate-sensitive: TLT is down at least 3% over 20 trading bars.
 Defensive bid: SPY is down over 20 trading bars while TLT is up at least 3%.
 ```
 
-These labels are intentionally simple. They are not a substitute for macro data, rate series, central-bank policy analysis, or inflation data.
+These labels are intentionally simple. They are not a substitute for a validated macro regime model.
 
 ## 6. Still Deferred
 
-These remain outside current regime coverage:
+These remain outside current regime scoring:
 
-- VIX trend.
-- DXY trend.
-- US10Y / yield curve data.
+- FRED volatility, rates, yield curve, dollar proxy, credit, inflation, employment, and liquidity series.
 - Macro calendar and economic surprises.
-- Liquidity indicators.
-- Credit spreads.
 - Full macro regime classification.
 
-They can be added later when a real source is chosen.
+The real FRED source is now connected for context. It still requires a separate validation checkpoint before any score change.
 
 ## 7. Product Stance
 
@@ -133,6 +130,17 @@ date: 2026-05-27
 historical score dates: 228
 ```
 
+Phase 5A/B verification run:
+
+```text
+cargo run -- run daily --date latest
+date: 2026-05-28
+macro observations: 4843
+
+cargo run -- doctor
+ok: FRED macro coverage present (11/11)
+```
+
 Latest stored regime components include:
 
 ```text
@@ -148,4 +156,4 @@ Pre-dashboard stability is complete through:
 PDB-6: Data quality and reproducibility check
 ```
 
-PDB-3.6 decided that current ETF-proxy regime coverage is acceptable for the first build when the wording is precise. PDB-4 connected recent news catalysts through Alpaca News. PDB-5 clarified backtest scope. PDB-6 added data quality and reproducibility checks. Additional macro sources are post-MVP macro expansion.
+PDB-3.6 decided that current ETF-proxy regime coverage is acceptable for the first build when the wording is precise. PDB-4 connected recent news catalysts through Alpaca News. PDB-5 clarified backtest scope. PDB-6 added data quality and reproducibility checks. Phase 5A/B connected FRED macro context without changing regime score weights. The next regime step is validation, not formula tuning.

@@ -5,6 +5,7 @@ mod sqlite;
 mod write_repository;
 
 pub use quality::{
-    DataQualitySnapshot, LatestScoreCoverage, RequiredPriceCoverage, RequiredSymbolCoverage,
+    DataQualitySnapshot, LatestScoreCoverage, RequiredMacroCoverage, RequiredPriceCoverage,
+    RequiredSymbolCoverage,
 };
 pub use sqlite::{Database, DbCounts, default_db_path};

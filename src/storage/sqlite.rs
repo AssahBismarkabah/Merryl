@@ -18,6 +18,7 @@ pub struct Database {
 pub struct DbCounts {
     pub symbols: i64,
     pub prices_daily: i64,
+    pub macro_series: i64,
     pub market_regime_scores: i64,
     pub score_dates: i64,
     pub sector_scores: i64,
@@ -46,6 +47,7 @@ impl Database {
         Ok(DbCounts {
             symbols: self.count_table("symbols")?,
             prices_daily: self.count_table("prices_daily")?,
+            macro_series: self.count_table("macro_series")?,
             market_regime_scores: self.count_table("market_regime_scores")?,
             score_dates: self.count_distinct_dates("sector_scores")?,
             sector_scores: self.count_table("sector_scores")?,

@@ -4,8 +4,8 @@ use serde_json::json;
 
 use crate::config::{market_data, scoring::REPORT_WATCHLIST_LIMIT};
 use crate::domain::models::{
-    DailyPrice, IndustryMap, IndustryScore, MarketEvent, MarketRegimeScore, SectorMap, SectorScore,
-    StockScore, Symbol,
+    DailyPrice, IndustryMap, IndustryScore, MacroObservation, MarketEvent, MarketRegimeScore,
+    SectorMap, SectorScore, StockScore, Symbol,
 };
 
 use super::sqlite::Database;
@@ -81,6 +81,50 @@ impl Database {
                     price.adjusted_close,
                     price.volume,
                     &price.source,
+                ])?;
+            }
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn upsert_macro_observations(&mut self, observations: &[MacroObservation]) -> Result<()> {
+        let tx = self.conn.transaction()?;
+        {
+            let mut stmt = tx.prepare(
+                r#"
+                INSERT INTO macro_series (
+                    series, date, value, source, series_name, frequency, units,
+                    realtime_start, realtime_end, raw_json, quality_status, inserted_at
+                )
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, CURRENT_TIMESTAMP)
+                ON CONFLICT(series, date) DO UPDATE SET
+                    value = excluded.value,
+                    source = excluded.source,
+                    series_name = excluded.series_name,
+                    frequency = excluded.frequency,
+                    units = excluded.units,
+                    realtime_start = excluded.realtime_start,
+                    realtime_end = excluded.realtime_end,
+                    raw_json = excluded.raw_json,
+                    quality_status = excluded.quality_status,
+                    inserted_at = CURRENT_TIMESTAMP
+                "#,
+            )?;
+
+            for observation in observations {
+                stmt.execute(params![
+                    &observation.series,
+                    &observation.date,
+                    observation.value,
+                    &observation.source,
+                    &observation.series_name,
+                    &observation.frequency,
+                    &observation.units,
+                    &observation.realtime_start,
+                    &observation.realtime_end,
+                    &observation.raw_json,
+                    &observation.quality_status,
                 ])?;
             }
         }

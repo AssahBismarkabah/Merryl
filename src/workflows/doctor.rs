@@ -2,10 +2,11 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use crate::config::{paths, quality, scoring, universe};
-use crate::data::AlpacaProvider;
+use crate::config::{macro_data, paths, quality, scoring, universe};
+use crate::data::{AlpacaProvider, FredProvider};
 use crate::storage::{
-    DataQualitySnapshot, Database, RequiredPriceCoverage, RequiredSymbolCoverage, default_db_path,
+    DataQualitySnapshot, Database, RequiredMacroCoverage, RequiredPriceCoverage,
+    RequiredSymbolCoverage, default_db_path,
 };
 
 use super::messages;
@@ -23,6 +24,7 @@ pub fn doctor_for_db_path(db_path: &Path) -> Result<Vec<String>> {
     }
 
     checks.extend(AlpacaProvider::env_status());
+    checks.extend(FredProvider::env_status());
     checks.push(path_check(paths::DAILY_WORKFLOW_CONFIG));
     checks.push(generated_path_check(db_path));
     checks.push(generated_path_check(paths::REPORTS_DIR));
@@ -56,7 +58,11 @@ fn data_quality_checks(db_path: &Path) -> Result<Vec<String>> {
 
     let db = Database::open(db_path)?;
     db.migrate()?;
-    let snapshot = db.data_quality_snapshot(&required_market_symbols(), universe::SECTOR_ETFS)?;
+    let snapshot = db.data_quality_snapshot(
+        &required_market_symbols(),
+        universe::SECTOR_ETFS,
+        macro_data::MACRO_SERIES,
+    )?;
 
     Ok(data_quality_messages(&snapshot))
 }
@@ -70,6 +76,7 @@ fn data_quality_messages(snapshot: &DataQualitySnapshot) -> Vec<String> {
         required_symbol_message(&snapshot.symbol_coverage),
         sector_map_message(snapshot),
         price_coverage_message(snapshot),
+        macro_coverage_message(snapshot),
         score_date_coverage_message(snapshot),
         latest_score_date_message(snapshot),
         latest_score_rows_message(snapshot),
@@ -104,6 +111,38 @@ fn sector_map_message(snapshot: &DataQualitySnapshot) -> String {
             snapshot.missing_sector_maps.join(", ")
         ))
     }
+}
+
+fn macro_coverage_message(snapshot: &DataQualitySnapshot) -> String {
+    let missing = insufficient_macro_coverage(snapshot);
+    if missing.is_empty() {
+        messages::ok(format!(
+            "FRED macro coverage present ({}/{})",
+            snapshot.macro_coverage.len(),
+            macro_data::MACRO_SERIES.len()
+        ))
+    } else {
+        messages::missing(format!("FRED macro coverage: {}", missing.join(", ")))
+    }
+}
+
+fn insufficient_macro_coverage(snapshot: &DataQualitySnapshot) -> Vec<String> {
+    snapshot
+        .macro_coverage
+        .iter()
+        .filter(|coverage| coverage.observation_count == 0)
+        .map(macro_coverage_summary)
+        .collect()
+}
+
+fn macro_coverage_summary(coverage: &RequiredMacroCoverage) -> String {
+    format!(
+        "{} observations={}, first={}, latest={}",
+        coverage.series,
+        coverage.observation_count,
+        optional_date(coverage.first_date.as_deref()),
+        optional_date(coverage.latest_date.as_deref())
+    )
 }
 
 fn price_coverage_message(snapshot: &DataQualitySnapshot) -> String {

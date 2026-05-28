@@ -4,9 +4,12 @@ use anyhow::{Context, Result, bail};
 use chrono::{Duration as ChronoDuration, NaiveDate};
 
 use crate::config::{market_data, scoring as scoring_config};
-use crate::data::{AlpacaProvider, CatalystEventProvider, DailyOhlcvProvider, default_end_date};
+use crate::data::{
+    AlpacaProvider, CatalystEventProvider, DailyOhlcvProvider, FredProvider, MacroSeriesProvider,
+    default_end_date,
+};
 use crate::domain::models::{MarketEvent, StockScore};
-use crate::output::write_daily_outputs;
+use crate::output::{DailyReportInput, write_daily_outputs};
 use crate::scoring::{latest_date, previous_watchlist_symbols_for_date, score_market_history};
 use crate::storage::{Database, default_db_path};
 
@@ -20,6 +23,7 @@ pub struct RunDailyResult {
     pub sector_export: PathBuf,
     pub watchlist_export: PathBuf,
     pub historical_score_dates: usize,
+    pub macro_observations: usize,
 }
 
 pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
@@ -29,13 +33,18 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         .unwrap_or_else(default_end_date);
 
     let provider = AlpacaProvider::from_env()?;
+    let macro_provider = FredProvider::from_env()?;
     let symbols = provider.symbols()?;
     let sector_maps = provider.sector_maps();
     let industry_maps = provider.industry_maps(&symbols);
     let prices = provider.daily_prices(&symbols, fetch_end_date)?;
+    let macro_observations = macro_provider.macro_observations(fetch_end_date)?;
 
     if prices.is_empty() {
         bail!("Alpaca returned no daily prices for the configured universe");
+    }
+    if macro_observations.is_empty() {
+        bail!("FRED returned no macro observations for the configured macro series");
     }
 
     let score_date = match requested_date {
@@ -85,6 +94,7 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
     db.upsert_sector_maps(&sector_maps)?;
     db.upsert_industry_maps(&industry_maps)?;
     db.upsert_prices(&prices)?;
+    db.upsert_macro_observations(&macro_observations)?;
     for scores in &score_history {
         db.replace_market_regime(&scores.regime)?;
         db.replace_sector_scores(&scores.date, &scores.sectors)?;
@@ -98,15 +108,16 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         .last()
         .context("score history unexpectedly became empty")?;
 
-    let outputs = write_daily_outputs(
-        &report_date,
-        &scores.regime,
-        &scores.sectors,
-        &scores.industries,
-        &scores.stocks,
-        &recent_events,
-        &previous_watchlist_symbols,
-    )?;
+    let outputs = write_daily_outputs(DailyReportInput {
+        date: &report_date,
+        regime: &scores.regime,
+        sector_scores: &scores.sectors,
+        industry_scores: &scores.industries,
+        stock_scores: &scores.stocks,
+        events: &recent_events,
+        macro_observations: &macro_observations,
+        previous_watchlist_symbols: &previous_watchlist_symbols,
+    })?;
 
     Ok(RunDailyResult {
         date: report_date,
@@ -115,6 +126,7 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         sector_export: outputs.sector_export,
         watchlist_export: outputs.watchlist_export,
         historical_score_dates: score_history.len(),
+        macro_observations: macro_observations.len(),
     })
 }
 

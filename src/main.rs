@@ -61,6 +61,7 @@ fn main() -> Result<()> {
                 println!("sector export: {}", result.sector_export.display());
                 println!("watchlist export: {}", result.watchlist_export.display());
                 println!("historical score dates: {}", result.historical_score_dates);
+                println!("macro observations: {}", result.macro_observations);
             }
             RunWorkflow::Backtest { from, to } => {
                 let result = merryl::workflows::run_backtest(&from, &to)?;

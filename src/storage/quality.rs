@@ -8,6 +8,7 @@ pub struct DataQualitySnapshot {
     pub symbol_coverage: RequiredSymbolCoverage,
     pub missing_sector_maps: Vec<String>,
     pub price_coverage: Vec<RequiredPriceCoverage>,
+    pub macro_coverage: Vec<RequiredMacroCoverage>,
     pub latest_benchmark_price_date: Option<String>,
     pub score_dates: i64,
     pub latest_score_date: Option<String>,
@@ -28,6 +29,14 @@ pub struct RequiredPriceCoverage {
     pub latest_date: Option<String>,
 }
 
+#[derive(Debug, Clone)]
+pub struct RequiredMacroCoverage {
+    pub series: String,
+    pub observation_count: i64,
+    pub first_date: Option<String>,
+    pub latest_date: Option<String>,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct LatestScoreCoverage {
     pub market_regime_rows: i64,
@@ -42,6 +51,7 @@ impl Database {
         &self,
         required_symbols: &[&str],
         required_sector_maps: &[(&str, &str)],
+        required_macro_series: &[(&str, &str, &str, &str)],
     ) -> Result<DataQualitySnapshot> {
         let latest_score_date = self.latest_table_date("sector_scores")?;
         let latest_score_coverage = match latest_score_date.as_deref() {
@@ -53,6 +63,7 @@ impl Database {
             symbol_coverage: self.required_symbol_coverage(required_symbols)?,
             missing_sector_maps: self.missing_sector_maps(required_sector_maps)?,
             price_coverage: self.required_price_coverage(required_symbols)?,
+            macro_coverage: self.required_macro_coverage(required_macro_series)?,
             latest_benchmark_price_date: self.latest_symbol_price_date("SPY")?,
             score_dates: self.count_distinct_dates_for_table("sector_scores")?,
             latest_score_date,
@@ -85,6 +96,16 @@ impl Database {
         required_symbols
             .iter()
             .map(|symbol| self.price_coverage(symbol))
+            .collect()
+    }
+
+    fn required_macro_coverage(
+        &self,
+        required_macro_series: &[(&str, &str, &str, &str)],
+    ) -> Result<Vec<RequiredMacroCoverage>> {
+        required_macro_series
+            .iter()
+            .map(|(series, _, _, _)| self.macro_coverage(series))
             .collect()
     }
 
@@ -155,6 +176,27 @@ impl Database {
                 },
             )
             .with_context(|| format!("failed to check price coverage for {symbol}"))
+    }
+
+    fn macro_coverage(&self, series: &str) -> Result<RequiredMacroCoverage> {
+        self.conn
+            .query_row(
+                r#"
+                SELECT COUNT(*), MIN(date), MAX(date)
+                FROM macro_series
+                WHERE series = ?1
+                "#,
+                params![series],
+                |row| {
+                    Ok(RequiredMacroCoverage {
+                        series: series.to_string(),
+                        observation_count: row.get(0)?,
+                        first_date: row.get(1)?,
+                        latest_date: row.get(2)?,
+                    })
+                },
+            )
+            .with_context(|| format!("failed to check FRED macro coverage for {series}"))
     }
 
     fn latest_symbol_price_date(&self, symbol: &str) -> Result<Option<String>> {

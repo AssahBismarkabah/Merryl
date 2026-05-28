@@ -97,6 +97,81 @@ pub mod market_data {
     }
 }
 
+pub mod macro_data {
+    use super::Duration;
+
+    pub const FRED_API_KEY_ENV: &str = "FRED_API_KEY";
+    pub const FRED_API_URL_ENV: &str = "FRED_API_URL";
+    pub const MACRO_LOOKBACK_DAYS_ENV: &str = "MERRYL_MACRO_LOOKBACK_DAYS";
+
+    pub const FRED_API_URL: &str = "https://api.stlouisfed.org";
+    pub const FRED_SERIES_OBSERVATIONS_PATH: &str = "/fred/series/observations";
+    pub const FRED_FILE_TYPE_JSON: &str = "json";
+    pub const FRED_SORT_ASC: &str = "asc";
+    pub const SOURCE_NAME: &str = "fred";
+    pub const QUALITY_OK: &str = "ok";
+    pub const DEFAULT_MACRO_LOOKBACK_DAYS: i64 = 900;
+    pub const HTTP_TIMEOUT_SECONDS: u64 = 45;
+
+    pub const MACRO_SERIES: &[(&str, &str, &str, &str)] = &[
+        ("VIXCLS", "CBOE Volatility Index: VIX", "Daily", "Index"),
+        (
+            "DGS10",
+            "10-Year Treasury Constant Maturity Rate",
+            "Daily",
+            "Percent",
+        ),
+        (
+            "DGS2",
+            "2-Year Treasury Constant Maturity Rate",
+            "Daily",
+            "Percent",
+        ),
+        (
+            "T10Y2Y",
+            "10-Year Treasury Minus 2-Year Treasury",
+            "Daily",
+            "Percent",
+        ),
+        ("DFF", "Effective Federal Funds Rate", "Daily", "Percent"),
+        (
+            "CPIAUCSL",
+            "Consumer Price Index for All Urban Consumers",
+            "Monthly",
+            "Index",
+        ),
+        ("UNRATE", "Unemployment Rate", "Monthly", "Percent"),
+        (
+            "PAYEMS",
+            "All Employees, Total Nonfarm",
+            "Monthly",
+            "Thousands",
+        ),
+        (
+            "BAMLC0A0CM",
+            "ICE BofA US Corporate Index Option-Adjusted Spread",
+            "Daily",
+            "Percent",
+        ),
+        (
+            "DTWEXBGS",
+            "Nominal Broad U.S. Dollar Index",
+            "Daily",
+            "Index",
+        ),
+        (
+            "WALCL",
+            "Federal Reserve Total Assets",
+            "Weekly",
+            "Millions of dollars",
+        ),
+    ];
+
+    pub fn http_timeout() -> Duration {
+        Duration::from_secs(HTTP_TIMEOUT_SECONDS)
+    }
+}
+
 pub mod universe {
     pub const SP500_WIKIPEDIA_URL: &str =
         "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies";
@@ -231,7 +306,9 @@ pub mod output_text {
     pub const DAILY_REPORT_TITLE: &str = "Daily Market Rotation Report";
     pub const REPORT_RULE: &str = "Rule: this is a market rotation watchlist, not an automatic trade signal. Chart structure, invalidation, and risk define any trade.";
     pub const MARKET_REGIME_SECTION: &str = "Market Regime";
-    pub const MARKET_REGIME_V1_NOTE: &str = "Market regime coverage: daily ETF price proxies SPY, QQQ, IWM, DIA, TLT, GLD, and USO. Not yet included: VIX, DXY, US10Y, macro calendar, credit, or liquidity data.";
+    pub const MARKET_REGIME_V1_NOTE: &str = "Market regime score: daily ETF price proxies SPY, QQQ, IWM, DIA, TLT, GLD, and USO. FRED macro context is stored separately and is not part of scoring yet.";
+    pub const MACRO_CONTEXT_SECTION: &str = "Macro Context Coverage";
+    pub const MACRO_CONTEXT_NOTE: &str = "FRED macro observations are stored as context/provenance only; they are not scoring inputs yet.";
     pub const TOP_SECTORS_SECTION: &str = "Top Sectors";
     pub const WEAK_SECTORS_SECTION: &str = "Weak Sectors";
     pub const SECTOR_RANK_CHANGES_SECTION: &str = "Sector Rank Changes";
@@ -252,6 +329,9 @@ pub mod output_text {
     pub const WATCHLIST_TABLE_HEADER: &str = "| Rank | Symbol | Name | Sector | Industry | Score | 20D | Rel Sector | Rel Vol | Trend | Catalyst |";
     pub const WATCHLIST_TABLE_ALIGNMENT: &str =
         "|---:|---|---|---|---|---:|---:|---:|---:|---|---|";
+    pub const MACRO_TABLE_HEADER: &str =
+        "| Series | Name | Frequency | Latest | Observations | Status |";
+    pub const MACRO_TABLE_ALIGNMENT: &str = "|---|---|---|---:|---:|---|";
     pub const HIGH_RELATIVE_VOLUME_TABLE_HEADER: &str =
         "| Rank | Symbol | Sector | Score | Rel Vol | 20D | Rel Sector |";
     pub const HIGH_RELATIVE_VOLUME_TABLE_ALIGNMENT: &str = "|---:|---|---|---:|---:|---:|---:|";

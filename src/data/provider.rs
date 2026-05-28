@@ -1,7 +1,9 @@
 use anyhow::Result;
 use chrono::NaiveDate;
 
-use crate::domain::models::{DailyPrice, IndustryMap, MarketEvent, SectorMap, Symbol};
+use crate::domain::models::{
+    DailyPrice, IndustryMap, MacroObservation, MarketEvent, SectorMap, Symbol,
+};
 
 pub trait DailyOhlcvProvider {
     fn symbols(&self) -> Result<Vec<Symbol>>;
@@ -16,4 +18,8 @@ pub trait CatalystEventProvider {
         symbols: &[String],
         end_date: NaiveDate,
     ) -> Result<Vec<MarketEvent>>;
+}
+
+pub trait MacroSeriesProvider {
+    fn macro_observations(&self, end_date: NaiveDate) -> Result<Vec<MacroObservation>>;
 }

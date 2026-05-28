@@ -3,7 +3,7 @@ use rusqlite::Connection;
 use tempfile::tempdir;
 
 use merryl::domain::models::{
-    IndustryScore, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
+    IndustryScore, MacroObservation, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
 };
 use merryl::storage::Database;
 
@@ -23,6 +23,70 @@ fn stock_score_components_column_migration_is_idempotent() -> Result<()> {
         .collect::<Result<Vec<_>, _>>()?;
 
     assert!(columns.iter().any(|column| column == "components_json"));
+
+    Ok(())
+}
+
+#[test]
+fn macro_series_provenance_columns_migration_is_idempotent() -> Result<()> {
+    let dir = tempdir()?;
+    let db_path = dir.path().join("market.db");
+    let db = Database::open(&db_path)?;
+
+    db.migrate()?;
+    db.migrate()?;
+
+    let conn = Connection::open(db_path)?;
+    let mut stmt = conn.prepare("PRAGMA table_info(macro_series)")?;
+    let columns = stmt
+        .query_map([], |row| row.get::<_, String>(1))?
+        .collect::<Result<Vec<_>, _>>()?;
+
+    for expected in [
+        "series_name",
+        "frequency",
+        "units",
+        "realtime_start",
+        "realtime_end",
+        "raw_json",
+        "quality_status",
+    ] {
+        assert!(
+            columns.iter().any(|column| column == expected),
+            "expected macro_series column {expected}, got {columns:#?}"
+        );
+    }
+
+    Ok(())
+}
+
+#[test]
+fn macro_observation_upserts_are_idempotent() -> Result<()> {
+    let dir = tempdir()?;
+    let db_path = dir.path().join("market.db");
+    let mut db = Database::open(&db_path)?;
+    db.migrate()?;
+
+    db.upsert_macro_observations(&[macro_observation("2026-05-27", 18.3)])?;
+    db.upsert_macro_observations(&[macro_observation("2026-05-27", 19.4)])?;
+    drop(db);
+
+    let conn = Connection::open(db_path)?;
+    let count: i64 = conn.query_row("SELECT COUNT(*) FROM macro_series", [], |row| row.get(0))?;
+    let value: f64 = conn.query_row(
+        "SELECT value FROM macro_series WHERE series = 'VIXCLS' AND date = '2026-05-27'",
+        [],
+        |row| row.get(0),
+    )?;
+    let source: String = conn.query_row(
+        "SELECT source FROM macro_series WHERE series = 'VIXCLS' AND date = '2026-05-27'",
+        [],
+        |row| row.get(0),
+    )?;
+
+    assert_eq!(count, 1);
+    assert_eq!(value, 19.4);
+    assert_eq!(source, "fred:VIXCLS");
 
     Ok(())
 }
@@ -178,5 +242,21 @@ fn stock_score(date: &str) -> StockScore {
         catalyst_status: "pending_source".to_string(),
         components_json: "{}".to_string(),
         explanation: "fixture stock score".to_string(),
+    }
+}
+
+fn macro_observation(date: &str, value: f64) -> MacroObservation {
+    MacroObservation {
+        series: "VIXCLS".to_string(),
+        series_name: "CBOE Volatility Index: VIX".to_string(),
+        date: date.to_string(),
+        value,
+        source: "fred:VIXCLS".to_string(),
+        frequency: "Daily".to_string(),
+        units: "Index".to_string(),
+        realtime_start: date.to_string(),
+        realtime_end: date.to_string(),
+        raw_json: format!(r#"{{"series_id":"VIXCLS","date":"{date}","value":"{value}"}}"#),
+        quality_status: "ok".to_string(),
     }
 }

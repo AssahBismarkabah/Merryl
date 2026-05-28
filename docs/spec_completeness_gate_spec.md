@@ -60,7 +60,7 @@ Anything needed for those items should be implemented or explicitly blocked by a
 
 | Area | Current State | Spec Risk | Gate Decision |
 |---|---|---|---|
-| Market regime | Uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, USO. Missing VIX, DXY, US10Y, macro calendar/surprises. | Can underrepresent macro/rates/liquidity context. | Accept for first build because the main spec's MVP must-have list requires SPY/QQQ/IWM/DIA and does not require full macro feeds. Replace vague wording with exact source/coverage language. Add VIX/DXY/US10Y/macro calendar to post-MVP macro expansion. |
+| Market regime | Score uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, USO. Phase 5A/B later connected FRED macro context, but not as scoring inputs. | Can underrepresent macro/rates/liquidity context if presented as a full macro model. | Accept for first build because the main spec's MVP must-have list requires SPY/QQQ/IWM/DIA and does not require full macro scoring. Keep exact source/coverage language and validate macro scoring separately before changing weights. |
 | Catalyst/earnings | `pending_source` only. | Weakens the "why is this moving?" layer. | Required now. PDB-4 must choose and implement a real source or remove catalyst claims from user-facing ranking. This is the next implementation task. |
 | Sector ranking | Map-only; not proven forward-return signal. | Dashboard could overstate sector score as predictive. | Accept as market-map layer. Keep honest wording and do not present as a trade signal. Formula semantics are fixed by PDB-3.5. |
 | Industry/theme | GICS industry mapping only. No custom theme engine, no industry ETF/fund-flow confirmation. | May miss narrative/theme rotations. | Accept for first build because GICS industry mapping is in Phase 0 as the standard first mapping. Add theme baskets later after core dashboard/report workflow is controlled. |
@@ -117,7 +117,7 @@ If any of these are incomplete, they should be fixed before dashboard work conti
 
 Gate answers:
 
-1. Current ETF-proxy regime coverage is sufficient for the first build if wording is precise. VIX/DXY/US10Y/macro calendar are not required before PDB-4.
+1. Current ETF-proxy regime score coverage is sufficient for the first build if wording is precise. Phase 5A/B connects FRED macro context separately; macro scoring still requires a later validation checkpoint.
 2. S&P 500 is enough for the first build. Universe expansion is not required before PDB-4.
 3. Daily data is enough for the first build. Intraday/live data is not required before PDB-4.
 4. GICS industries are enough for the first build. Theme baskets are not required before PDB-4.

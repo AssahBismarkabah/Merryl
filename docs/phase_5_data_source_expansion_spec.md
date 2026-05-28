@@ -2,7 +2,7 @@
 
 Version: 0.1
 Date: 2026-05-28
-Status: Planning; no Phase 5 data-source implementation has started
+Status: Phase 5A/B first implementation complete; FRED macro ingestion is connected as context/provenance only
 
 Related documents:
 
@@ -559,6 +559,59 @@ Reason:
 
 Do not start Phase 5 with ETF fund flows, options flow, intraday data, or universe expansion unless the user explicitly chooses those after reviewing cost and complexity.
 
+## 7.1 Implemented Phase 5A/B Boundary
+
+Implemented on 2026-05-28:
+
+- Added a FRED provider adapter under `src/data/`.
+- Required `FRED_API_KEY` for the daily workflow.
+- Fetched configured macro series during `merryl run daily --date latest`.
+- Stored macro observations in `macro_series` with series name, frequency, units, realtime dates, raw JSON, source, and quality status.
+- Added idempotent SQLite migration coverage for macro provenance columns.
+- Added doctor/data-health checks for required FRED macro series coverage.
+- Added Markdown report and dashboard data-health coverage for macro series.
+- Added status output for stored macro observation count.
+- Kept Market Regime V1 scoring unchanged.
+
+Current configured FRED series:
+
+```text
+VIXCLS
+DGS10
+DGS2
+T10Y2Y
+DFF
+CPIAUCSL
+UNRATE
+PAYEMS
+BAMLC0A0CM
+DTWEXBGS
+WALCL
+```
+
+Real run verification on 2026-05-28:
+
+```text
+merryl run daily --date latest
+  -> macro observations stored: 4843
+
+merryl doctor
+  -> ok: FRED macro coverage present (11/11)
+```
+
+What this does not change:
+
+- It does not make macro data a scoring input yet.
+- It does not replace the ETF-proxy regime score.
+- It does not add a macro calendar or release-event model.
+- It does not change sector, industry, or stock scoring weights.
+
+Next checkpoint before any macro scoring change:
+
+```text
+Create a regime/macro validation document that compares ETF-proxy regime behavior with FRED-aware context over historical scored dates.
+```
+
 ## 8. Data Model Requirements
 
 New source data should be stored separately before it affects scoring.
@@ -666,4 +719,3 @@ This document is accepted when:
 - The plan preserves the current validated scoring flow.
 - The plan does not add dashboard charting or trade execution.
 - `docs/implementation_spec.md` points to this document as the current Phase 5 planning reference.
-

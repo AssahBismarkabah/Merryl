@@ -275,7 +275,7 @@ The next milestone should be chosen deliberately from:
 Current selected next milestone:
 
 ```text
-Phase 5 data-source expansion planning.
+Phase 5C structured earnings/catalyst source decision.
 ```
 
 Planning reference:
@@ -284,4 +284,4 @@ Planning reference:
 docs/phase_5_data_source_expansion_spec.md
 ```
 
-Do not treat this as permission to add every advanced source at once. Phase 5 starts with proxy inventory, source selection, provenance, and validation gates.
+Phase 5A/B has connected FRED macro context with provenance and coverage checks. Do not treat this as permission to add every advanced source at once. The next Phase 5 work should remain source-specific, validation-backed, and non-disruptive to the current scoring flow.

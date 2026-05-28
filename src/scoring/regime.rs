@@ -68,7 +68,7 @@ pub fn score_market_regime(date: &str, histories: &PriceHistories) -> MarketRegi
         format!("{base_label} / {context_label}")
     };
     let explanation = format!(
-        "{label}: regime coverage uses daily ETF price proxies. SPY 20D {}, SPY 60D {}, QQQ vs SPY {}, IWM vs SPY {}, DIA vs SPY {}, TLT 20D {}, GLD 20D {}, USO 20D {}. Not yet included: VIX, DXY, US10Y, macro calendar, credit, or liquidity data.",
+        "{label}: regime score uses daily ETF price proxies. SPY 20D {}, SPY 60D {}, QQQ vs SPY {}, IWM vs SPY {}, DIA vs SPY {}, TLT 20D {}, GLD 20D {}, USO 20D {}. FRED macro context is stored separately and is not part of scoring yet.",
         pct(spy_20d),
         pct(spy_60d),
         pct(qqq_relative),
@@ -97,7 +97,7 @@ pub fn score_market_regime(date: &str, histories: &PriceHistories) -> MarketRegi
             "gld_return_20d": gld_20d,
             "uso_return_20d": uso_20d,
             "context_label": context_label,
-            "source_note": "Regime coverage uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, and USO. Not yet included: VIX, DXY, US10Y, macro calendar, credit, or liquidity data."
+            "source_note": "Regime score uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, and USO. FRED macro context is stored separately and is not part of scoring yet."
         })
         .to_string(),
         explanation,

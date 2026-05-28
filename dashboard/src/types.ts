@@ -106,12 +106,20 @@ export interface DataHealth {
   missing_symbols: string[];
   missing_sector_maps: string[];
   required_price_coverage: PriceCoverage[];
+  required_macro_coverage: MacroCoverage[];
   latest_score_coverage: LatestScoreCoverage;
 }
 
 export interface PriceCoverage {
   symbol: string;
   bar_count: number;
+  first_date: string | null;
+  latest_date: string | null;
+}
+
+export interface MacroCoverage {
+  series: string;
+  observation_count: number;
   first_date: string | null;
   latest_date: string | null;
 }

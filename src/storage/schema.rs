@@ -64,6 +64,13 @@ CREATE TABLE IF NOT EXISTS macro_series (
     date TEXT NOT NULL,
     value REAL NOT NULL,
     source TEXT NOT NULL,
+    series_name TEXT NOT NULL DEFAULT '',
+    frequency TEXT NOT NULL DEFAULT '',
+    units TEXT NOT NULL DEFAULT '',
+    realtime_start TEXT NOT NULL DEFAULT '',
+    realtime_end TEXT NOT NULL DEFAULT '',
+    raw_json TEXT NOT NULL DEFAULT '{}',
+    quality_status TEXT NOT NULL DEFAULT 'ok',
     inserted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (series, date)
 );
@@ -185,6 +192,41 @@ impl Database {
             "stock_scores",
             "components_json",
             "ALTER TABLE stock_scores ADD COLUMN components_json TEXT NOT NULL DEFAULT '{}'",
+        )?;
+        self.add_column_if_missing(
+            "macro_series",
+            "series_name",
+            "ALTER TABLE macro_series ADD COLUMN series_name TEXT NOT NULL DEFAULT ''",
+        )?;
+        self.add_column_if_missing(
+            "macro_series",
+            "frequency",
+            "ALTER TABLE macro_series ADD COLUMN frequency TEXT NOT NULL DEFAULT ''",
+        )?;
+        self.add_column_if_missing(
+            "macro_series",
+            "units",
+            "ALTER TABLE macro_series ADD COLUMN units TEXT NOT NULL DEFAULT ''",
+        )?;
+        self.add_column_if_missing(
+            "macro_series",
+            "realtime_start",
+            "ALTER TABLE macro_series ADD COLUMN realtime_start TEXT NOT NULL DEFAULT ''",
+        )?;
+        self.add_column_if_missing(
+            "macro_series",
+            "realtime_end",
+            "ALTER TABLE macro_series ADD COLUMN realtime_end TEXT NOT NULL DEFAULT ''",
+        )?;
+        self.add_column_if_missing(
+            "macro_series",
+            "raw_json",
+            "ALTER TABLE macro_series ADD COLUMN raw_json TEXT NOT NULL DEFAULT '{}'",
+        )?;
+        self.add_column_if_missing(
+            "macro_series",
+            "quality_status",
+            "ALTER TABLE macro_series ADD COLUMN quality_status TEXT NOT NULL DEFAULT 'ok'",
         )?;
         Ok(())
     }

@@ -164,7 +164,7 @@ The current `implementation_spec.md` limitations are not equal in priority.
 
 | Limitation | Phase 4 blocker? | Reason |
 |---|---:|---|
-| Market regime coverage is ETF-proxy based | Addressed for first build | PDB-3 and PDB-3.6 state the exact coverage: SPY, QQQ, IWM, DIA, TLT, GLD, and USO are included; VIX, DXY, US10Y, macro calendar, credit, and liquidity data are not yet included. It still must not be presented as a full macro model. |
+| Market regime coverage is ETF-proxy based | Addressed for first build | PDB-3 and PDB-3.6 state the exact score inputs: SPY, QQQ, IWM, DIA, TLT, GLD, and USO. Phase 5A/B later connected FRED macro context, but it is not part of regime scoring yet. It still must not be presented as a full macro model. |
 | First valid score date has no prior rank-change baseline | No | This is expected for rolling historical windows. It affects only the first scored date. |
 | Catalyst/news source | Addressed for recent news | PDB-4 connects real Alpaca News headlines for current watchlist symbols. Structured earnings calendar data remains explicitly not connected. |
 | Industry/theme bridge | No | Hardened and validated in PDB-1. It should stay as an attention and confirmation layer, not a trade signal. |

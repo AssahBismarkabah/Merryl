@@ -3,14 +3,15 @@ use chrono::{Duration, NaiveDate};
 use tempfile::tempdir;
 
 use merryl::config::{
-    quality, scoring,
+    macro_data, quality, scoring,
     universe::{
         ASSET_BROAD_ETF, ASSET_MACRO_ETF, ASSET_SECTOR_ETF, BROAD_ETFS, EXCHANGE_US, MACRO_ETFS,
         SECTOR_ETFS,
     },
 };
 use merryl::domain::models::{
-    DailyPrice, IndustryScore, MarketRegimeScore, SectorMap, SectorScore, StockScore, Symbol,
+    DailyPrice, IndustryScore, MacroObservation, MarketRegimeScore, SectorMap, SectorScore,
+    StockScore, Symbol,
 };
 use merryl::storage::Database;
 use merryl::workflows::doctor_for_db_path;
@@ -27,6 +28,7 @@ fn doctor_reports_missing_core_data_for_empty_database() -> Result<()> {
     assert_contains(&checks, "missing: required market symbols");
     assert_contains(&checks, "missing: required sector map entries");
     assert_contains(&checks, "missing: required ETF price coverage");
+    assert_contains(&checks, "missing: FRED macro coverage");
     assert_contains(&checks, "missing: historical score coverage");
     assert_contains(&checks, "missing: latest score date");
     assert_contains(&checks, "missing: latest score rows");
@@ -45,6 +47,7 @@ fn doctor_accepts_complete_core_data_fixture() -> Result<()> {
     db.upsert_symbols(&required_symbols())?;
     db.upsert_sector_maps(&sector_maps())?;
     db.upsert_prices(&required_prices(&dates))?;
+    db.upsert_macro_observations(&required_macro_observations())?;
 
     for date in &dates {
         db.replace_market_regime(&market_regime_score(date))?;
@@ -60,6 +63,7 @@ fn doctor_accepts_complete_core_data_fixture() -> Result<()> {
     assert_contains(&checks, "ok: required market symbols present");
     assert_contains(&checks, "ok: required sector map entries present");
     assert_contains(&checks, "ok: required ETF price coverage");
+    assert_contains(&checks, "ok: FRED macro coverage present");
     assert_contains(&checks, "ok: historical score coverage");
     assert_contains(
         &checks,
@@ -69,6 +73,7 @@ fn doctor_accepts_complete_core_data_fixture() -> Result<()> {
     assert_not_contains(&checks, "missing: required market symbols");
     assert_not_contains(&checks, "missing: required sector map entries");
     assert_not_contains(&checks, "missing: required ETF price coverage");
+    assert_not_contains(&checks, "missing: FRED macro coverage");
     assert_not_contains(&checks, "missing: historical score coverage");
     assert_not_contains(&checks, "missing: latest score date");
     assert_not_contains(&checks, "missing: latest score rows");
@@ -147,6 +152,25 @@ fn sector_maps() -> Vec<SectorMap> {
             sector: (*sector).to_string(),
             sector_etf: (*sector_etf).to_string(),
             description: format!("{sector} sector ETF proxy"),
+        })
+        .collect()
+}
+
+fn required_macro_observations() -> Vec<MacroObservation> {
+    macro_data::MACRO_SERIES
+        .iter()
+        .map(|(series, name, frequency, units)| MacroObservation {
+            series: (*series).to_string(),
+            series_name: (*name).to_string(),
+            date: "2026-05-27".to_string(),
+            value: 1.0,
+            source: format!("fred:{series}"),
+            frequency: (*frequency).to_string(),
+            units: (*units).to_string(),
+            realtime_start: "2026-05-27".to_string(),
+            realtime_end: "2026-05-27".to_string(),
+            raw_json: format!(r#"{{"series_id":"{series}","date":"2026-05-27"}}"#),
+            quality_status: "ok".to_string(),
         })
         .collect()
 }

@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
 use merryl::domain::models::{
-    IndustryScore, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
+    IndustryScore, MacroObservation, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
 };
-use merryl::output::daily_report_markdown;
+use merryl::output::{DailyReportInput, daily_report_markdown};
 
 #[test]
 fn daily_report_contains_documented_sections() {
@@ -56,18 +56,25 @@ fn daily_report_contains_documented_sections() {
         url: Some("https://example.com/nvda".to_string()),
     }];
     let previous_watchlist = HashSet::from(["AMD".to_string()]);
-    let report = daily_report_markdown(
-        "2026-05-26",
-        &regime,
-        &sectors,
-        &industries,
-        &stocks,
-        &events,
-        &previous_watchlist,
-    );
+    let macro_observations = [macro_observation(
+        "VIXCLS",
+        "CBOE Volatility Index: VIX",
+        "Daily",
+    )];
+    let report = daily_report_markdown(&DailyReportInput {
+        date: "2026-05-26",
+        regime: &regime,
+        sector_scores: &sectors,
+        industry_scores: &industries,
+        stock_scores: &stocks,
+        events: &events,
+        macro_observations: &macro_observations,
+        previous_watchlist_symbols: &previous_watchlist,
+    });
 
     for section in [
         "## Market Regime",
+        "## Macro Context Coverage",
         "## Top Sectors",
         "## Weak Sectors",
         "## Sector Rank Changes",
@@ -81,7 +88,12 @@ fn daily_report_contains_documented_sections() {
         assert!(report.contains(section), "missing section {section}");
     }
     assert!(report.contains("## New Leaders"));
-    assert!(report.contains("Market regime coverage: daily ETF price proxies"));
+    assert!(report.contains("Market regime score: daily ETF price proxies"));
+    assert!(report.contains("FRED macro context is stored separately"));
+    assert!(
+        report
+            .contains("| VIXCLS | CBOE Volatility Index: VIX | Daily | 2026-05-26 | 1 | stored |")
+    );
     assert!(report.contains("Sector ranking is a market-map and attention layer."));
     assert!(report.contains("Recent news source: Alpaca News."));
     assert!(report.contains("- **NVDA** `recent_news:1`"));
@@ -138,5 +150,21 @@ fn stock(
         catalyst_status: catalyst_status.to_string(),
         components_json: "{}".to_string(),
         explanation: format!("{symbol} explanation"),
+    }
+}
+
+fn macro_observation(series: &str, name: &str, frequency: &str) -> MacroObservation {
+    MacroObservation {
+        series: series.to_string(),
+        series_name: name.to_string(),
+        date: "2026-05-26".to_string(),
+        value: 18.44,
+        source: format!("fred:{series}"),
+        frequency: frequency.to_string(),
+        units: "Index".to_string(),
+        realtime_start: "2026-05-26".to_string(),
+        realtime_end: "2026-05-26".to_string(),
+        raw_json: "{}".to_string(),
+        quality_status: "ok".to_string(),
     }
 }

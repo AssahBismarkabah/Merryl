@@ -127,6 +127,7 @@ pub struct DataHealthDto {
     pub missing_symbols: Vec<String>,
     pub missing_sector_maps: Vec<String>,
     pub required_price_coverage: Vec<PriceCoverageDto>,
+    pub required_macro_coverage: Vec<MacroCoverageDto>,
     pub latest_score_coverage: LatestScoreCoverageDto,
 }
 
@@ -134,6 +135,14 @@ pub struct DataHealthDto {
 pub struct PriceCoverageDto {
     pub symbol: String,
     pub bar_count: i64,
+    pub first_date: Option<String>,
+    pub latest_date: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MacroCoverageDto {
+    pub series: String,
+    pub observation_count: i64,
     pub first_date: Option<String>,
     pub latest_date: Option<String>,
 }

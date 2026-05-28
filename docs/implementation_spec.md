@@ -1,8 +1,8 @@
 # Merryl Implementation Runbook
 
 Version: 0.2
-Date: 2026-05-27
-Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, and Phase 5 data-source expansion planning
+Date: 2026-05-28
+Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, and Phase 5A/B FRED macro ingestion foundation
 
 ## Current Slice
 
@@ -12,9 +12,11 @@ The current implementation target is:
 Merryl daily run
   -> load S&P 500 anchor universe
   -> fetch real daily OHLCV data
+  -> fetch real FRED macro series context
   -> score the valid historical market window
-  -> store market regime, sector, industry, stock, and watchlist rows in SQLite
+  -> store macro observations, market regime, sector, industry, stock, and watchlist rows in SQLite
   -> explain Market Regime V1 with broad equity ETFs plus TLT, GLD, and USO context
+  -> keep FRED macro data as context/provenance only until a separate scoring-validation checkpoint
   -> explain industry/theme strength with return, relative return, volume, breadth, and 20D-high components
   -> write Markdown and CSV outputs for the latest/requested score date
 
@@ -32,6 +34,7 @@ Merryl doctor run
   -> verify required docs, workflow config, credentials, and generated paths
   -> verify required market symbols and sector maps exist
   -> verify required ETF price coverage and latest-date alignment
+  -> verify FRED macro series coverage
   -> verify historical score-date coverage
   -> verify latest regime, sector, industry, stock, and watchlist row coverage
 
@@ -51,7 +54,7 @@ Source code is grouped by responsibility:
 ```text
 src/config/      centralized constants, paths, env var names, defaults, scoring weights
 src/domain/      shared domain models
-src/data/        provider trait, Alpaca adapter, S&P 500 universe, sector ETF mapping
+src/data/        provider trait, Alpaca/FRED adapters, S&P 500 universe, sector ETF mapping
 src/storage/     SQLite connection, schema migration, write repositories
 src/scoring/     indicators, sector scoring, industry scoring, stock scoring, market orchestration
 src/dashboard/   read-only dashboard DTOs, repositories, and local axum server
@@ -72,7 +75,7 @@ Rules for new code:
 
 ## Data Provider
 
-Current provider:
+Current market-data provider:
 
 ```text
 Alpaca Market Data API
@@ -94,6 +97,27 @@ MERRYL_LOOKBACK_DAYS=420
 ```
 
 The default feed is `iex`, which is the practical free-tier starting point. If the account supports a different feed later, set `ALPACA_FEED`.
+
+Current macro provider:
+
+```text
+FRED API
+```
+
+Required environment variable:
+
+```text
+FRED_API_KEY
+```
+
+Optional environment variables:
+
+```text
+FRED_API_URL=https://api.stlouisfed.org
+MERRYL_MACRO_LOOKBACK_DAYS=900
+```
+
+FRED macro observations are stored in `macro_series` with provenance and coverage metadata. They are not part of the Market Regime V1 score yet.
 
 ## Commands
 
@@ -165,6 +189,7 @@ Current report sections:
 
 ```text
 Market Regime
+Macro Context Coverage
 Top Sectors
 Weak Sectors
 Sector Rank Changes
@@ -294,7 +319,7 @@ Do not treat Markdown or CSV as the system-of-record.
 
 ## Current Limitations
 
-- Market regime coverage uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, and USO. VIX, DXY, US10Y, macro calendar, credit, liquidity indicators, and richer rates data remain deferred until a real source is chosen.
+- Market regime scoring still uses daily ETF price proxies: SPY, QQQ, IWM, DIA, TLT, GLD, and USO. FRED macro series for volatility, rates, yield curve, inflation, employment, credit spread, dollar proxy, and liquidity context are stored, but they are not scoring inputs until a separate validation checkpoint.
 - The first valid score date in a fetched window has no prior rank-change baseline.
 - Recent news catalysts are connected through Alpaca News for the current top watchlist. Watchlist rows with recent news show `recent_news:N`. Structured earnings calendar data is not connected yet.
 - Sector ranking is useful as a market-map and attention layer, but PDB-2 labels it as map-only / not yet a proven forward-return predictor. PDB-3.5 removed the neutral rank-change placeholder from sector scoring. Current rank-change is stored and reported, but it is not a scoring component.
@@ -312,10 +337,10 @@ PDB-3.6 confirmed that the first-build boundaries are aligned with the source sp
 Current implementation priority:
 
 ```text
-Phase 5 data-source expansion planning.
+Phase 5C structured earnings/catalyst source decision.
 ```
 
-The first read-only dashboard/API slice from `docs/pre_dashboard_stability_backlog_spec.md` and `docs/phase_4_dashboard_api_spec.md` is implemented. Phase 4.1 dashboard stabilization is complete for the current pass. Merryl should now move into Phase 5 planning by identifying each first-build proxy, deciding what concrete source-backed layer it should become, and choosing the next data-source implementation without changing the validated market-map flow.
+The first read-only dashboard/API slice from `docs/pre_dashboard_stability_backlog_spec.md` and `docs/phase_4_dashboard_api_spec.md` is implemented. Phase 4.1 dashboard stabilization is complete for the current pass. Phase 5 planning is recorded, and the first Phase 5A/B implementation is complete: FRED macro observations are fetched during the daily workflow, stored with provenance, counted in status, and checked by doctor/dashboard data health without changing scoring weights.
 
 The stabilization plan is recorded in `docs/phase_4_dashboard_stabilization_spec.md`.
 
@@ -328,7 +353,7 @@ selected-date dashboard loading
   -> Overview/Regime/Validation ergonomics pass
 ```
 
-The Phase 5 planning reference is recorded in `docs/phase_5_data_source_expansion_spec.md`.
+The Phase 5 planning and implementation reference is recorded in `docs/phase_5_data_source_expansion_spec.md`.
 
 The dashboard must remain a reader over the controlled market-map chain. Do not turn Merryl into a charting platform, trade execution surface, portfolio simulator, or alert engine while expanding data sources.
 

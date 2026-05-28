@@ -4,7 +4,7 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 use serde_json::Value;
 
-use crate::config::{scoring, universe};
+use crate::config::{macro_data, scoring, universe};
 use crate::domain::models::{
     BacktestResultRow, IndustryScore, MarketRegimeScore, SectorScore, StockScore, WatchlistRow,
 };
@@ -12,7 +12,7 @@ use crate::storage::{DataQualitySnapshot, Database};
 
 use super::models::{
     BacktestDto, DashboardSnapshot, DataHealthDto, HealthDto, IndustryDto, LatestScoreCoverageDto,
-    PriceCoverageDto, RegimeDto, SectorDto, StockDto, WatchlistDto,
+    MacroCoverageDto, PriceCoverageDto, RegimeDto, SectorDto, StockDto, WatchlistDto,
 };
 
 const RUN_DAILY_MESSAGE: &str =
@@ -25,8 +25,11 @@ pub fn load_health(db_path: &Path) -> Result<HealthDto> {
 
     let db = Database::open(db_path)?;
     db.migrate()?;
-    let snapshot =
-        db.data_quality_snapshot(&universe::required_market_symbols(), universe::SECTOR_ETFS)?;
+    let snapshot = db.data_quality_snapshot(
+        &universe::required_market_symbols(),
+        universe::SECTOR_ETFS,
+        macro_data::MACRO_SERIES,
+    )?;
 
     Ok(HealthDto {
         status: "ok".to_string(),
@@ -85,8 +88,11 @@ fn dashboard_for_date(db_path: &Path, db: &Database, date: &str) -> Result<Dashb
     let regime = db.market_regime_for_date(date)?;
     let watchlist = db.watchlist_for_date(date)?;
     let latest_backtest = db.latest_backtest_result()?;
-    let data_quality =
-        db.data_quality_snapshot(&universe::required_market_symbols(), universe::SECTOR_ETFS)?;
+    let data_quality = db.data_quality_snapshot(
+        &universe::required_market_symbols(),
+        universe::SECTOR_ETFS,
+        macro_data::MACRO_SERIES,
+    )?;
 
     Ok(DashboardSnapshot {
         score_date: date.to_string(),
@@ -106,7 +112,7 @@ fn limitations() -> Vec<String> {
         "Dashboard is read-only and uses stored SQLite scores.".to_string(),
         "Watchlist rows are not automatic trade signals.".to_string(),
         "Sector ranking is a market-map and attention layer, not a proven standalone forward-return signal.".to_string(),
-        "Market regime uses ETF proxies SPY, QQQ, IWM, DIA, TLT, GLD, and USO; VIX, DXY, US10Y, macro calendar, credit, and liquidity data are not connected yet.".to_string(),
+        "Market regime scoring still uses ETF proxies SPY, QQQ, IWM, DIA, TLT, GLD, and USO; FRED macro context is stored separately and is not part of scoring yet.".to_string(),
         "Structured earnings calendar data is not connected yet.".to_string(),
         "Backtests validate score behavior, not trade profitability.".to_string(),
     ]
@@ -253,6 +259,16 @@ fn data_health_dto(db_path: &Path, snapshot: DataQualitySnapshot) -> DataHealthD
             .map(|coverage| PriceCoverageDto {
                 symbol: coverage.symbol,
                 bar_count: coverage.bar_count,
+                first_date: coverage.first_date,
+                latest_date: coverage.latest_date,
+            })
+            .collect(),
+        required_macro_coverage: snapshot
+            .macro_coverage
+            .into_iter()
+            .map(|coverage| MacroCoverageDto {
+                series: coverage.series,
+                observation_count: coverage.observation_count,
                 first_date: coverage.first_date,
                 latest_date: coverage.latest_date,
             })

@@ -1,35 +1,39 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::config::{APP_NAME, output_text, scoring};
+use crate::config::{APP_NAME, macro_data, output_text, scoring};
 use crate::domain::models::{
-    IndustryScore, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
+    IndustryScore, MacroObservation, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
 };
 
 use super::formatting::{multiple, pct, score};
 
-pub fn daily_report_markdown(
-    date: &str,
-    regime: &MarketRegimeScore,
-    sector_scores: &[SectorScore],
-    industry_scores: &[IndustryScore],
-    stock_scores: &[StockScore],
-    events: &[MarketEvent],
-    previous_watchlist_symbols: &HashSet<String>,
-) -> String {
+pub struct DailyReportInput<'a> {
+    pub date: &'a str,
+    pub regime: &'a MarketRegimeScore,
+    pub sector_scores: &'a [SectorScore],
+    pub industry_scores: &'a [IndustryScore],
+    pub stock_scores: &'a [StockScore],
+    pub events: &'a [MarketEvent],
+    pub macro_observations: &'a [MacroObservation],
+    pub previous_watchlist_symbols: &'a HashSet<String>,
+}
+
+pub fn daily_report_markdown(input: &DailyReportInput<'_>) -> String {
     [
-        report_header(date),
-        market_regime(regime),
+        report_header(input.date),
+        market_regime(input.regime),
+        macro_context_coverage(input.macro_observations),
         sector_map_note(),
-        top_sector_table(sector_scores),
-        weak_sector_table(sector_scores),
-        sector_rank_changes(sector_scores),
-        top_industry_table(industry_scores),
-        watchlist_table(stock_scores),
-        new_leaders(stock_scores, previous_watchlist_symbols),
-        high_relative_volume_table(stock_scores),
-        catalyst_flags(stock_scores, events),
+        top_sector_table(input.sector_scores),
+        weak_sector_table(input.sector_scores),
+        sector_rank_changes(input.sector_scores),
+        top_industry_table(input.industry_scores),
+        watchlist_table(input.stock_scores),
+        new_leaders(input.stock_scores, input.previous_watchlist_symbols),
+        high_relative_volume_table(input.stock_scores),
+        catalyst_flags(input.stock_scores, input.events),
         notes_for_chart_review(),
-        explanation_list(stock_scores),
+        explanation_list(input.stock_scores),
     ]
     .join("\n\n")
 }
@@ -60,6 +64,69 @@ fn sector_map_note() -> String {
     output_text::SECTOR_MAP_NOTE.to_string()
 }
 
+fn macro_context_coverage(macro_observations: &[MacroObservation]) -> String {
+    let mut coverage = macro_coverage(macro_observations);
+    coverage.sort_by(|a, b| a.series.cmp(&b.series));
+
+    let mut rows = vec![
+        section_heading(output_text::MACRO_CONTEXT_SECTION),
+        output_text::MACRO_CONTEXT_NOTE.to_string(),
+        output_text::MACRO_TABLE_HEADER.to_string(),
+        output_text::MACRO_TABLE_ALIGNMENT.to_string(),
+    ];
+
+    rows.extend(coverage.into_iter().map(|coverage| {
+        format!(
+            "| {} | {} | {} | {} | {} | {} |",
+            coverage.series,
+            coverage.name,
+            coverage.frequency,
+            coverage.latest_date.unwrap_or_else(|| "none".to_string()),
+            coverage.observations,
+            if coverage.observations > 0 {
+                "stored"
+            } else {
+                "missing"
+            }
+        )
+    }));
+
+    rows.join("\n")
+}
+
+fn macro_coverage(macro_observations: &[MacroObservation]) -> Vec<MacroCoverage> {
+    let mut coverage: HashMap<&str, MacroCoverage> = macro_data::MACRO_SERIES
+        .iter()
+        .map(|(series, name, frequency, _)| {
+            (
+                *series,
+                MacroCoverage {
+                    series: (*series).to_string(),
+                    name: (*name).to_string(),
+                    frequency: (*frequency).to_string(),
+                    latest_date: None,
+                    observations: 0,
+                },
+            )
+        })
+        .collect();
+
+    for observation in macro_observations {
+        if let Some(entry) = coverage.get_mut(observation.series.as_str()) {
+            entry.observations += 1;
+            if entry
+                .latest_date
+                .as_deref()
+                .is_none_or(|latest| observation.date.as_str() > latest)
+            {
+                entry.latest_date = Some(observation.date.clone());
+            }
+        }
+    }
+
+    coverage.into_values().collect()
+}
+
 fn top_sector_table(sector_scores: &[SectorScore]) -> String {
     let mut rows = vec![
         section_heading(output_text::TOP_SECTORS_SECTION),
@@ -74,6 +141,14 @@ fn top_sector_table(sector_scores: &[SectorScore]) -> String {
             .map(sector_row),
     );
     rows.join("\n")
+}
+
+struct MacroCoverage {
+    series: String,
+    name: String,
+    frequency: String,
+    latest_date: Option<String>,
+    observations: usize,
 }
 
 fn weak_sector_table(sector_scores: &[SectorScore]) -> String {

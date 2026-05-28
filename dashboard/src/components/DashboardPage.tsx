@@ -312,6 +312,22 @@ function renderView(view: DashboardView, data: DashboardSnapshot) {
                   </DataTag>
                 ],
                 [
+                  <DataTag tone="muted">Macro</DataTag>,
+                  "FRED series",
+                  String(data.data_health.required_macro_coverage.length),
+                  <DataTag tone={hasMacroCoverage(data) ? "accent" : "muted"}>
+                    {hasMacroCoverage(data) ? "Stored" : "Review"}
+                  </DataTag>
+                ],
+                [
+                  <DataTag tone="muted">Macro</DataTag>,
+                  "Missing series",
+                  String(missingMacroSeries(data).length),
+                  <DataTag tone={missingMacroSeries(data).length === 0 ? "accent" : "muted"}>
+                    {missingMacroSeries(data).length === 0 ? "OK" : "Review"}
+                  </DataTag>
+                ],
+                [
                   <DataTag tone="accent">Latest</DataTag>,
                   "Rows",
                   `${data.data_health.latest_score_coverage.sector_rows} sectors / ${data.data_health.latest_score_coverage.industry_rows} industries / ${data.data_health.latest_score_coverage.stock_rows} stocks`,
@@ -397,6 +413,14 @@ function MoveTag({ value }: { value: number }) {
   return <DataTag tone="muted">Flat</DataTag>;
 }
 
+function hasMacroCoverage(data: DashboardSnapshot) {
+  return data.data_health.required_macro_coverage.length > 0 && missingMacroSeries(data).length === 0;
+}
+
+function missingMacroSeries(data: DashboardSnapshot) {
+  return data.data_health.required_macro_coverage.filter((coverage) => coverage.observation_count === 0);
+}
+
 function limitRow(item: string): ReactNode[] {
   const lower = item.toLowerCase();
 
@@ -410,7 +434,7 @@ function limitRow(item: string): ReactNode[] {
     return [<DataTag tone="muted">Sector</DataTag>, "Map layer", <DataTag tone="muted">Formula review</DataTag>];
   }
   if (lower.includes("market regime")) {
-    return [<DataTag tone="muted">Regime</DataTag>, "ETF proxy", <DataTag tone="muted">Macro feed</DataTag>];
+    return [<DataTag tone="muted">Regime</DataTag>, "ETF score, FRED context", <DataTag tone="muted">Validate</DataTag>];
   }
   if (lower.includes("earnings")) {
     return [<DataTag tone="muted">Catalyst</DataTag>, "Earnings pending", <DataTag tone="muted">Data source</DataTag>];

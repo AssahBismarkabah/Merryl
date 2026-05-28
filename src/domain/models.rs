@@ -26,6 +26,21 @@ pub struct DailyPrice {
 }
 
 #[derive(Debug, Clone)]
+pub struct MacroObservation {
+    pub series: String,
+    pub series_name: String,
+    pub date: String,
+    pub value: f64,
+    pub source: String,
+    pub frequency: String,
+    pub units: String,
+    pub realtime_start: String,
+    pub realtime_end: String,
+    pub raw_json: String,
+    pub quality_status: String,
+}
+
+#[derive(Debug, Clone)]
 pub struct MarketEvent {
     pub symbol: String,
     pub sector: Option<String>,
