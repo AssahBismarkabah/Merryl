@@ -47,8 +47,8 @@ export const watchlistColumns: ColumnDef<WatchlistRow>[] = [
   { header: "Sector", cell: ({ row }) => dataTag(row.original.sector, "accent") },
   { header: "Industry", cell: ({ row }) => dataTag(row.original.industry, "muted") },
   { header: "Score", cell: ({ row }) => metricCell(number(row.original.score)) },
-  { header: "Catalyst", cell: ({ row }) => statusTag(row.original.catalyst_status) },
-  { header: "Reason", accessorKey: "reason" }
+  { header: "Classification", cell: ({ row }) => classificationCell(row.original.classifications) },
+  { header: "Catalyst", cell: ({ row }) => statusTag(row.original.catalyst_status) }
 ];
 
 type TagTone = "accent" | "muted";
@@ -81,4 +81,32 @@ function statusTag(value: string) {
 
 function dataTag(value: string, tone: TagTone) {
   return createElement("span", { className: `dataTag ${tone}` }, value);
+}
+
+function classificationCell(values?: string[]) {
+  const labels = values && values.length > 0 ? values.map(shortLabel) : ["unclassified"];
+  return createElement("span", { className: "classificationCell" }, labels.join(", "));
+}
+
+function shortLabel(value: string) {
+  switch (value) {
+    case "sector_leader":
+      return "sector";
+    case "industry_leader":
+      return "industry";
+    case "relative_strength_leader":
+      return "strength";
+    case "volume_confirmed":
+      return "volume";
+    case "new_leader":
+      return "new";
+    case "event_context":
+      return "event";
+    case "event_risk":
+      return "risk";
+    case "macro_conflict_context":
+      return "macro";
+    default:
+      return value.replaceAll("_", " ");
+  }
 }

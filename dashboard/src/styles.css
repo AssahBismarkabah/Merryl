@@ -301,31 +301,6 @@ h3 {
   overflow: hidden;
 }
 
-.tickerStrip {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(118px, 1fr));
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  overflow-x: auto;
-}
-
-.tickerItem {
-  min-height: 58px;
-  padding: 10px 12px;
-  border-right: 1px solid var(--border-soft);
-}
-
-.tickerItem:last-child {
-  border-right: 0;
-}
-
-.tickerItem strong {
-  display: block;
-  margin-top: 5px;
-  font-size: 17px;
-  font-variant-numeric: tabular-nums;
-}
-
 .positive {
   color: var(--positive);
 }
@@ -407,6 +382,10 @@ h3 {
 .validationStack {
   display: grid;
   min-width: 0;
+}
+
+.validationStack .detailSection {
+  padding-bottom: 0;
 }
 
 .tableWrap {
@@ -510,6 +489,15 @@ tbody tr:hover {
 .dataTag.muted {
   color: #c8d0dc;
   background: #252a31;
+}
+
+.classificationCell {
+  display: inline-block;
+  max-width: 260px;
+  overflow: hidden;
+  color: var(--muted-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .error,

@@ -77,6 +77,7 @@ export interface WatchlistRow {
   industry: string;
   score: number;
   catalyst_status: string;
+  classifications: string[];
   reason: string;
 }
 

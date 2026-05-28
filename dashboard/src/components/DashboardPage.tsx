@@ -3,7 +3,6 @@ import { type ReactNode, useMemo, useState } from "react";
 import { DataTable } from "./DataTable";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { MarketOverview } from "./MarketOverview";
-import { MarketStrip } from "./MarketStrip";
 import { number, percent } from "../format";
 import {
   industryColumns,
@@ -98,16 +97,18 @@ function DateSelector({
   selectedDate: string;
   onChange: (date: string) => void;
 }) {
+  const scoredDates = dates ?? [];
+
   return (
     <label className="dateControl">
       <span>Market date</span>
       <select
         aria-label="Market date"
-        disabled={disabled || dates.length === 0}
+        disabled={disabled || scoredDates.length === 0}
         value={selectedDate}
         onChange={(event) => onChange(event.target.value)}
       >
-        {dates.map((date) => (
+        {scoredDates.map((date) => (
           <option key={date} value={date}>
             {date}
           </option>
@@ -122,7 +123,6 @@ function renderView(view: DashboardView, data: DashboardSnapshot) {
     case "overview":
       return (
         <div className="viewSurface">
-          <MarketStrip data={data} />
           <MarketOverview data={data} />
         </div>
       );
@@ -235,114 +235,20 @@ function renderView(view: DashboardView, data: DashboardSnapshot) {
       return (
         <div className="viewSurface validationStack">
           <section className="detailSection">
-            <ViewHeader title="Backtest Review" />
-            {data.latest_backtest ? (
-              <SimpleTable
-                columns={["Area", "Metric", "Value", "State"]}
-                rows={[
-                  [
-                    <DataTag tone="accent">Backtest</DataTag>,
-                    "Range",
-                    `${data.latest_backtest.from_date} to ${data.latest_backtest.to_date}`,
-                    <DataTag tone="accent">Stored</DataTag>
-                  ],
-                  [
-                    <DataTag tone="accent">Backtest</DataTag>,
-                    "Scope",
-                    "Score behavior",
-                    <DataTag tone="muted">Validation</DataTag>
-                  ],
-                  [
-                    <DataTag tone="muted">Coverage</DataTag>,
-                    "Sectors",
-                    String(data.latest_backtest.metrics.sector_observation_count ?? 0),
-                    <DataTag tone="accent">Ready</DataTag>
-                  ],
-                  [
-                    <DataTag tone="muted">Coverage</DataTag>,
-                    "Stocks",
-                    String(data.latest_backtest.metrics.stock_observation_count ?? 0),
-                    <DataTag tone="accent">Ready</DataTag>
-                  ],
-                  [
-                    <DataTag tone="muted">Coverage</DataTag>,
-                    "Industries",
-                    String(data.latest_backtest.metrics.industry_stock_observation_count ?? 0),
-                    <DataTag tone="accent">Ready</DataTag>
-                  ]
-                ]}
-              />
-            ) : (
-              <p className="empty">No stored backtest result yet.</p>
-            )}
+            <ViewHeader title="Validation Summary" />
+            <SimpleTable columns={["Layer", "Lead", "Value", "Signal", "Context"]} rows={validationRows(data)} />
           </section>
 
           <section className="detailSection">
             <ViewHeader title="Data Health" />
-            <SimpleTable
-              columns={["Area", "Metric", "Value", "State"]}
-              rows={[
-                [<DataTag tone="accent">Market</DataTag>, "Date", data.score_date, <DataTag tone="accent">Current</DataTag>],
-                [
-                  <DataTag tone="accent">Scores</DataTag>,
-                  "Dates",
-                  String(data.data_health.score_dates),
-                  <DataTag tone="accent">Stored</DataTag>
-                ],
-                [
-                  <DataTag tone="muted">Universe</DataTag>,
-                  "Symbols",
-                  String(data.data_health.required_symbol_count),
-                  <DataTag tone="accent">Tracked</DataTag>
-                ],
-                [
-                  <DataTag tone="muted">Coverage</DataTag>,
-                  "Missing symbols",
-                  String(data.data_health.missing_symbols.length),
-                  <DataTag tone={data.data_health.missing_symbols.length === 0 ? "accent" : "muted"}>
-                    {data.data_health.missing_symbols.length === 0 ? "OK" : "Review"}
-                  </DataTag>
-                ],
-                [
-                  <DataTag tone="muted">Coverage</DataTag>,
-                  "Missing maps",
-                  String(data.data_health.missing_sector_maps.length),
-                  <DataTag tone={data.data_health.missing_sector_maps.length === 0 ? "accent" : "muted"}>
-                    {data.data_health.missing_sector_maps.length === 0 ? "OK" : "Review"}
-                  </DataTag>
-                ],
-                [
-                  <DataTag tone="muted">Macro</DataTag>,
-                  "FRED series",
-                  String(data.data_health.required_macro_coverage.length),
-                  <DataTag tone={hasMacroCoverage(data) ? "accent" : "muted"}>
-                    {hasMacroCoverage(data) ? "Stored" : "Review"}
-                  </DataTag>
-                ],
-                [
-                  <DataTag tone="muted">Macro</DataTag>,
-                  "Missing series",
-                  String(missingMacroSeries(data).length),
-                  <DataTag tone={missingMacroSeries(data).length === 0 ? "accent" : "muted"}>
-                    {missingMacroSeries(data).length === 0 ? "OK" : "Review"}
-                  </DataTag>
-                ],
-                [
-                  <DataTag tone="accent">Latest</DataTag>,
-                  "Rows",
-                  `${data.data_health.latest_score_coverage.sector_rows} sectors / ${data.data_health.latest_score_coverage.industry_rows} industries / ${data.data_health.latest_score_coverage.stock_rows} stocks`,
-                  <DataTag tone="accent">Stored</DataTag>
-                ],
-                [<DataTag tone="muted">Storage</DataTag>, "System", "SQLite", <DataTag tone="accent">Connected</DataTag>]
-              ]}
-            />
+            <SimpleTable columns={["Layer", "Lead", "Value", "Signal", "Context"]} rows={dataHealthRows(data)} />
           </section>
 
           <section className="detailSection">
             <ViewHeader title="Coverage Limits" />
             <SimpleTable
-              columns={["Area", "Current State", "Next"]}
-              rows={data.limitations.map((item) => limitRow(item))}
+              columns={["Layer", "Lead", "Value", "Signal", "Context"]}
+              rows={(data.limitations ?? []).map((item) => limitRow(item))}
             />
           </section>
         </div>
@@ -414,36 +320,233 @@ function MoveTag({ value }: { value: number }) {
 }
 
 function hasMacroCoverage(data: DashboardSnapshot) {
-  return data.data_health.required_macro_coverage.length > 0 && missingMacroSeries(data).length === 0;
+  const macroCoverage = dashboardHealth(data).required_macro_coverage ?? [];
+  return macroCoverage.length > 0 && missingMacroSeries(data).length === 0;
 }
 
 function missingMacroSeries(data: DashboardSnapshot) {
-  return data.data_health.required_macro_coverage.filter((coverage) => coverage.observation_count === 0);
+  return (dashboardHealth(data).required_macro_coverage ?? []).filter((coverage) => coverage.observation_count === 0);
+}
+
+function dataHealthRows(data: DashboardSnapshot): ReactNode[][] {
+  const health = dashboardHealth(data);
+  const missingSymbols = health.missing_symbols ?? [];
+  const missingMaps = health.missing_sector_maps ?? [];
+  const macroCoverage = health.required_macro_coverage ?? [];
+  const missingMacro = missingMacroSeries(data);
+  const latestCoverage = health.latest_score_coverage ?? {
+    sector_rows: 0,
+    industry_rows: 0,
+    stock_rows: 0
+  };
+
+  return [
+    [
+      <DataTag tone="accent">Market</DataTag>,
+      "Date",
+      data.score_date,
+      <DataTag tone="accent">Current</DataTag>,
+      "Selected score date"
+    ],
+    [
+      <DataTag tone="accent">Scores</DataTag>,
+      "Dates",
+      String(health.score_dates ?? 0),
+      <DataTag tone="accent">Stored</DataTag>,
+      "Historical scoring coverage"
+    ],
+    [
+      <DataTag tone="muted">Universe</DataTag>,
+      "Symbols",
+      String(health.required_symbol_count ?? 0),
+      <DataTag tone="accent">Tracked</DataTag>,
+      "Configured market universe"
+    ],
+    [
+      <DataTag tone="muted">Coverage</DataTag>,
+      "Missing symbols",
+      String(missingSymbols.length),
+      <DataTag tone={missingSymbols.length === 0 ? "accent" : "muted"}>
+        {missingSymbols.length === 0 ? "OK" : "Review"}
+      </DataTag>,
+      "Required symbol ingestion"
+    ],
+    [
+      <DataTag tone="muted">Coverage</DataTag>,
+      "Missing maps",
+      String(missingMaps.length),
+      <DataTag tone={missingMaps.length === 0 ? "accent" : "muted"}>
+        {missingMaps.length === 0 ? "OK" : "Review"}
+      </DataTag>,
+      "Sector and industry mapping"
+    ],
+    [
+      <DataTag tone="muted">Macro</DataTag>,
+      "FRED series",
+      String(macroCoverage.length),
+      <DataTag tone={hasMacroCoverage(data) ? "accent" : "muted"}>
+        {hasMacroCoverage(data) ? "Stored" : "Review"}
+      </DataTag>,
+      "Macro context coverage"
+    ],
+    [
+      <DataTag tone="muted">Macro</DataTag>,
+      "Missing series",
+      String(missingMacro.length),
+      <DataTag tone={missingMacro.length === 0 ? "accent" : "muted"}>
+        {missingMacro.length === 0 ? "OK" : "Review"}
+      </DataTag>,
+      "Required FRED observations"
+    ],
+    [
+      <DataTag tone="accent">Latest</DataTag>,
+      "Rows",
+      `${latestCoverage.sector_rows} sectors / ${latestCoverage.industry_rows} industries / ${latestCoverage.stock_rows} stocks`,
+      <DataTag tone="accent">Stored</DataTag>,
+      "Dashboard rows from SQLite"
+    ],
+    [
+      <DataTag tone="muted">Storage</DataTag>,
+      "System",
+      "SQLite",
+      <DataTag tone="accent">Connected</DataTag>,
+      "Read-only dashboard source"
+    ]
+  ];
+}
+
+function dashboardHealth(data: DashboardSnapshot): Partial<DashboardSnapshot["data_health"]> {
+  return data.data_health ?? {};
+}
+
+function validationRows(data: DashboardSnapshot): ReactNode[][] {
+  const latestBacktest = data.latest_backtest;
+  const metrics = latestBacktest?.metrics;
+
+  if (!latestBacktest) {
+    return [
+      [
+        <DataTag tone="muted">Backtest</DataTag>,
+        "Stored result",
+        "Missing",
+        <DataTag tone="muted">Run needed</DataTag>,
+        "Use `merryl run backtest` after scores exist"
+      ]
+    ];
+  }
+
+  return [
+    [
+      <DataTag tone="accent">Backtest</DataTag>,
+      "Range",
+      `${latestBacktest.from_date} to ${latestBacktest.to_date}`,
+      <DataTag tone="accent">Stored</DataTag>,
+      "Score behavior validation"
+    ],
+    [
+      <DataTag tone="accent">Backtest</DataTag>,
+      "Scope",
+      validationScope(metrics),
+      <DataTag tone="muted">Validation</DataTag>,
+      "Not trade profitability"
+    ],
+    [
+      <DataTag tone="muted">Sector</DataTag>,
+      "Observations",
+      metricCount(metrics, "sector_observation_count"),
+      <DataTag tone="accent">Ready</DataTag>,
+      "Sector score forward behavior"
+    ],
+    [
+      <DataTag tone="muted">Stock</DataTag>,
+      "Observations",
+      metricCount(metrics, "stock_observation_count"),
+      <DataTag tone="accent">Ready</DataTag>,
+      "Stock score forward behavior"
+    ],
+    [
+      <DataTag tone="muted">Industry</DataTag>,
+      "Observations",
+      metricCount(metrics, "industry_stock_observation_count"),
+      <DataTag tone="accent">Ready</DataTag>,
+      "Industry-adjusted stock behavior"
+    ]
+  ];
+}
+
+type BacktestMetrics = NonNullable<DashboardSnapshot["latest_backtest"]>["metrics"];
+
+function validationScope(metrics: BacktestMetrics | undefined) {
+  const purpose = metrics?.validation_scope?.purpose;
+  return purpose ? purpose.replaceAll("_", " ") : "score behavior validation";
+}
+
+function metricCount(
+  metrics: BacktestMetrics | undefined,
+  key: "sector_observation_count" | "stock_observation_count" | "industry_stock_observation_count"
+) {
+  return String(metrics?.[key] ?? 0);
 }
 
 function limitRow(item: string): ReactNode[] {
   const lower = item.toLowerCase();
 
   if (lower.includes("read-only")) {
-    return [<DataTag tone="accent">Dashboard</DataTag>, "Read-only", <DataTag tone="muted">Phase 4</DataTag>];
+    return [
+      <DataTag tone="accent">Dashboard</DataTag>,
+      "Read-only",
+      "Stored SQLite scores",
+      <DataTag tone="muted">Phase 4</DataTag>,
+      "No scoring or writes in UI"
+    ];
   }
   if (lower.includes("watchlist")) {
-    return [<DataTag tone="accent">Watchlist</DataTag>, "Chart review only", <DataTag tone="muted">Risk plan</DataTag>];
+    return [
+      <DataTag tone="accent">Watchlist</DataTag>,
+      "Chart review only",
+      "Not a trade signal",
+      <DataTag tone="muted">Risk plan</DataTag>,
+      "Final output remains a review queue"
+    ];
   }
   if (lower.includes("sector ranking")) {
-    return [<DataTag tone="muted">Sector</DataTag>, "Map layer", <DataTag tone="muted">Formula review</DataTag>];
+    return [
+      <DataTag tone="muted">Sector</DataTag>,
+      "Map layer",
+      "Attention ranking",
+      <DataTag tone="muted">Formula review</DataTag>,
+      "Not standalone forward signal"
+    ];
   }
   if (lower.includes("market regime")) {
-    return [<DataTag tone="muted">Regime</DataTag>, "ETF score, FRED context", <DataTag tone="muted">Validate</DataTag>];
+    return [
+      <DataTag tone="muted">Regime</DataTag>,
+      "ETF score",
+      "FRED context separate",
+      <DataTag tone="muted">Validate</DataTag>,
+      "Macro context is not a score input yet"
+    ];
   }
   if (lower.includes("earnings")) {
-    return [<DataTag tone="muted">Catalyst</DataTag>, "Earnings pending", <DataTag tone="muted">Data source</DataTag>];
+    return [
+      <DataTag tone="muted">Catalyst</DataTag>,
+      "Events",
+      "Source-backed where available",
+      <DataTag tone="muted">Data source</DataTag>,
+      "Context, not score input"
+    ];
   }
   if (lower.includes("backtests")) {
-    return [<DataTag tone="accent">Backtest</DataTag>, "Score behavior", <DataTag tone="muted">Validation only</DataTag>];
+    return [
+      <DataTag tone="accent">Backtest</DataTag>,
+      "Score behavior",
+      "Validation only",
+      <DataTag tone="muted">Research</DataTag>,
+      "No P&L claim"
+    ];
   }
 
-  return [<DataTag tone="muted">General</DataTag>, item, <DataTag tone="muted">Review</DataTag>];
+  return [<DataTag tone="muted">General</DataTag>, "Limit", item, <DataTag tone="muted">Review</DataTag>, "Phase control"];
 }
 
 function viewTitle(view: DashboardView) {

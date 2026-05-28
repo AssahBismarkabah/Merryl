@@ -15,7 +15,7 @@ export async function fetchScoredDates(): Promise<string[]> {
   }
 
   const body = (await response.json()) as { dates: string[] };
-  return body.dates;
+  return body.dates ?? [];
 }
 
 async function fetchDashboard(url: string): Promise<DashboardSnapshot> {
