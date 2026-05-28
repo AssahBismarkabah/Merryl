@@ -69,6 +69,18 @@ pub mod paths {
             "{VALIDATION_EXPORTS_DIR}/{from_date}_{to_date}_macro_regime_validation.csv"
         ))
     }
+
+    pub fn event_context_validation_report_path(from_date: &str, to_date: &str) -> PathBuf {
+        PathBuf::from(format!(
+            "{VALIDATION_REPORTS_DIR}/{from_date}_{to_date}_event_context_validation.md"
+        ))
+    }
+
+    pub fn event_context_validation_export_path(from_date: &str, to_date: &str) -> PathBuf {
+        PathBuf::from(format!(
+            "{VALIDATION_EXPORTS_DIR}/{from_date}_{to_date}_event_context_validation.csv"
+        ))
+    }
 }
 
 pub mod market_data {
@@ -240,6 +252,17 @@ pub mod event_data {
     pub fn sec_request_sleep() -> Duration {
         Duration::from_millis(SEC_REQUEST_SLEEP_MS)
     }
+}
+
+pub mod event_validation {
+    pub const GROUP_ALL_WATCHLIST: &str = "all_watchlist";
+    pub const GROUP_PENDING_SOURCE: &str = "pending_source";
+    pub const GROUP_EVENT_CONTEXT: &str = "event_context";
+    pub const GROUP_RECENT_NEWS: &str = "recent_news";
+    pub const GROUP_EARNINGS: &str = "earnings";
+    pub const GROUP_FILING: &str = "filing";
+    pub const GROUP_EVENT_RISK: &str = "event_risk";
+    pub const GROUP_MULTIPLE_EVENT_TYPES: &str = "multiple_event_types";
 }
 
 pub mod universe {

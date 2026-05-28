@@ -1,5 +1,6 @@
 mod backtest;
 mod csv;
+mod event_context_validation;
 mod formatting;
 mod macro_regime_validation;
 mod markdown;
@@ -7,6 +8,9 @@ mod paths;
 mod reports;
 
 pub use backtest::{BacktestOutputPaths, write_backtest_outputs};
+pub use event_context_validation::{
+    EventContextValidationOutputPaths, write_event_context_validation_outputs,
+};
 pub use macro_regime_validation::{
     MacroRegimeValidationOutputPaths, write_macro_regime_validation_outputs,
 };

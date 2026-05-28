@@ -1,9 +1,28 @@
+use std::collections::HashMap;
+
 use crate::config::{event_data, market_data, scoring};
 use crate::domain::models::{MarketEvent, StockScore};
 
 pub fn apply_catalyst_status(stock_scores: &mut [StockScore], events: &[MarketEvent]) {
     for stock in stock_scores {
         stock.catalyst_status = catalyst_status_for_symbol(&stock.symbol, events);
+    }
+}
+
+pub fn preserve_existing_catalyst_statuses(
+    stock_scores: &mut [StockScore],
+    existing_statuses: &HashMap<(String, String), String>,
+    report_date: &str,
+) {
+    for stock in stock_scores {
+        if stock.date.as_str() >= report_date {
+            continue;
+        }
+        if let Some(status) = existing_statuses.get(&(stock.date.clone(), stock.symbol.clone()))
+            && status != scoring::CATALYST_PENDING_SOURCE
+        {
+            stock.catalyst_status = status.clone();
+        }
     }
 }
 

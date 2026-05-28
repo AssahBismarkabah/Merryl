@@ -1,8 +1,8 @@
 # Merryl Implementation Runbook
 
-Version: 0.2
+Version: 0.3
 Date: 2026-05-28
-Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, Phase 5A/B FRED macro ingestion and macro/regime validation, and Phase 5C structured catalyst/event context
+Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, Phase 5A/B FRED macro ingestion and macro/regime validation, Phase 5C structured catalyst/event context, and Phase 5C event-context validation
 
 ## Current Slice
 
@@ -29,9 +29,10 @@ Merryl backtest run
   -> group sector forward behavior by same-day sector component decile
   -> group stock forward behavior by same-day industry/theme score decile
   -> validate ETF-proxy regime labels against stored FRED macro context using as-of macro snapshots
+  -> validate stored event/catalyst watchlist labels against forward stock behavior
   -> summarize hit rate, average return, median return, and relative return behavior
   -> store metrics in backtest_results
-  -> write Markdown and CSV backtest summaries plus macro/regime validation outputs
+  -> write Markdown and CSV backtest summaries plus macro/regime and event-context validation outputs
 
 Merryl doctor run
   -> verify required docs, workflow config, credentials, and generated paths
@@ -253,6 +254,13 @@ reports/validations/YYYY-MM-DD_YYYY-MM-DD_macro_regime_validation.md
 exports/validations/YYYY-MM-DD_YYYY-MM-DD_macro_regime_validation.csv
 ```
 
+Event context validation outputs:
+
+```text
+reports/validations/YYYY-MM-DD_YYYY-MM-DD_event_context_validation.md
+exports/validations/YYYY-MM-DD_YYYY-MM-DD_event_context_validation.csv
+```
+
 Phase 3 validation:
 
 ```text
@@ -317,6 +325,12 @@ Phase 5C structured catalyst source plan:
 
 ```text
 docs/phase_5c_structured_catalyst_source_spec.md
+```
+
+Phase 5C event context validation checkpoint:
+
+```text
+docs/phase_5c_event_context_validation_spec.md
 ```
 
 Phase 5C source coverage review:

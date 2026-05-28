@@ -1,8 +1,8 @@
 # Watchlist Convergence Review Spec
 
-Version: 0.2
+Version: 0.3
 Date: 2026-05-28
-Status: Implemented; review output before adding another data source or changing score formulas
+Status: Implemented; Phase 5C event-context validation is implemented
 
 Related documents:
 
@@ -242,12 +242,24 @@ Implementation result:
 
 ## 9. Follow-Up After Classification
 
-Now that the classification layer exists, the next step is to review the generated daily report and dashboard output before deciding whether the next target is:
+Now that the classification layer exists, the follow-up validation checkpoint is:
 
-- a macro-adjusted regime comparison
-- catalyst/event validation grouping
-- industry event concentration
+```text
+docs/phase_5c_event_context_validation_spec.md
+```
+
+This validates catalyst/event labels as a watchlist review layer before any catalyst/event scoring-weight change.
+
+Live result:
+
+```text
+Event-context rows exist, but they do not yet have enough future bars for forward validation.
+```
+
+Do not move next to:
+
 - ETF fund-flow confirmation
+- options flow
+- intraday data
 - universe expansion
-
-Until then, adding another source is premature because the final classification/filtering surface is not explicit enough.
+- catalyst/event score bonuses

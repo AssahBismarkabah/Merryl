@@ -39,6 +39,23 @@ pub fn pct_return(
     Some((current / previous) - 1.0)
 }
 
+pub fn forward_return(
+    histories: &PriceHistories,
+    symbol: &str,
+    date: &str,
+    horizon: usize,
+) -> Option<f64> {
+    let history = histories.get(symbol)?;
+    let idx = history.iter().position(|price| price.date == date)?;
+    let future_idx = idx + horizon;
+    if future_idx >= history.len() {
+        return None;
+    }
+    let current = history[idx].adjusted_close;
+    let future = history[future_idx].adjusted_close;
+    Some((future / current) - 1.0)
+}
+
 pub fn relative_volume(
     histories: &PriceHistories,
     symbol: &str,

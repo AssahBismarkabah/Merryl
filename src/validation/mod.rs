@@ -7,6 +7,13 @@ use serde::Serialize;
 use crate::config::{macro_data, macro_validation};
 use crate::domain::models::{MacroObservation, MarketRegimeScore, SectorScore};
 
+mod event_context;
+
+pub use event_context::{
+    EventContextSummaryRow, EventContextValidationInput, EventContextValidationMetrics,
+    EventContextValidationScope, run_event_context_validation,
+};
+
 const SERIES_VIX: &str = "VIXCLS";
 const SERIES_DGS10: &str = "DGS10";
 const SERIES_T10Y2Y: &str = "T10Y2Y";

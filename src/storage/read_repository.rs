@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use anyhow::Result;
 use rusqlite::{OptionalExtension, params};
 
+use crate::config::scoring;
 use crate::domain::models::{
     BacktestResultRow, DailyPrice, IndustryScore, IndustryScoreSnapshot, MacroObservation,
     MarketRegimeScore, SectorMap, SectorScore, StockScore, WatchlistRow,
@@ -198,6 +199,55 @@ impl Database {
         })?;
 
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn watchlists_between(&self, from_date: &str, to_date: &str) -> Result<Vec<WatchlistRow>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT date, rank, symbol, score, reason
+            FROM watchlists
+            WHERE date BETWEEN ?1 AND ?2
+            ORDER BY date, rank
+            "#,
+        )?;
+        let rows = stmt.query_map(params![from_date, to_date], |row| {
+            Ok(WatchlistRow {
+                date: row.get(0)?,
+                rank: row.get::<_, i64>(1)? as usize,
+                symbol: row.get(2)?,
+                score: row.get(3)?,
+                reason: row.get(4)?,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn non_pending_stock_catalyst_statuses_before(
+        &self,
+        date: &str,
+    ) -> Result<HashMap<(String, String), String>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT date, symbol, catalyst_status
+            FROM stock_scores
+            WHERE date < ?1
+              AND catalyst_status != ?2
+            "#,
+        )?;
+        let rows = stmt.query_map(params![date, scoring::CATALYST_PENDING_SOURCE], |row| {
+            let score_date: String = row.get(0)?;
+            let symbol: String = row.get(1)?;
+            let catalyst_status: String = row.get(2)?;
+            Ok(((score_date, symbol), catalyst_status))
+        })?;
+
+        let mut statuses = HashMap::new();
+        for row in rows {
+            let (key, catalyst_status) = row?;
+            statuses.insert(key, catalyst_status);
+        }
+        Ok(statuses)
     }
 
     pub fn latest_backtest_result(&self) -> Result<Option<BacktestResultRow>> {

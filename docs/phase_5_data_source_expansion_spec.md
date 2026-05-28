@@ -1,8 +1,8 @@
 # Phase 5 Data Source Expansion Spec
 
-Version: 0.2
+Version: 0.3
 Date: 2026-05-28
-Status: Phase 5A/B macro ingestion, macro/regime validation, non-scoring macro context overlay, and Phase 5C structured catalyst context complete
+Status: Phase 5A/B macro ingestion, macro/regime validation, non-scoring macro context overlay, Phase 5C structured catalyst context, final watchlist classification, and Phase 5C event-context validation complete
 
 Related documents:
 
@@ -16,6 +16,7 @@ Related documents:
 - `docs/phase_5b_macro_regime_validation_spec.md`
 - `docs/catalyst_earnings_source_spec.md`
 - `docs/phase_5c_structured_catalyst_source_spec.md`
+- `docs/phase_5c_event_context_validation_spec.md`
 - `docs/phase_5c_source_coverage_review_spec.md`
 - `docs/watchlist_convergence_review_spec.md`
 - `docs/phase_4_dashboard_stabilization_spec.md`
@@ -714,13 +715,15 @@ docs/phase_5c_source_coverage_review_spec.md
 
 The coverage checkpoint accepted Phase 5C as source-backed context for the current ranked stock surface. It did not approve any catalyst/event scoring-weight change.
 
-Current Phase 5 target:
+The final watchlist classification layer from `docs/watchlist_convergence_review_spec.md` is implemented.
+
+Current Phase 5 checkpoint:
 
 ```text
-Review the implemented final watchlist classification layer from `docs/watchlist_convergence_review_spec.md`.
+Review the Phase 5C event context validation result from `docs/phase_5c_event_context_validation_spec.md`.
 ```
 
-Do not move to paid ETF fund flows, options flow, intraday data, universe expansion, or score-formula changes before the final classification/filtering output is reviewed.
+Do not move to paid ETF fund flows, options flow, intraday data, universe expansion, or score-formula changes before the event-context validation result is reviewed.
 
 ## 8. Data Model Requirements
 

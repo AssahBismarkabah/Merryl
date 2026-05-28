@@ -12,7 +12,8 @@ use crate::data::{
 use crate::domain::models::{MarketEvent, StockScore};
 use crate::output::{DailyReportInput, write_daily_outputs};
 use crate::scoring::{
-    apply_catalyst_status, latest_date, previous_watchlist_symbols_for_date, score_market_history,
+    apply_catalyst_status, latest_date, preserve_existing_catalyst_statuses,
+    previous_watchlist_symbols_for_date, score_market_history,
 };
 use crate::storage::{Database, default_db_path};
 use crate::validation::macro_context_overlay;
@@ -111,6 +112,14 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         attach_event_sectors(&mut structured_events, &scores.stocks);
         attach_event_sectors(&mut all_events, &scores.stocks);
         apply_catalyst_status(&mut scores.stocks, &all_events);
+    }
+    let existing_catalyst_statuses = db.non_pending_stock_catalyst_statuses_before(&report_date)?;
+    for scores in &mut score_history {
+        preserve_existing_catalyst_statuses(
+            &mut scores.stocks,
+            &existing_catalyst_statuses,
+            &report_date,
+        );
     }
 
     db.upsert_symbols(&symbols)?;

@@ -1,8 +1,8 @@
 # Phase 5C Structured Catalyst Source Spec
 
-Version: 0.2
+Version: 0.3
 Date: 2026-05-28
-Status: First implementation complete; live daily verification passed
+Status: First implementation complete; live daily verification and event-context validation passed
 
 Related documents:
 
@@ -11,6 +11,7 @@ Related documents:
 - `docs/phase_0_decisions_spec.md`
 - `docs/phase_5_data_source_expansion_spec.md`
 - `docs/phase_5c_source_coverage_review_spec.md`
+- `docs/phase_5c_event_context_validation_spec.md`
 - `docs/catalyst_earnings_source_spec.md`
 - `docs/implementation_spec.md`
 
@@ -463,6 +464,28 @@ docs/phase_5c_source_coverage_review_spec.md
 ```
 
 The coverage review accepted Phase 5C as a source-backed event-context layer for the current scored stock surface. It did not approve any catalyst/event scoring-weight change.
+
+Follow-up validation checkpoint:
+
+```text
+docs/phase_5c_event_context_validation_spec.md
+```
+
+This checkpoint now validates stored catalyst/event labels against watchlist forward behavior before any catalyst/event scoring-weight change is considered.
+
+Live result:
+
+```text
+Rows with event context: 25
+Event-context forward observations: 0
+```
+
+Interpretation:
+
+```text
+Structured event labels are connected, but they do not yet have enough future bars for forward validation.
+Do not change catalyst/event score weights yet.
+```
 
 ## 13. Acceptance Criteria
 

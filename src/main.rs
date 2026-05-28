@@ -82,6 +82,14 @@ fn main() -> Result<()> {
                     "macro regime validation export: {}",
                     result.macro_regime_validation_export.display()
                 );
+                println!(
+                    "event context validation report: {}",
+                    result.event_context_validation_report.display()
+                );
+                println!(
+                    "event context validation export: {}",
+                    result.event_context_validation_export.display()
+                );
                 println!("sector observations: {}", result.sector_observation_count);
                 println!(
                     "sector component observations: {}",
@@ -95,6 +103,10 @@ fn main() -> Result<()> {
                 println!(
                     "macro regime snapshots: {}",
                     result.macro_regime_snapshot_count
+                );
+                println!(
+                    "event context observations: {}",
+                    result.event_context_observation_count
                 );
                 println!("backtest result id: {}", result.backtest_result_id);
             }

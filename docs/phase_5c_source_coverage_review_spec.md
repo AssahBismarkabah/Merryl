@@ -1,8 +1,8 @@
 # Phase 5C Source Coverage Review Spec
 
-Version: 0.1
+Version: 0.2
 Date: 2026-05-28
-Status: Complete checkpoint; use before the next Phase 5 target
+Status: Complete checkpoint; Phase 5C event-context validation is implemented
 
 Related documents:
 
@@ -12,6 +12,7 @@ Related documents:
 - `docs/phase_5_data_source_expansion_spec.md`
 - `docs/phase_5b_macro_regime_validation_spec.md`
 - `docs/phase_5c_structured_catalyst_source_spec.md`
+- `docs/phase_5c_event_context_validation_spec.md`
 - `docs/watchlist_convergence_review_spec.md`
 - `docs/implementation_spec.md`
 
@@ -183,13 +184,24 @@ FRED-aware macro context over historical scored dates
 
 without changing scoring formulas first.
 
-Current next target:
+The watchlist convergence target is now implemented in `docs/watchlist_convergence_review_spec.md`.
+
+Current checkpoint:
 
 ```text
-docs/watchlist_convergence_review_spec.md
+docs/phase_5c_event_context_validation_spec.md
 ```
 
-The current target is to make the final watchlist classification/filtering surface explicit before adding another source or changing score formulas.
+The current checkpoint validates whether stored event/catalyst labels help the final watchlist review surface before adding another source or changing score formulas.
+
+Live result:
+
+```text
+Rows with event context: 25
+Event-context forward observations: 0
+```
+
+This means source-backed event context is present, but it has not accumulated enough future bars to justify any scoring-weight change.
 
 ## 7. Non-Goals For The Next Step
 

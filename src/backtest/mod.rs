@@ -7,6 +7,7 @@ use crate::config::scoring;
 use crate::domain::models::{
     DailyPrice, IndustryScoreSnapshot, SectorMap, SectorScore, StockScore,
 };
+use crate::scoring::{forward_return, histories_by_symbol};
 
 const ENTITY_SECTOR: &str = "sector";
 const ENTITY_STOCK: &str = "stock";
@@ -393,20 +394,6 @@ fn summarize_observations(observations: &[Observation]) -> Vec<BacktestSummaryRo
     summaries
 }
 
-fn histories_by_symbol(prices: &[DailyPrice]) -> HashMap<String, Vec<DailyPrice>> {
-    let mut histories: HashMap<String, Vec<DailyPrice>> = HashMap::new();
-    for price in prices {
-        histories
-            .entry(price.symbol.clone())
-            .or_default()
-            .push(price.clone());
-    }
-    for history in histories.values_mut() {
-        history.sort_by(|a, b| a.date.cmp(&b.date));
-    }
-    histories
-}
-
 fn sector_scores_by_date(scores: &[SectorScore]) -> HashMap<String, Vec<&SectorScore>> {
     let mut by_date: HashMap<String, Vec<&SectorScore>> = HashMap::new();
     for score in scores {
@@ -511,23 +498,6 @@ fn sector_component_value(score: &SectorScore, component: SectorComponent) -> f6
         }
         SectorComponent::RankChange => score.rank_change,
     }
-}
-
-fn forward_return(
-    histories: &HashMap<String, Vec<DailyPrice>>,
-    symbol: &str,
-    date: &str,
-    horizon: usize,
-) -> Option<f64> {
-    let history = histories.get(symbol)?;
-    let idx = history.iter().position(|price| price.date == date)?;
-    let future_idx = idx + horizon;
-    if future_idx >= history.len() {
-        return None;
-    }
-    let current = history[idx].adjusted_close;
-    let future = history[future_idx].adjusted_close;
-    Some((future / current) - 1.0)
 }
 
 fn average(values: &[f64]) -> f64 {
