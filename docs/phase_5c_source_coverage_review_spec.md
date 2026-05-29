@@ -13,6 +13,7 @@ Related documents:
 - `docs/phase_5b_macro_regime_validation_spec.md`
 - `docs/phase_5c_structured_catalyst_source_spec.md`
 - `docs/phase_5c_event_context_validation_spec.md`
+- `docs/phase_5_readiness_gate_spec.md`
 - `docs/watchlist_convergence_review_spec.md`
 - `docs/implementation_spec.md`
 
@@ -36,7 +37,7 @@ The review answers:
 - Are missing values visible instead of silently treated as neutral?
 - Does the context preserve the "why might this be moving?" question?
 - Should catalyst/event data affect scores now?
-- What is the next Phase 5 target that best preserves the market-rotation flow?
+- What control point should prevent Phase 5 from moving too quickly into new sources or scoring changes?
 
 ## 2. Live Coverage Snapshot
 
@@ -225,4 +226,4 @@ This checkpoint is accepted because:
 - Latest scored top-25 and top-50 stocks had zero `pending_source` catalyst labels.
 - Event rows include `quality_status`.
 - The report labels event context as context, not a trade signal.
-- The next Phase 5 target is now superseded by `docs/watchlist_convergence_review_spec.md`, which keeps the work aligned with the final filtered watchlist.
+- The active Phase 5 control point is now `docs/phase_5_readiness_gate_spec.md`, which blocks scoring changes and paid-source implementation until the readiness gates are satisfied.

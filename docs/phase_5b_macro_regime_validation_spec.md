@@ -13,6 +13,7 @@ Related documents:
 - `docs/market_regime_formula_decision_checkpoint_spec.md`
 - `docs/phase_5_data_source_expansion_spec.md`
 - `docs/phase_5c_source_coverage_review_spec.md`
+- `docs/phase_5_readiness_gate_spec.md`
 - `docs/implementation_spec.md`
 
 ## 1. Purpose

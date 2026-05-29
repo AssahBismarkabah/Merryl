@@ -12,6 +12,7 @@ Related documents:
 - `docs/phase_5_data_source_expansion_spec.md`
 - `docs/phase_5c_structured_catalyst_source_spec.md`
 - `docs/phase_5c_source_coverage_review_spec.md`
+- `docs/phase_5_readiness_gate_spec.md`
 - `docs/watchlist_convergence_review_spec.md`
 - `docs/implementation_spec.md`
 

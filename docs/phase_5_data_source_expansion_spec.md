@@ -18,6 +18,7 @@ Related documents:
 - `docs/phase_5c_structured_catalyst_source_spec.md`
 - `docs/phase_5c_event_context_validation_spec.md`
 - `docs/phase_5c_source_coverage_review_spec.md`
+- `docs/phase_5_readiness_gate_spec.md`
 - `docs/watchlist_convergence_review_spec.md`
 - `docs/phase_4_dashboard_stabilization_spec.md`
 
@@ -717,13 +718,13 @@ The coverage checkpoint accepted Phase 5C as source-backed context for the curre
 
 The final watchlist classification layer from `docs/watchlist_convergence_review_spec.md` is implemented.
 
-Current Phase 5 checkpoint:
+Current Phase 5 readiness gate:
 
 ```text
-Review the Phase 5C event context validation result from `docs/phase_5c_event_context_validation_spec.md`.
+docs/phase_5_readiness_gate_spec.md
 ```
 
-Do not move to paid ETF fund flows, options flow, intraday data, universe expansion, or score-formula changes before the event-context validation result is reviewed.
+The readiness gate records that event-context labels exist but do not yet have forward-bar validation. Do not move to paid ETF fund flows, options flow, intraday data, universe expansion, or score-formula changes before the readiness gates are satisfied.
 
 ## 8. Data Model Requirements
 
