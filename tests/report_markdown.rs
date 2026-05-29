@@ -118,6 +118,7 @@ fn daily_report_contains_documented_sections() {
         "## Weak Sectors",
         "## Sector Rank Changes",
         "## Top Industries Or Themes",
+        "## Actionability Review Queue",
         "## Top Stocks Worth Charting",
         "## New Leaders",
         "## High Relative Volume Names",
@@ -140,6 +141,8 @@ fn daily_report_contains_documented_sections() {
             .contains("| VIXCLS | CBOE Volatility Index: VIX | Daily | 2026-05-26 | 1 | stored |")
     );
     assert!(report.contains("Sector ranking is a market-map and attention layer."));
+    assert!(report.contains("Actionability groups are a chart-review queue"));
+    assert!(report.contains("Primary Actionability"));
     assert!(report.contains("Event sources: Alpaca News, Alpha Vantage Earnings Calendar"));
     assert!(report.contains("- **NVDA** `recent_news:1`"));
     assert!(report.contains("NVDA announces new AI platform"));

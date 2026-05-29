@@ -12,6 +12,9 @@ pub use catalysts::{
     apply_catalyst_status, catalyst_status_for_symbol, preserve_existing_catalyst_statuses,
 };
 pub use history::{previous_watchlist_symbols_for_date, score_market_history};
-pub use indicators::{forward_return, histories_by_symbol, latest_date};
+pub use indicators::{
+    average_true_range, distance_pct, forward_return, gap_pct, highest_close, histories_by_symbol,
+    latest_date, lowest_close, range_pct, true_range,
+};
 pub use market::{MarketScores, score_market};
 pub use sectors::apply_sector_rank_changes;

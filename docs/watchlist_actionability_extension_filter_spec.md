@@ -2,7 +2,7 @@
 
 Version: 0.1
 Date: 2026-05-29
-Status: Planning document; implementation not started
+Status: Implemented for the current no-new-source pass
 
 Related documents:
 
@@ -24,6 +24,17 @@ External research references:
 - Investor's Business Daily: 5 percent buy zone and extended-stock concept: `https://www.investors.com/how-to-invest/investors-corner/how-to-buy-stocks-why-the-buy-zone-is-the-sweet-spot`
 
 ## 1. Purpose
+
+Implementation checkpoint, 2026-05-29:
+
+- Actionability metrics are generated during stock scoring from existing daily OHLCV data.
+- Metrics and labels are stored in `stock_scores.components_json`.
+- Core stock `score` and `rank` remain unchanged.
+- Daily Markdown reports include `Actionability Review Queue`.
+- Dashboard watchlist and leadership data expose actionability fields.
+- Existing `merryl run backtest --from YYYY-MM-DD --to YYYY-MM-DD` writes actionability validation outputs.
+- CSV watchlist shape remains unchanged.
+- No new provider, paid source, public CLI command, charting workspace, or scoring-weight change was added.
 
 The current Merryl watchlist is good at finding visible leadership, but many names can appear after they have already made an explosive move.
 
@@ -606,18 +617,18 @@ cargo run -- status
 
 Implementation is accepted when:
 
-- Actionability labels are generated for scored stocks using existing daily data.
-- Actionability metrics and labels are stored in `stock_scores.components_json`.
-- Core stock scores and ranks are unchanged.
-- Daily report includes an `Actionability Review Queue`.
-- Existing ranked watchlist remains visible.
-- Dashboard exposes and displays actionability consistently.
-- Backtest validation can compare forward behavior by actionability bucket.
-- No new provider is added.
-- No public CLI command is added.
-- No paid source is added.
-- CSV exports remain unchanged.
-- The report and dashboard keep Merryl positioned as a market-map and watchlist tool, not a trading signal.
+- Complete: Actionability labels are generated for scored stocks using existing daily data.
+- Complete: Actionability metrics and labels are stored in `stock_scores.components_json`.
+- Complete: Core stock scores and ranks are unchanged.
+- Complete: Daily report includes an `Actionability Review Queue`.
+- Complete: Existing ranked watchlist remains visible.
+- Complete: Dashboard exposes and displays actionability consistently.
+- Complete: Backtest validation can compare forward behavior by actionability bucket.
+- Complete: No new provider is added.
+- Complete: No public CLI command is added.
+- Complete: No paid source is added.
+- Complete: CSV exports remain unchanged.
+- Complete: The report and dashboard keep Merryl positioned as a market-map and watchlist tool, not a trading signal.
 
 ## 15. What This Does Not Solve
 
@@ -667,3 +678,35 @@ Reason:
 - It does not change score formulas before validation.
 
 Do not proceed if the intended next step is to make Merryl a charting platform. This spec only decides what Merryl should put in front of the user for chart review elsewhere.
+
+## 18. Implementation Verification
+
+Commands run after implementation:
+
+```text
+cargo fmt --check
+cargo test
+cargo clippy -- -D warnings
+npm run build
+set -a; source .env; set +a; cargo run -- run daily --date latest
+cargo run -- run backtest --from 2025-07-01 --to 2026-05-29
+cargo run -- status
+```
+
+Latest live run:
+
+```text
+date: 2026-05-29
+historical score dates: 228
+actionability validation report: reports/validations/2025-07-01_2026-05-29_actionability_validation.md
+actionability validation export: exports/validations/2025-07-01_2026-05-29_actionability_validation.csv
+actionability observations: 26350
+```
+
+Current interpretation:
+
+```text
+The actionability layer is now implemented as a review and validation layer.
+It is not approved as a scoring-weight change.
+The next decision should come from observing the validation output over more live runs.
+```

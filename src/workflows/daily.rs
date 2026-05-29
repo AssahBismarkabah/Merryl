@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use anyhow::{Context, Result, bail};
 use chrono::{Duration as ChronoDuration, NaiveDate};
 
+use crate::actionability::refresh_stock_components;
 use crate::config::market_data;
 use crate::data::{
     AlpacaProvider, AlphaVantageProvider, CatalystEventProvider, DailyOhlcvProvider,
@@ -120,6 +121,9 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
             &existing_catalyst_statuses,
             &report_date,
         );
+        for stock in &mut scores.stocks {
+            refresh_stock_components(stock);
+        }
     }
 
     db.upsert_symbols(&symbols)?;

@@ -7,8 +7,13 @@ use serde::Serialize;
 use crate::config::{macro_data, macro_validation};
 use crate::domain::models::{MacroObservation, MarketRegimeScore, SectorScore};
 
+mod actionability;
 mod event_context;
 
+pub use actionability::{
+    ActionabilitySummaryRow, ActionabilityValidationInput, ActionabilityValidationMetrics,
+    ActionabilityValidationScope, run_actionability_validation,
+};
 pub use event_context::{
     EventContextSummaryRow, EventContextValidationInput, EventContextValidationMetrics,
     EventContextValidationScope, run_event_context_validation,

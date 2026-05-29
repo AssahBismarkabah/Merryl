@@ -226,9 +226,19 @@ function renderView(view: DashboardView, data: DashboardSnapshot) {
       );
     case "watchlist":
       return (
-        <div className="viewSurface">
-          <ViewHeader title="Watchlist" />
-          <DataTable data={data.watchlist} columns={watchlistColumns} />
+        <div className="viewSurface validationStack">
+          <section className="detailSection">
+            <ViewHeader title="Actionability Buckets" />
+            <SimpleTable
+              columns={["Bucket", "Count", "Lead", "Context"]}
+              rows={actionabilityRows(data)}
+            />
+          </section>
+
+          <section className="detailSection">
+            <ViewHeader title="Watchlist" />
+            <DataTable data={data.watchlist} columns={watchlistColumns} />
+          </section>
         </div>
       );
     case "validation":
@@ -417,6 +427,78 @@ function dataHealthRows(data: DashboardSnapshot): ReactNode[][] {
 
 function dashboardHealth(data: DashboardSnapshot): Partial<DashboardSnapshot["data_health"]> {
   return data.data_health ?? {};
+}
+
+function actionabilityRows(data: DashboardSnapshot): ReactNode[][] {
+  const bucketOrder = [
+    "early_rotation_candidate",
+    "base_compression_candidate",
+    "pullback_leader",
+    "actionable_leader",
+    "extended_leader",
+    "event_watch_unconfirmed",
+    "unclassified_leader"
+  ];
+  const byBucket = new Map<string, typeof data.watchlist>();
+  for (const row of data.watchlist) {
+    const bucket = row.primary_actionability || "unclassified_leader";
+    byBucket.set(bucket, [...(byBucket.get(bucket) ?? []), row]);
+  }
+
+  return bucketOrder
+    .filter((bucket) => (byBucket.get(bucket)?.length ?? 0) > 0)
+    .map((bucket) => {
+      const rows = byBucket.get(bucket) ?? [];
+      const lead = rows[0];
+      return [
+        <DataTag tone={bucket === "extended_leader" ? "muted" : "accent"}>
+          {bucketLabel(bucket)}
+        </DataTag>,
+        rows.length,
+        lead ? `${lead.symbol} ${number(lead.score)}` : "None",
+        actionabilityContext(bucket)
+      ];
+    });
+}
+
+function bucketLabel(value: string) {
+  switch (value) {
+    case "early_rotation_candidate":
+      return "Early";
+    case "base_compression_candidate":
+      return "Base";
+    case "pullback_leader":
+      return "Pullback";
+    case "actionable_leader":
+      return "Actionable";
+    case "extended_leader":
+      return "Extended";
+    case "event_watch_unconfirmed":
+      return "Event watch";
+    case "unclassified_leader":
+      return "Unclassified";
+    default:
+      return value.replaceAll("_", " ");
+  }
+}
+
+function actionabilityContext(value: string) {
+  switch (value) {
+    case "early_rotation_candidate":
+      return "Starting to participate";
+    case "base_compression_candidate":
+      return "Tight near highs";
+    case "pullback_leader":
+      return "Leader pulling back";
+    case "actionable_leader":
+      return "Confirmed, not stretched";
+    case "extended_leader":
+      return "Already moved";
+    case "event_watch_unconfirmed":
+      return "Event context only";
+    default:
+      return "Needs review";
+  }
 }
 
 function validationRows(data: DashboardSnapshot): ReactNode[][] {

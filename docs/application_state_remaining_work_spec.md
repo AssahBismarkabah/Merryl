@@ -245,14 +245,16 @@ Remaining dashboard work should stay inside the current boundary:
 
 The current ranked watchlist can contain many names that already made an explosive move.
 
-Needed:
+Implemented in the current no-new-source pass:
 
-- Measure whether a ranked leader is extended, actionable, pulling back, compressing, or still early.
-- Use existing daily OHLCV and stored scores first.
-- Keep core stock scores and ranks unchanged until validation proves the new labels are useful.
-- Add an actionability review queue before adding new paid or advanced sources.
+- Measures whether a ranked leader is extended, actionable, pulling back, compressing, or still early.
+- Uses existing daily OHLCV and stored scores.
+- Keeps core stock scores and ranks unchanged.
+- Adds an actionability review queue before the ranked watchlist.
+- Exposes actionability fields in the dashboard watchlist and leadership data.
+- Adds actionability validation to the existing backtest workflow.
 
-Planning document:
+Implementation document:
 
 ```text
 docs/watchlist_actionability_extension_filter_spec.md
@@ -280,18 +282,16 @@ These are not rejected forever. They are blocked until the current validation an
 The safest next application step is:
 
 ```text
-Run the current system, accumulate forward bars for event-labeled rows, and rerun validation.
+Run the current system, accumulate forward bars for event-labeled and actionability-labeled rows, and rerun validation.
 ```
 
-If starting new planning work, the next document should be:
+The local actionability work is now implemented. The next source-expansion planning track remains:
 
 ```text
-Watchlist Actionability And Extension Filter Spec
+Phase 5D ETF fund-flow source planning
 ```
 
-That document should be used before any code change that tries to reduce late, already-extended watchlist names.
-
-Phase 5D ETF fund-flow source planning still remains the next source-expansion planning track, but it should not outrank the local actionability work because actionability uses data Merryl already stores.
+Do not promote actionability labels into scoring weights yet. Use the validation output first.
 
 ## 9. Validation Commands
 

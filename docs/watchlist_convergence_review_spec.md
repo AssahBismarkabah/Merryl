@@ -265,10 +265,10 @@ Do not move next to:
 - universe expansion
 - catalyst/event score bonuses
 
-After live review, the next local watchlist improvement is recorded in:
+After live review, the next local watchlist improvement was implemented from:
 
 ```text
 docs/watchlist_actionability_extension_filter_spec.md
 ```
 
-That document addresses the problem that a ranked leader can be real but already extended. It should be handled as an actionability/classification layer first, not as a new data-source or score-formula change.
+That document addresses the problem that a ranked leader can be real but already extended. It is now handled as an actionability/classification layer first, not as a new data-source or score-formula change.

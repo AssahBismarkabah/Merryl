@@ -37,6 +37,8 @@ export const stockColumns: ColumnDef<Stock>[] = [
   { header: "Vs Sector", cell: ({ row }) => percentCell(row.original.relative_return_vs_sector) },
   { header: "Vs SPY", cell: ({ row }) => percentCell(row.original.relative_return_vs_spy) },
   { header: "Rel Vol", cell: ({ row }) => metricCell(number(row.original.relative_volume)) },
+  { header: "Actionability", cell: ({ row }) => actionabilityCell(row.original.primary_actionability) },
+  { header: "20D MA", cell: ({ row }) => percentCell(row.original.distance_from_20d_ma_pct) },
   { header: "Catalyst", cell: ({ row }) => statusTag(row.original.catalyst_status) }
 ];
 
@@ -47,6 +49,8 @@ export const watchlistColumns: ColumnDef<WatchlistRow>[] = [
   { header: "Sector", cell: ({ row }) => dataTag(row.original.sector, "accent") },
   { header: "Industry", cell: ({ row }) => dataTag(row.original.industry, "muted") },
   { header: "Score", cell: ({ row }) => metricCell(number(row.original.score)) },
+  { header: "Actionability", cell: ({ row }) => actionabilityCell(row.original.primary_actionability) },
+  { header: "20D MA", cell: ({ row }) => percentCell(row.original.distance_from_20d_ma_pct) },
   { header: "Classification", cell: ({ row }) => classificationCell(row.original.classifications) },
   { header: "Catalyst", cell: ({ row }) => statusTag(row.original.catalyst_status) }
 ];
@@ -88,6 +92,10 @@ function classificationCell(values?: string[]) {
   return createElement("span", { className: "classificationCell" }, labels.join(", "));
 }
 
+function actionabilityCell(value: string) {
+  return dataTag(shortLabel(value || "unclassified_leader"), value === "extended_leader" ? "muted" : "accent");
+}
+
 function shortLabel(value: string) {
   switch (value) {
     case "sector_leader":
@@ -106,6 +114,20 @@ function shortLabel(value: string) {
       return "risk";
     case "macro_conflict_context":
       return "macro";
+    case "extended_leader":
+      return "extended";
+    case "actionable_leader":
+      return "actionable";
+    case "early_rotation_candidate":
+      return "early";
+    case "pullback_leader":
+      return "pullback";
+    case "base_compression_candidate":
+      return "base";
+    case "event_watch_unconfirmed":
+      return "event watch";
+    case "unclassified_leader":
+      return "unclassified";
     default:
       return value.replaceAll("_", " ");
   }

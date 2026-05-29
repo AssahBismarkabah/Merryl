@@ -101,6 +101,12 @@ pub struct StockDto {
     pub avg_dollar_volume: f64,
     pub trend_state: String,
     pub catalyst_status: String,
+    pub primary_actionability: String,
+    pub actionability_labels: Vec<String>,
+    pub distance_from_20d_ma_pct: f64,
+    pub distance_from_50d_ma_pct: f64,
+    pub atr_extension_from_20d_ma: f64,
+    pub distance_from_20d_high_pct: f64,
     pub components: Value,
     pub explanation: String,
 }
@@ -116,6 +122,12 @@ pub struct WatchlistDto {
     pub score: f64,
     pub catalyst_status: String,
     pub classifications: Vec<String>,
+    pub primary_actionability: String,
+    pub actionability_labels: Vec<String>,
+    pub distance_from_20d_ma_pct: f64,
+    pub distance_from_50d_ma_pct: f64,
+    pub atr_extension_from_20d_ma: f64,
+    pub distance_from_20d_high_pct: f64,
     pub reason: String,
 }
 

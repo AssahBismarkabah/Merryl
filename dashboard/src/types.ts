@@ -67,6 +67,12 @@ export interface Stock {
   avg_dollar_volume: number;
   trend_state: string;
   catalyst_status: string;
+  primary_actionability: string;
+  actionability_labels: string[];
+  distance_from_20d_ma_pct: number;
+  distance_from_50d_ma_pct: number;
+  atr_extension_from_20d_ma: number;
+  distance_from_20d_high_pct: number;
 }
 
 export interface WatchlistRow {
@@ -78,6 +84,12 @@ export interface WatchlistRow {
   score: number;
   catalyst_status: string;
   classifications: string[];
+  primary_actionability: string;
+  actionability_labels: string[];
+  distance_from_20d_ma_pct: number;
+  distance_from_50d_ma_pct: number;
+  atr_extension_from_20d_ma: number;
+  distance_from_20d_high_pct: number;
   reason: string;
 }
 

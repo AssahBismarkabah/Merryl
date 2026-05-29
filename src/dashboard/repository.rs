@@ -4,6 +4,7 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 use serde_json::Value;
 
+use crate::actionability::{classification_for_stock, metrics_from_components};
 use crate::classification::WatchlistClassifier;
 use crate::config::{macro_data, scoring, universe};
 use crate::domain::models::{
@@ -217,6 +218,8 @@ fn industry_dto(industry: IndustryScore) -> IndustryDto {
 }
 
 fn stock_dto(stock: StockScore) -> StockDto {
+    let actionability = classification_for_stock(&stock);
+    let actionability_metrics = metrics_from_components(&stock.components_json);
     StockDto {
         date: stock.date,
         rank: stock.rank,
@@ -236,6 +239,12 @@ fn stock_dto(stock: StockScore) -> StockDto {
         avg_dollar_volume: stock.avg_dollar_volume,
         trend_state: stock.trend_state,
         catalyst_status: stock.catalyst_status,
+        primary_actionability: actionability.primary,
+        actionability_labels: actionability.labels,
+        distance_from_20d_ma_pct: actionability_metrics.distance_from_20d_ma_pct,
+        distance_from_50d_ma_pct: actionability_metrics.distance_from_50d_ma_pct,
+        atr_extension_from_20d_ma: actionability_metrics.atr_extension_from_20d_ma,
+        distance_from_20d_high_pct: actionability_metrics.distance_from_20d_high_pct,
         components: json_value(&stock.components_json),
         explanation: stock.explanation,
     }
@@ -255,6 +264,10 @@ fn watchlist_dtos(
         .iter()
         .map(|row| {
             let stock = stock_lookup.get(row.symbol.as_str());
+            let actionability = stock.map(|stock| classification_for_stock(stock));
+            let actionability_metrics = stock
+                .map(|stock| metrics_from_components(&stock.components_json))
+                .unwrap_or_default();
             WatchlistDto {
                 date: row.date.clone(),
                 rank: row.rank,
@@ -271,6 +284,17 @@ fn watchlist_dtos(
                 classifications: stock
                     .map(|stock| classifier.labels_for(stock))
                     .unwrap_or_default(),
+                primary_actionability: actionability
+                    .as_ref()
+                    .map(|classification| classification.primary.clone())
+                    .unwrap_or_default(),
+                actionability_labels: actionability
+                    .map(|classification| classification.labels)
+                    .unwrap_or_default(),
+                distance_from_20d_ma_pct: actionability_metrics.distance_from_20d_ma_pct,
+                distance_from_50d_ma_pct: actionability_metrics.distance_from_50d_ma_pct,
+                atr_extension_from_20d_ma: actionability_metrics.atr_extension_from_20d_ma,
+                distance_from_20d_high_pct: actionability_metrics.distance_from_20d_high_pct,
                 reason: row.reason.clone(),
             }
         })

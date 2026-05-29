@@ -90,6 +90,14 @@ fn main() -> Result<()> {
                     "event context validation export: {}",
                     result.event_context_validation_export.display()
                 );
+                println!(
+                    "actionability validation report: {}",
+                    result.actionability_validation_report.display()
+                );
+                println!(
+                    "actionability validation export: {}",
+                    result.actionability_validation_export.display()
+                );
                 println!("sector observations: {}", result.sector_observation_count);
                 println!(
                     "sector component observations: {}",
@@ -107,6 +115,10 @@ fn main() -> Result<()> {
                 println!(
                     "event context observations: {}",
                     result.event_context_observation_count
+                );
+                println!(
+                    "actionability observations: {}",
+                    result.actionability_observation_count
                 );
                 println!("backtest result id: {}", result.backtest_result_id);
             }

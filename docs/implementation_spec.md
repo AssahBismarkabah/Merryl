@@ -1,8 +1,8 @@
 # Merryl Implementation Runbook
 
 Version: 0.3
-Date: 2026-05-28
-Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, Phase 5A/B FRED macro ingestion and macro/regime validation, Phase 5C structured catalyst/event context, and Phase 5C event-context validation
+Date: 2026-05-29
+Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, Phase 5A/B FRED macro ingestion and macro/regime validation, Phase 5C structured catalyst/event context, Phase 5C event-context validation, and watchlist actionability validation
 
 ## Current Slice
 
@@ -16,10 +16,12 @@ Merryl daily run
   -> score the valid historical market window
   -> fetch recent Alpaca News, Alpha Vantage earnings calendar, and SEC EDGAR filing events for the current watchlist
   -> store macro observations, event context, market regime, sector, industry, stock, and watchlist rows in SQLite
+  -> store stock actionability metrics and labels in stock score components
   -> explain Market Regime V1 with broad equity ETFs plus TLT, GLD, and USO context
   -> show as-of FRED macro flags as a non-scoring context overlay beside Market Regime V1
   -> explain industry/theme strength with return, relative return, volume, breadth, and 20D-high components
   -> label catalyst/event context as recent news, earnings date, filing event, or pending source
+  -> expose actionability review groups in the daily report and dashboard
   -> write Markdown and CSV outputs for the latest/requested score date
 
 Merryl backtest run
@@ -30,9 +32,10 @@ Merryl backtest run
   -> group stock forward behavior by same-day industry/theme score decile
   -> validate ETF-proxy regime labels against stored FRED macro context using as-of macro snapshots
   -> validate stored event/catalyst watchlist labels against forward stock behavior
+  -> validate stored actionability labels against forward stock behavior
   -> summarize hit rate, average return, median return, and relative return behavior
   -> store metrics in backtest_results
-  -> write Markdown and CSV backtest summaries plus macro/regime and event-context validation outputs
+  -> write Markdown and CSV backtest summaries plus macro/regime, event-context, and actionability validation outputs
 
 Merryl doctor run
   -> verify required docs, workflow config, credentials, and generated paths
@@ -447,7 +450,7 @@ The Phase 5C coverage checkpoint is recorded in `docs/phase_5c_source_coverage_r
 
 The watchlist convergence checkpoint is recorded in `docs/watchlist_convergence_review_spec.md`. It confirms the connected sources are converging toward the final filtered watchlist and implements explicit classification labels before any new provider, paid source, universe expansion, or scoring formula change.
 
-The watchlist actionability and extension filter plan is recorded in `docs/watchlist_actionability_extension_filter_spec.md`. It addresses the observed problem that many high-ranked names are already extended, and proposes a no-new-source actionability layer before any score formula or Phase 5D source work.
+The watchlist actionability and extension filter implementation is recorded in `docs/watchlist_actionability_extension_filter_spec.md`. It addresses the observed problem that many high-ranked names are already extended, adds a no-new-source actionability layer, and keeps core scores/ranks unchanged before any score formula or Phase 5D source work.
 
 The Phase 5C event-context validation checkpoint is recorded in `docs/phase_5c_event_context_validation_spec.md`. It writes event-context validation outputs from stored SQLite data and records that current event-context rows do not yet have enough future bars for formula decisions.
 

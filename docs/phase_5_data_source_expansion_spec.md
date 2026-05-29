@@ -2,7 +2,7 @@
 
 Version: 0.3
 Date: 2026-05-28
-Status: Phase 5A/B macro ingestion, macro/regime validation, non-scoring macro context overlay, Phase 5C structured catalyst context, final watchlist classification, and Phase 5C event-context validation complete
+Status: Phase 5A/B macro ingestion, macro/regime validation, non-scoring macro context overlay, Phase 5C structured catalyst context, final watchlist classification, Phase 5C event-context validation, and watchlist actionability validation complete
 
 Related documents:
 

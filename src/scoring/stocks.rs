@@ -2,13 +2,19 @@ use std::collections::HashMap;
 
 use serde_json::json;
 
+use crate::actionability::{
+    ActionabilityInput, ActionabilityMetrics, components_with_actionability,
+};
+use crate::config::actionability as actionability_config;
 use crate::config::scoring as scoring_config;
 use crate::config::universe::ASSET_STOCK;
 use crate::domain::models::{SectorMap, SectorScore, StockScore, Symbol};
 
 use super::explanations::stock_explanation;
 use super::indicators::{
-    PriceHistories, avg_dollar_volume, clamp_score, pct_return, relative_volume, trend_state,
+    PriceHistories, average_true_range, avg_dollar_volume, clamp_score, distance_pct,
+    effective_index, gap_pct, highest_close, lowest_close, moving_average, pct_return, range_pct,
+    relative_volume, trend_state, true_range,
 };
 
 pub fn score_stocks(
@@ -96,6 +102,34 @@ pub fn score_stocks(
             + scoring_config::STOCK_RELATIVE_VOLUME_WEIGHT * relative_volume_component
             + scoring_config::STOCK_TREND_WEIGHT * trend_component
             + scoring_config::STOCK_LIQUIDITY_WEIGHT * liquidity_component;
+        let actionability_metrics =
+            stock_actionability_metrics(histories, &symbol.symbol, date).unwrap_or_default();
+        let actionability_input = ActionabilityInput {
+            score,
+            sector_score,
+            return_1d: r1,
+            return_5d: r5,
+            relative_return_vs_sector,
+            relative_return_vs_spy,
+            relative_volume: rel_volume,
+            trend_state: &trend_state,
+            catalyst_status: scoring_config::CATALYST_PENDING_SOURCE,
+        };
+        let components_json = components_with_actionability(
+            json!({
+                "sector_score": sector_score,
+                "relative_strength_component": relative_strength_component,
+                "relative_volume_component": relative_volume_component,
+                "trend_component": trend_component,
+                "liquidity_component": liquidity_component,
+                "relative_return_vs_sector": relative_return_vs_sector,
+                "relative_return_vs_spy": relative_return_vs_spy,
+                "avg_dollar_volume": avg_dollar_volume
+            }),
+            &actionability_input,
+            &actionability_metrics,
+        )
+        .to_string();
 
         scores.push(StockScore {
             date: date.to_string(),
@@ -116,17 +150,7 @@ pub fn score_stocks(
             avg_dollar_volume,
             trend_state,
             catalyst_status: scoring_config::CATALYST_PENDING_SOURCE.to_string(),
-            components_json: json!({
-                "sector_score": sector_score,
-                "relative_strength_component": relative_strength_component,
-                "relative_volume_component": relative_volume_component,
-                "trend_component": trend_component,
-                "liquidity_component": liquidity_component,
-                "relative_return_vs_sector": relative_return_vs_sector,
-                "relative_return_vs_spy": relative_return_vs_spy,
-                "avg_dollar_volume": avg_dollar_volume
-            })
-            .to_string(),
+            components_json,
             explanation: stock_explanation(
                 &symbol.symbol,
                 score,
@@ -152,4 +176,51 @@ fn trend_component(trend_state: &str) -> f64 {
         "below_trend" => scoring_config::TREND_BELOW_SCORE,
         _ => scoring_config::NEUTRAL_SCORE,
     }
+}
+
+fn stock_actionability_metrics(
+    histories: &PriceHistories,
+    symbol: &str,
+    date: &str,
+) -> Option<ActionabilityMetrics> {
+    let history = histories.get(symbol)?;
+    let idx = effective_index(history, date)?;
+    let price = history.get(idx)?;
+    let close = price.adjusted_close;
+    let raw_close = price.close;
+    let ma_20d = moving_average(history, idx, scoring_config::RETURN_20D)?;
+    let ma_50d = moving_average(history, idx, scoring_config::RETURN_50D)?;
+    let atr_14d = average_true_range(history, idx, actionability_config::ATR_LOOKBACK)?;
+    let high_20d = highest_close(history, idx, actionability_config::HIGH_20D_LOOKBACK)?;
+    let high_60d = highest_close(history, idx, actionability_config::HIGH_60D_LOOKBACK)?;
+    let high_10d = highest_close(history, idx, actionability_config::RANGE_10D_LOOKBACK)?;
+    let low_10d = lowest_close(history, idx, actionability_config::RANGE_10D_LOOKBACK)?;
+    let true_range = true_range(history, idx)?;
+
+    Some(ActionabilityMetrics {
+        ma_20d,
+        ma_50d,
+        distance_from_20d_ma_pct: distance_pct(close, ma_20d)?,
+        distance_from_50d_ma_pct: distance_pct(close, ma_50d)?,
+        atr_14d,
+        atr_14d_pct: distance_pct(raw_close + atr_14d, raw_close)?,
+        atr_extension_from_20d_ma: if atr_14d == 0.0 {
+            0.0
+        } else {
+            (close - ma_20d) / atr_14d
+        },
+        atr_extension_from_50d_ma: if atr_14d == 0.0 {
+            0.0
+        } else {
+            (close - ma_50d) / atr_14d
+        },
+        high_20d,
+        high_60d,
+        distance_from_20d_high_pct: distance_pct(close, high_20d)?,
+        distance_from_60d_high_pct: distance_pct(close, high_60d)?,
+        range_10d_pct: range_pct(high_10d, low_10d, close)?,
+        gap_pct: gap_pct(history, idx).unwrap_or_default(),
+        true_range_pct: distance_pct(raw_close + true_range, raw_close)?,
+        complete: true,
+    })
 }

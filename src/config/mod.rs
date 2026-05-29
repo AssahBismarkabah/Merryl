@@ -81,6 +81,18 @@ pub mod paths {
             "{VALIDATION_EXPORTS_DIR}/{from_date}_{to_date}_event_context_validation.csv"
         ))
     }
+
+    pub fn actionability_validation_report_path(from_date: &str, to_date: &str) -> PathBuf {
+        PathBuf::from(format!(
+            "{VALIDATION_REPORTS_DIR}/{from_date}_{to_date}_actionability_validation.md"
+        ))
+    }
+
+    pub fn actionability_validation_export_path(from_date: &str, to_date: &str) -> PathBuf {
+        PathBuf::from(format!(
+            "{VALIDATION_EXPORTS_DIR}/{from_date}_{to_date}_actionability_validation.csv"
+        ))
+    }
 }
 
 pub mod market_data {
@@ -407,6 +419,73 @@ pub mod classification {
     pub const LABEL_MACRO_CONFLICT_CONTEXT: &str = "macro_conflict_context";
 }
 
+pub mod actionability {
+    pub const ATR_LOOKBACK: usize = 14;
+    pub const HIGH_20D_LOOKBACK: usize = 20;
+    pub const HIGH_60D_LOOKBACK: usize = 60;
+    pub const RANGE_10D_LOOKBACK: usize = 10;
+    pub const EXTENDED_5D_RETURN: f64 = 0.08;
+    pub const EXTENDED_1D_RETURN: f64 = 0.05;
+    pub const EXTENDED_GAP: f64 = 0.04;
+    pub const EXTENDED_DISTANCE_20D_MA: f64 = 0.12;
+    pub const EXTENDED_DISTANCE_50D_MA: f64 = 0.20;
+    pub const EXTENDED_ATR_MULTIPLE_FROM_20D_MA: f64 = 2.5;
+    pub const PULLBACK_FROM_20D_HIGH_MIN: f64 = -0.12;
+    pub const PULLBACK_FROM_20D_HIGH_MAX: f64 = -0.03;
+    pub const NEAR_20D_MA_MAX_DISTANCE: f64 = 0.04;
+    pub const NEAR_50D_MA_MAX_DISTANCE: f64 = 0.06;
+    pub const COMPRESSION_10D_RANGE_MAX: f64 = 0.08;
+    pub const STRONG_SCORE_MIN: f64 = 70.0;
+    pub const EARLY_ROTATION_5D_MAX_RETURN: f64 = EXTENDED_5D_RETURN;
+
+    pub const COMPONENT_MA_20D: &str = "ma_20d";
+    pub const COMPONENT_MA_50D: &str = "ma_50d";
+    pub const COMPONENT_DISTANCE_FROM_20D_MA_PCT: &str = "distance_from_20d_ma_pct";
+    pub const COMPONENT_DISTANCE_FROM_50D_MA_PCT: &str = "distance_from_50d_ma_pct";
+    pub const COMPONENT_ATR_14D: &str = "atr_14d";
+    pub const COMPONENT_ATR_14D_PCT: &str = "atr_14d_pct";
+    pub const COMPONENT_ATR_EXTENSION_FROM_20D_MA: &str = "atr_extension_from_20d_ma";
+    pub const COMPONENT_ATR_EXTENSION_FROM_50D_MA: &str = "atr_extension_from_50d_ma";
+    pub const COMPONENT_HIGH_20D: &str = "high_20d";
+    pub const COMPONENT_HIGH_60D: &str = "high_60d";
+    pub const COMPONENT_DISTANCE_FROM_20D_HIGH_PCT: &str = "distance_from_20d_high_pct";
+    pub const COMPONENT_DISTANCE_FROM_60D_HIGH_PCT: &str = "distance_from_60d_high_pct";
+    pub const COMPONENT_RANGE_10D_PCT: &str = "range_10d_pct";
+    pub const COMPONENT_GAP_PCT: &str = "gap_pct";
+    pub const COMPONENT_TRUE_RANGE_PCT: &str = "true_range_pct";
+    pub const COMPONENT_ACTIONABILITY_LABELS: &str = "actionability_labels";
+    pub const COMPONENT_PRIMARY_ACTIONABILITY: &str = "primary_actionability";
+
+    pub const LABEL_ALL_WATCHLIST: &str = "all_watchlist";
+    pub const LABEL_EXTENDED_LEADER: &str = "extended_leader";
+    pub const LABEL_ACTIONABLE_LEADER: &str = "actionable_leader";
+    pub const LABEL_EARLY_ROTATION_CANDIDATE: &str = "early_rotation_candidate";
+    pub const LABEL_PULLBACK_LEADER: &str = "pullback_leader";
+    pub const LABEL_BASE_COMPRESSION_CANDIDATE: &str = "base_compression_candidate";
+    pub const LABEL_EVENT_WATCH_UNCONFIRMED: &str = "event_watch_unconfirmed";
+    pub const LABEL_UNCLASSIFIED_LEADER: &str = "unclassified_leader";
+
+    pub const PRIMARY_PRIORITY: &[&str] = &[
+        LABEL_EXTENDED_LEADER,
+        LABEL_PULLBACK_LEADER,
+        LABEL_BASE_COMPRESSION_CANDIDATE,
+        LABEL_EARLY_ROTATION_CANDIDATE,
+        LABEL_ACTIONABLE_LEADER,
+        LABEL_EVENT_WATCH_UNCONFIRMED,
+        LABEL_UNCLASSIFIED_LEADER,
+    ];
+
+    pub const REVIEW_QUEUE_ORDER: &[&str] = &[
+        LABEL_EARLY_ROTATION_CANDIDATE,
+        LABEL_BASE_COMPRESSION_CANDIDATE,
+        LABEL_PULLBACK_LEADER,
+        LABEL_ACTIONABLE_LEADER,
+        LABEL_EXTENDED_LEADER,
+        LABEL_EVENT_WATCH_UNCONFIRMED,
+        LABEL_UNCLASSIFIED_LEADER,
+    ];
+}
+
 pub mod quality {
     use super::scoring::RETURN_60D;
 
@@ -426,6 +505,8 @@ pub mod output_text {
     pub const SECTOR_RANK_CHANGES_SECTION: &str = "Sector Rank Changes";
     pub const SECTOR_MAP_NOTE: &str = "Sector ranking is a market-map and attention layer. PDB-2 validation labels it as map-only, not a proven forward-return signal.";
     pub const TOP_INDUSTRIES_SECTION: &str = "Top Industries Or Themes";
+    pub const ACTIONABILITY_SECTION: &str = "Actionability Review Queue";
+    pub const ACTIONABILITY_NOTE: &str = "Actionability groups are a chart-review queue, not trade signals. Core score and rank remain unchanged.";
     pub const WATCHLIST_SECTION: &str = "Top Stocks Worth Charting";
     pub const NEW_LEADERS_SECTION: &str = "New Leaders";
     pub const HIGH_RELATIVE_VOLUME_SECTION: &str = "High Relative Volume Names";
@@ -438,9 +519,12 @@ pub mod output_text {
     pub const INDUSTRY_TABLE_HEADER: &str = "| Rank | Industry / Theme | Sector | Score | 5D | 20D | 60D | Vs Sector | Vs SPY | Rel Vol | Breadth 20D | Breadth 50D | 20D Highs | Members |";
     pub const INDUSTRY_TABLE_ALIGNMENT: &str =
         "|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|";
-    pub const WATCHLIST_TABLE_HEADER: &str = "| Rank | Symbol | Name | Sector | Industry | Score | 20D | Rel Sector | Rel Vol | Trend | Classification | Catalyst |";
+    pub const ACTIONABILITY_TABLE_HEADER: &str = "| Bucket | Rank | Symbol | Score | 5D | 20D | Rel Sector | Rel Vol | 20D MA Dist | 20D High Dist | ATR Ext | Catalyst |";
+    pub const ACTIONABILITY_TABLE_ALIGNMENT: &str =
+        "|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---|";
+    pub const WATCHLIST_TABLE_HEADER: &str = "| Rank | Symbol | Name | Sector | Industry | Score | 20D | Rel Sector | Rel Vol | Trend | Primary Actionability | Actionability | Classification | Catalyst |";
     pub const WATCHLIST_TABLE_ALIGNMENT: &str =
-        "|---:|---|---|---|---|---:|---:|---:|---:|---|---|---|";
+        "|---:|---|---|---|---|---:|---:|---:|---:|---|---|---|---|---|";
     pub const MACRO_TABLE_HEADER: &str =
         "| Series | Name | Frequency | Latest | Observations | Status |";
     pub const MACRO_TABLE_ALIGNMENT: &str = "|---|---|---|---:|---:|---|";

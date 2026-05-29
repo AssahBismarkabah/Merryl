@@ -1,7 +1,13 @@
 use std::collections::{HashMap, HashSet};
 
+use crate::actionability::{
+    ActionabilityClassification, classification_for_stock, metrics_from_components,
+};
 use crate::classification::WatchlistClassifier;
-use crate::config::{APP_NAME, event_data, macro_data, market_data, output_text, scoring};
+use crate::config::{
+    APP_NAME, actionability as actionability_config, event_data, macro_data, market_data,
+    output_text, scoring,
+};
 use crate::domain::models::{
     IndustryScore, MacroObservation, MarketEvent, MarketRegimeScore, SectorScore, StockScore,
 };
@@ -32,6 +38,7 @@ pub fn daily_report_markdown(input: &DailyReportInput<'_>) -> String {
         weak_sector_table(input.sector_scores),
         sector_rank_changes(input.sector_scores),
         top_industry_table(input.industry_scores),
+        actionability_review_queue(input.stock_scores),
         watchlist_table(input),
         new_leaders(input),
         high_relative_volume_table(input.stock_scores),
@@ -317,21 +324,64 @@ fn watchlist_table(input: &DailyReportInput<'_>) -> String {
 }
 
 fn watchlist_row(stock: &StockScore, labels: &[String]) -> String {
+    let actionability = classification_for_stock(stock);
     format!(
-        "| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |",
+        "| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |",
         stock.rank,
         stock.symbol,
-        stock.name,
-        stock.sector,
-        stock.industry,
+        table_cell(&stock.name),
+        table_cell(&stock.sector),
+        table_cell(&stock.industry),
         score(stock.score),
         pct(stock.return_20d),
         pct(stock.relative_return_vs_sector),
         multiple(stock.relative_volume),
-        stock.trend_state,
-        labels.join(", "),
-        stock.catalyst_status,
+        table_cell(&stock.trend_state),
+        actionability.primary,
+        table_cell(&actionability.labels.join(", ")),
+        table_cell(&labels.join(", ")),
+        table_cell(&stock.catalyst_status),
     )
+}
+
+fn actionability_review_queue(stock_scores: &[StockScore]) -> String {
+    let mut rows = vec![
+        section_heading(output_text::ACTIONABILITY_SECTION),
+        output_text::ACTIONABILITY_NOTE.to_string(),
+        output_text::ACTIONABILITY_TABLE_HEADER.to_string(),
+        output_text::ACTIONABILITY_TABLE_ALIGNMENT.to_string(),
+    ];
+    let mut grouped: Vec<(&StockScore, ActionabilityClassification)> = stock_scores
+        .iter()
+        .map(|stock| (stock, classification_for_stock(stock)))
+        .collect();
+    grouped.sort_by(
+        |(left, left_classification), (right, right_classification)| {
+            review_queue_order(&left_classification.primary)
+                .cmp(&review_queue_order(&right_classification.primary))
+                .then(left.rank.cmp(&right.rank))
+        },
+    );
+
+    rows.extend(grouped.into_iter().map(|(stock, classification)| {
+        let metrics = metrics_from_components(&stock.components_json);
+        format!(
+            "| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |",
+            classification.primary,
+            stock.rank,
+            stock.symbol,
+            score(stock.score),
+            pct(stock.return_5d),
+            pct(stock.return_20d),
+            pct(stock.relative_return_vs_sector),
+            multiple(stock.relative_volume),
+            optional_pct(metrics.complete, metrics.distance_from_20d_ma_pct),
+            optional_pct(metrics.complete, metrics.distance_from_20d_high_pct),
+            optional_multiple(metrics.complete, metrics.atr_extension_from_20d_ma),
+            table_cell(&stock.catalyst_status)
+        )
+    }));
+    rows.join("\n")
 }
 
 fn new_leaders(input: &DailyReportInput<'_>) -> String {
@@ -541,4 +591,31 @@ fn rank_change(value: f64) -> String {
     } else {
         format!("{value:.0}")
     }
+}
+
+fn optional_pct(available: bool, value: f64) -> String {
+    if available {
+        pct(value)
+    } else {
+        "n/a".to_string()
+    }
+}
+
+fn optional_multiple(available: bool, value: f64) -> String {
+    if available {
+        format!("{value:.1}")
+    } else {
+        "n/a".to_string()
+    }
+}
+
+fn review_queue_order(bucket: &str) -> usize {
+    actionability_config::REVIEW_QUEUE_ORDER
+        .iter()
+        .position(|candidate| *candidate == bucket)
+        .unwrap_or(actionability_config::REVIEW_QUEUE_ORDER.len())
+}
+
+fn table_cell(value: &str) -> String {
+    value.replace('|', "\\|")
 }

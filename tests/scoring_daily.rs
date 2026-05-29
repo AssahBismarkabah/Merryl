@@ -101,6 +101,18 @@ fn daily_scoring_produces_sector_and_stock_rankings() {
             .any(|industry| industry.relative_return_vs_sector != 0.0)
     );
     assert!(scores.stocks.iter().any(|stock| stock.symbol == "MSFT"));
+    assert!(
+        scores
+            .stocks
+            .iter()
+            .any(|stock| stock.components_json.contains("primary_actionability"))
+    );
+    assert!(
+        scores
+            .stocks
+            .iter()
+            .any(|stock| stock.components_json.contains("distance_from_20d_ma_pct"))
+    );
     assert_eq!(scores.sectors[0].rank, 1);
     assert_eq!(scores.stocks[0].rank, 1);
     assert!(!scores.regime.label.is_empty());

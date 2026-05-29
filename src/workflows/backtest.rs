@@ -7,13 +7,13 @@ use serde_json::json;
 use crate::backtest::{BacktestInput, run_backtest_analysis};
 use crate::config::scoring;
 use crate::output::{
-    write_backtest_outputs, write_event_context_validation_outputs,
-    write_macro_regime_validation_outputs,
+    write_actionability_validation_outputs, write_backtest_outputs,
+    write_event_context_validation_outputs, write_macro_regime_validation_outputs,
 };
 use crate::storage::{Database, default_db_path};
 use crate::validation::{
-    EventContextValidationInput, MacroRegimeValidationInput, run_event_context_validation,
-    run_macro_regime_validation,
+    ActionabilityValidationInput, EventContextValidationInput, MacroRegimeValidationInput,
+    run_actionability_validation, run_event_context_validation, run_macro_regime_validation,
 };
 
 #[derive(Debug)]
@@ -27,12 +27,15 @@ pub struct RunBacktestResult {
     pub macro_regime_validation_export: PathBuf,
     pub event_context_validation_report: PathBuf,
     pub event_context_validation_export: PathBuf,
+    pub actionability_validation_report: PathBuf,
+    pub actionability_validation_export: PathBuf,
     pub sector_observation_count: usize,
     pub sector_component_observation_count: usize,
     pub stock_observation_count: usize,
     pub industry_stock_observation_count: usize,
     pub macro_regime_snapshot_count: usize,
     pub event_context_observation_count: usize,
+    pub actionability_observation_count: usize,
     pub backtest_result_id: i64,
 }
 
@@ -94,6 +97,14 @@ pub fn run_backtest(from_arg: &str, to_arg: &str) -> Result<RunBacktestResult> {
         from_date: from_date.clone(),
         to_date: to_date.clone(),
         stock_scores: stock_scores.clone(),
+        watchlist_rows: watchlist_rows.clone(),
+        sector_maps: sector_maps.clone(),
+        prices: prices.clone(),
+    })?;
+    let actionability_metrics = run_actionability_validation(ActionabilityValidationInput {
+        from_date: from_date.clone(),
+        to_date: to_date.clone(),
+        stock_scores: stock_scores.clone(),
         watchlist_rows,
         sector_maps: sector_maps.clone(),
         prices: prices.clone(),
@@ -101,19 +112,22 @@ pub fn run_backtest(from_arg: &str, to_arg: &str) -> Result<RunBacktestResult> {
     let outputs = write_backtest_outputs(&metrics)?;
     let macro_regime_outputs = write_macro_regime_validation_outputs(&macro_regime_metrics)?;
     let event_context_outputs = write_event_context_validation_outputs(&event_context_metrics)?;
+    let actionability_outputs = write_actionability_validation_outputs(&actionability_metrics)?;
     let run_name = format!("backtest_{}_{}", from_date, to_date);
     let config_json = json!({
         "horizons": scoring::BACKTEST_HORIZONS,
         "validation_scope": &metrics.validation_scope,
         "macro_regime_validation_scope": &macro_regime_metrics.validation_scope,
         "event_context_validation_scope": &event_context_metrics.validation_scope,
+        "actionability_validation_scope": &actionability_metrics.validation_scope,
         "relative_return_policy": {
             "sector": "sector ETF forward return minus SPY forward return",
             "sector_components": "sector ETF forward return grouped by same-day sector component decile",
             "stock_primary": "stock forward return minus sector ETF forward return",
             "stock_vs_spy": "stock forward return minus SPY forward return",
             "stock_by_industry": "stock forward return grouped by same-day industry/theme score decile",
-            "event_context": "watchlist stock forward return grouped by stored same-day catalyst_status labels"
+            "event_context": "watchlist stock forward return grouped by stored same-day catalyst_status labels",
+            "actionability": "watchlist stock forward return grouped by stored score-date actionability labels"
         },
         "source": "SQLite historical scores and daily prices"
     })
@@ -125,6 +139,9 @@ pub fn run_backtest(from_arg: &str, to_arg: &str) -> Result<RunBacktestResult> {
     metrics_json_value["event_context_validation"] =
         serde_json::to_value(&event_context_metrics)
             .context("failed to serialize event context validation metrics")?;
+    metrics_json_value["actionability_validation"] =
+        serde_json::to_value(&actionability_metrics)
+            .context("failed to serialize actionability validation metrics")?;
     let metrics_json = metrics_json_value.to_string();
     let backtest_result_id =
         db.insert_backtest_result(&run_name, &from_date, &to_date, &config_json, &metrics_json)?;
@@ -139,12 +156,15 @@ pub fn run_backtest(from_arg: &str, to_arg: &str) -> Result<RunBacktestResult> {
         macro_regime_validation_export: macro_regime_outputs.summary_export,
         event_context_validation_report: event_context_outputs.report,
         event_context_validation_export: event_context_outputs.summary_export,
+        actionability_validation_report: actionability_outputs.report,
+        actionability_validation_export: actionability_outputs.summary_export,
         sector_observation_count: metrics.sector_observation_count,
         sector_component_observation_count: metrics.sector_component_observation_count,
         stock_observation_count: metrics.stock_observation_count,
         industry_stock_observation_count: metrics.industry_stock_observation_count,
         macro_regime_snapshot_count: macro_regime_metrics.macro_snapshot_count,
         event_context_observation_count: event_context_metrics.forward_observation_count,
+        actionability_observation_count: actionability_metrics.forward_observation_count,
         backtest_result_id,
     })
 }

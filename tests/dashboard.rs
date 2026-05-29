@@ -50,6 +50,16 @@ fn dashboard_snapshot_reads_latest_market_map() -> Result<()> {
             .classifications
             .contains(&"macro_conflict_context".to_string())
     );
+    assert_eq!(
+        snapshot.watchlist[0].primary_actionability,
+        "base_compression_candidate"
+    );
+    assert!(
+        snapshot.watchlist[0]
+            .actionability_labels
+            .contains(&"base_compression_candidate".to_string())
+    );
+    assert_eq!(snapshot.stocks[0].distance_from_20d_ma_pct, 0.03);
     assert!(snapshot.latest_backtest.is_none());
     assert_eq!(
         snapshot.data_health.latest_score_date.as_deref(),
@@ -111,7 +121,15 @@ async fn dashboard_api_returns_latest_snapshot_json() -> Result<()> {
         "rate_pressure"
     );
     assert_eq!(json["stocks"][0]["symbol"], "MSFT");
+    assert_eq!(
+        json["stocks"][0]["primary_actionability"],
+        "base_compression_candidate"
+    );
     assert_eq!(json["watchlist"][0]["classifications"][0], "sector_leader");
+    assert_eq!(
+        json["watchlist"][0]["primary_actionability"],
+        "base_compression_candidate"
+    );
 
     Ok(())
 }
@@ -383,7 +401,7 @@ fn stock_score(date: &str) -> StockScore {
         avg_dollar_volume: 50_000_000.0,
         trend_state: "above_20d_50d".to_string(),
         catalyst_status: "recent_news:2".to_string(),
-        components_json: r#"{"relative_strength_component":80.0}"#.to_string(),
+        components_json: r#"{"relative_strength_component":80.0,"ma_20d":100.0,"ma_50d":98.0,"distance_from_20d_ma_pct":0.03,"distance_from_50d_ma_pct":0.05,"atr_14d":2.0,"atr_14d_pct":0.02,"atr_extension_from_20d_ma":1.5,"atr_extension_from_50d_ma":2.4,"high_20d":104.0,"high_60d":106.0,"distance_from_20d_high_pct":-0.01,"distance_from_60d_high_pct":-0.04,"range_10d_pct":0.04,"gap_pct":0.0,"true_range_pct":0.02,"primary_actionability":"base_compression_candidate","actionability_labels":["base_compression_candidate","early_rotation_candidate","actionable_leader"]}"#.to_string(),
         explanation: "fixture stock".to_string(),
     }
 }

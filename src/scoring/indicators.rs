@@ -129,6 +129,74 @@ pub fn moving_average(history: &[DailyPrice], idx: usize, lookback: usize) -> Op
     )
 }
 
+pub fn highest_close(history: &[DailyPrice], idx: usize, lookback: usize) -> Option<f64> {
+    if idx + 1 < lookback {
+        return None;
+    }
+    history[idx + 1 - lookback..=idx]
+        .iter()
+        .map(|price| price.adjusted_close)
+        .max_by(|left, right| left.total_cmp(right))
+}
+
+pub fn lowest_close(history: &[DailyPrice], idx: usize, lookback: usize) -> Option<f64> {
+    if idx + 1 < lookback {
+        return None;
+    }
+    history[idx + 1 - lookback..=idx]
+        .iter()
+        .map(|price| price.adjusted_close)
+        .min_by(|left, right| left.total_cmp(right))
+}
+
+pub fn true_range(history: &[DailyPrice], idx: usize) -> Option<f64> {
+    let price = history.get(idx)?;
+    if idx == 0 {
+        return Some(price.high - price.low);
+    }
+    let previous_close = history.get(idx - 1)?.close;
+    Some(
+        (price.high - price.low)
+            .max((price.high - previous_close).abs())
+            .max((price.low - previous_close).abs()),
+    )
+}
+
+pub fn average_true_range(history: &[DailyPrice], idx: usize, lookback: usize) -> Option<f64> {
+    if idx + 1 < lookback {
+        return None;
+    }
+    let ranges = (idx + 1 - lookback..=idx)
+        .map(|range_idx| true_range(history, range_idx))
+        .collect::<Option<Vec<_>>>()?;
+    average(&ranges)
+}
+
+pub fn distance_pct(value: f64, reference: f64) -> Option<f64> {
+    if reference == 0.0 {
+        None
+    } else {
+        Some((value / reference) - 1.0)
+    }
+}
+
+pub fn range_pct(high: f64, low: f64, close: f64) -> Option<f64> {
+    if close == 0.0 {
+        None
+    } else {
+        Some((high - low) / close)
+    }
+}
+
+pub fn gap_pct(history: &[DailyPrice], idx: usize) -> Option<f64> {
+    if idx == 0 {
+        return None;
+    }
+    let current_open = history.get(idx)?.open;
+    let previous_close = history.get(idx - 1)?.close;
+    distance_pct(current_open, previous_close)
+}
+
 pub fn average(values: &[f64]) -> Option<f64> {
     if values.is_empty() {
         None
