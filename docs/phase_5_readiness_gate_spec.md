@@ -16,6 +16,7 @@ Related documents:
 - `docs/phase_5c_event_context_validation_spec.md`
 - `docs/phase_5c_source_coverage_review_spec.md`
 - `docs/watchlist_convergence_review_spec.md`
+- `docs/application_state_remaining_work_spec.md`
 - `docs/implementation_spec.md`
 
 ## 1. Purpose

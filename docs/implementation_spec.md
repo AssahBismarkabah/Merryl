@@ -351,6 +351,12 @@ Phase 5 readiness gate:
 docs/phase_5_readiness_gate_spec.md
 ```
 
+Application state and remaining work:
+
+```text
+docs/application_state_remaining_work_spec.md
+```
+
 Backtest scope clarity:
 
 ```text
@@ -438,6 +444,8 @@ The watchlist convergence checkpoint is recorded in `docs/watchlist_convergence_
 The Phase 5C event-context validation checkpoint is recorded in `docs/phase_5c_event_context_validation_spec.md`. It writes event-context validation outputs from stored SQLite data and records that current event-context rows do not yet have enough future bars for formula decisions.
 
 The Phase 5 readiness gate is recorded in `docs/phase_5_readiness_gate_spec.md`. It blocks catalyst/event scoring changes, macro scoring changes, Phase 5D paid-source implementation, options, intraday, and universe expansion until the required validation and source-decision gates pass.
+
+The current application-state audit is recorded in `docs/application_state_remaining_work_spec.md`. It summarizes what is working now, which connected data is still non-scoring context, what remains blocked, and what application work is still needed before the next build phase.
 
 The Phase 5B macro/regime validation implementation is recorded in `docs/phase_5b_macro_regime_validation_spec.md`. It reuses `merryl run backtest --from YYYY-MM-DD --to YYYY-MM-DD`, writes macro/regime validation outputs, uses only stored SQLite data, and keeps Market Regime V1 scoring unchanged.
 
