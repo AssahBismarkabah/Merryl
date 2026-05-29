@@ -8,6 +8,7 @@ use crate::config::{macro_data, macro_validation};
 use crate::domain::models::{MacroObservation, MarketRegimeScore, SectorScore};
 
 mod actionability;
+mod common;
 mod event_context;
 
 pub use actionability::{

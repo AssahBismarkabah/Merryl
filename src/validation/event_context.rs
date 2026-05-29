@@ -1,11 +1,15 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use anyhow::{Result, bail};
 use serde::Serialize;
 
 use crate::config::{event_validation, scoring};
 use crate::domain::models::{DailyPrice, SectorMap, StockScore, WatchlistRow};
-use crate::scoring::{forward_return, histories_by_symbol};
+use crate::scoring::histories_by_symbol;
+
+use super::common::{
+    average, forward_returns_for_horizon, median, scored_watchlist_rows, sector_etfs_by_sector,
+};
 
 #[derive(Debug, Clone)]
 pub struct EventContextValidationInput {
@@ -76,16 +80,7 @@ pub fn run_event_context_validation(
         bail!("missing historical scores or prices; run `merryl run daily --date latest` first");
     }
 
-    let watchlist_keys: HashSet<(String, String)> = input
-        .watchlist_rows
-        .iter()
-        .map(|row| (row.date.clone(), row.symbol.clone()))
-        .collect();
-    let scored_watchlist_rows: Vec<&StockScore> = input
-        .stock_scores
-        .iter()
-        .filter(|score| watchlist_keys.contains(&(score.date.clone(), score.symbol.clone())))
-        .collect();
+    let scored_watchlist_rows = scored_watchlist_rows(&input.stock_scores, &input.watchlist_rows);
 
     if scored_watchlist_rows.is_empty() {
         bail!("missing historical scores or prices; run `merryl run daily --date latest` first");
@@ -97,11 +92,7 @@ pub fn run_event_context_validation(
         .count();
     let pending_source_row_count = scored_watchlist_rows.len() - event_context_row_count;
     let histories = histories_by_symbol(&input.prices);
-    let sector_etfs: HashMap<&str, &str> = input
-        .sector_maps
-        .iter()
-        .map(|sector_map| (sector_map.sector.as_str(), sector_map.sector_etf.as_str()))
-        .collect();
+    let sector_etfs = sector_etfs_by_sector(&input.sector_maps);
     let mut observations = Vec::new();
     let mut forward_observation_count = 0;
     let mut event_context_forward_observation_count = 0;
@@ -113,20 +104,13 @@ pub fn run_event_context_validation(
             continue;
         };
         for horizon in scoring::BACKTEST_HORIZONS {
-            let Some(stock_return) =
-                forward_return(&histories, &score.symbol, &score.date, *horizon)
-            else {
-                skipped_missing_future_bars += 1;
-                continue;
-            };
-            let Some(spy_return) =
-                forward_return(&histories, scoring::BENCHMARK_SYMBOL, &score.date, *horizon)
-            else {
-                skipped_missing_future_bars += 1;
-                continue;
-            };
-            let Some(sector_return) = forward_return(&histories, sector_etf, &score.date, *horizon)
-            else {
+            let Some(forward_returns) = forward_returns_for_horizon(
+                &histories,
+                &score.symbol,
+                &score.date,
+                sector_etf,
+                *horizon,
+            ) else {
                 skipped_missing_future_bars += 1;
                 continue;
             };
@@ -141,9 +125,9 @@ pub fn run_event_context_validation(
                     .map(|group| EventContextObservation {
                         group,
                         horizon: *horizon,
-                        forward_return: stock_return,
-                        relative_return_vs_spy: stock_return - spy_return,
-                        relative_return_vs_sector: stock_return - sector_return,
+                        forward_return: forward_returns.stock,
+                        relative_return_vs_spy: forward_returns.stock - forward_returns.spy,
+                        relative_return_vs_sector: forward_returns.stock - forward_returns.sector,
                     }),
             );
         }
@@ -269,18 +253,4 @@ fn has_event_context(catalyst_status: &str) -> bool {
 
 fn has_label(catalyst_status: &str, prefix: &str) -> bool {
     catalyst_status.contains(&format!("{prefix}:"))
-}
-
-fn average(values: &[f64]) -> f64 {
-    values.iter().sum::<f64>() / values.len() as f64
-}
-
-fn median(mut values: Vec<f64>) -> f64 {
-    values.sort_by(|a, b| a.total_cmp(b));
-    let mid = values.len() / 2;
-    if values.len().is_multiple_of(2) {
-        (values[mid - 1] + values[mid]) / 2.0
-    } else {
-        values[mid]
-    }
 }

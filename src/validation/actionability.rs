@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use anyhow::{Result, bail};
 use serde::Serialize;
@@ -6,7 +6,11 @@ use serde::Serialize;
 use crate::actionability::stored_classification_from_components;
 use crate::config::{actionability as actionability_config, scoring};
 use crate::domain::models::{DailyPrice, SectorMap, StockScore, WatchlistRow};
-use crate::scoring::{forward_return, histories_by_symbol};
+use crate::scoring::histories_by_symbol;
+
+use super::common::{
+    average, forward_returns_for_horizon, median, scored_watchlist_rows, sector_etfs_by_sector,
+};
 
 #[derive(Debug, Clone)]
 pub struct ActionabilityValidationInput {
@@ -66,6 +70,13 @@ struct ActionabilityObservation {
     relative_return_vs_sector: f64,
 }
 
+#[derive(Debug, Clone, Default)]
+struct ActionabilityRowCounts {
+    extended_leader: usize,
+    useful_review: usize,
+    unclassified_leader: usize,
+}
+
 pub fn run_actionability_validation(
     input: ActionabilityValidationInput,
 ) -> Result<ActionabilityValidationMetrics> {
@@ -77,58 +88,15 @@ pub fn run_actionability_validation(
         bail!("missing historical scores or prices; run `merryl run daily --date latest` first");
     }
 
-    let watchlist_keys: HashSet<(String, String)> = input
-        .watchlist_rows
-        .iter()
-        .map(|row| (row.date.clone(), row.symbol.clone()))
-        .collect();
-    let scored_watchlist_rows: Vec<&StockScore> = input
-        .stock_scores
-        .iter()
-        .filter(|score| watchlist_keys.contains(&(score.date.clone(), score.symbol.clone())))
-        .collect();
+    let scored_watchlist_rows = scored_watchlist_rows(&input.stock_scores, &input.watchlist_rows);
 
     if scored_watchlist_rows.is_empty() {
         bail!("missing historical scores or prices; run `merryl run daily --date latest` first");
     }
 
-    let extended_leader_row_count = scored_watchlist_rows
-        .iter()
-        .filter(|score| {
-            let classification = stored_classification_from_components(&score.components_json);
-            classification
-                .labels
-                .contains(&actionability_config::LABEL_EXTENDED_LEADER.to_string())
-        })
-        .count();
-    let useful_review_row_count = scored_watchlist_rows
-        .iter()
-        .filter(|score| {
-            let classification = stored_classification_from_components(&score.components_json);
-            classification.labels.iter().any(|label| {
-                label == actionability_config::LABEL_PULLBACK_LEADER
-                    || label == actionability_config::LABEL_BASE_COMPRESSION_CANDIDATE
-                    || label == actionability_config::LABEL_EARLY_ROTATION_CANDIDATE
-                    || label == actionability_config::LABEL_ACTIONABLE_LEADER
-            })
-        })
-        .count();
-    let unclassified_leader_row_count = scored_watchlist_rows
-        .iter()
-        .filter(|score| {
-            let classification = stored_classification_from_components(&score.components_json);
-            classification
-                .labels
-                .contains(&actionability_config::LABEL_UNCLASSIFIED_LEADER.to_string())
-        })
-        .count();
-
+    let row_counts = actionability_row_counts(&scored_watchlist_rows);
     let histories = histories_by_symbol(&input.prices);
-    let sector_etfs: HashMap<&str, &str> = input
-        .sector_maps
-        .iter()
-        .map(|sector_map| (sector_map.sector.as_str(), sector_map.sector_etf.as_str()))
-        .collect();
+    let sector_etfs = sector_etfs_by_sector(&input.sector_maps);
     let mut observations = Vec::new();
     let mut forward_observation_count = 0;
     let mut skipped_missing_future_bars = 0;
@@ -139,20 +107,13 @@ pub fn run_actionability_validation(
             continue;
         };
         for horizon in scoring::BACKTEST_HORIZONS {
-            let Some(stock_return) =
-                forward_return(&histories, &score.symbol, &score.date, *horizon)
-            else {
-                skipped_missing_future_bars += 1;
-                continue;
-            };
-            let Some(spy_return) =
-                forward_return(&histories, scoring::BENCHMARK_SYMBOL, &score.date, *horizon)
-            else {
-                skipped_missing_future_bars += 1;
-                continue;
-            };
-            let Some(sector_return) = forward_return(&histories, sector_etf, &score.date, *horizon)
-            else {
+            let Some(forward_returns) = forward_returns_for_horizon(
+                &histories,
+                &score.symbol,
+                &score.date,
+                sector_etf,
+                *horizon,
+            ) else {
                 skipped_missing_future_bars += 1;
                 continue;
             };
@@ -164,9 +125,9 @@ pub fn run_actionability_validation(
                     .map(|group| ActionabilityObservation {
                         group,
                         horizon: *horizon,
-                        forward_return: stock_return,
-                        relative_return_vs_spy: stock_return - spy_return,
-                        relative_return_vs_sector: stock_return - sector_return,
+                        forward_return: forward_returns.stock,
+                        relative_return_vs_spy: forward_returns.stock - forward_returns.spy,
+                        relative_return_vs_sector: forward_returns.stock - forward_returns.sector,
                     }),
             );
         }
@@ -181,14 +142,54 @@ pub fn run_actionability_validation(
         validation_scope: validation_scope(),
         watchlist_row_count: input.watchlist_rows.len(),
         scored_watchlist_row_count: scored_watchlist_rows.len(),
-        extended_leader_row_count,
-        useful_review_row_count,
-        unclassified_leader_row_count,
+        extended_leader_row_count: row_counts.extended_leader,
+        useful_review_row_count: row_counts.useful_review,
+        unclassified_leader_row_count: row_counts.unclassified_leader,
         forward_observation_count,
         grouped_forward_observation_count,
         skipped_missing_future_bars,
         summaries,
     })
+}
+
+fn actionability_row_counts(scored_watchlist_rows: &[&StockScore]) -> ActionabilityRowCounts {
+    let mut counts = ActionabilityRowCounts::default();
+
+    for score in scored_watchlist_rows {
+        let classification = stored_classification_from_components(&score.components_json);
+        if has_label(
+            &classification.labels,
+            actionability_config::LABEL_EXTENDED_LEADER,
+        ) {
+            counts.extended_leader += 1;
+        }
+        if has_useful_review_label(&classification.labels) {
+            counts.useful_review += 1;
+        }
+        if has_label(
+            &classification.labels,
+            actionability_config::LABEL_UNCLASSIFIED_LEADER,
+        ) {
+            counts.unclassified_leader += 1;
+        }
+    }
+
+    counts
+}
+
+fn has_useful_review_label(labels: &[String]) -> bool {
+    [
+        actionability_config::LABEL_PULLBACK_LEADER,
+        actionability_config::LABEL_BASE_COMPRESSION_CANDIDATE,
+        actionability_config::LABEL_EARLY_ROTATION_CANDIDATE,
+        actionability_config::LABEL_ACTIONABLE_LEADER,
+    ]
+    .iter()
+    .any(|label| has_label(labels, label))
+}
+
+fn has_label(labels: &[String], expected: &str) -> bool {
+    labels.iter().any(|label| label == expected)
 }
 
 fn validation_scope() -> ActionabilityValidationScope {
@@ -263,18 +264,4 @@ fn summarize_observations(
 
     summaries.sort_by(|a, b| a.group.cmp(&b.group).then(a.horizon.cmp(&b.horizon)));
     summaries
-}
-
-fn average(values: &[f64]) -> f64 {
-    values.iter().sum::<f64>() / values.len() as f64
-}
-
-fn median(mut values: Vec<f64>) -> f64 {
-    values.sort_by(|a, b| a.total_cmp(b));
-    let mid = values.len() / 2;
-    if values.len().is_multiple_of(2) {
-        (values[mid - 1] + values[mid]) / 2.0
-    } else {
-        values[mid]
-    }
 }
