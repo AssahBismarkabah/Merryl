@@ -29,6 +29,7 @@ Related documents reviewed:
 - `docs/sector_formula_decision_checkpoint_spec.md`
 - `docs/sector_score_review_spec.md`
 - `docs/spec_completeness_gate_spec.md`
+- `docs/watchlist_actionability_extension_filter_spec.md`
 - `docs/watchlist_convergence_review_spec.md`
 
 ## 1. Purpose
@@ -122,15 +123,15 @@ The Phase 5 readiness gate blocks new score changes because the current evidence
 Current event-context validation state:
 
 ```text
-Rows with event context: 25
-Event-context forward observations: 0
+Rows with event context: 50
+Event-context forward observations: 25
 ```
 
 Meaning:
 
 - Event context is connected.
 - The events are visible in the final watchlist surface.
-- The events are not yet validated as improving forward behavior.
+- The first 1D forward observations exist, but the sample is still too small for formula changes.
 - Catalyst/event score changes are not approved.
 
 Current macro state:
@@ -240,6 +241,23 @@ Remaining dashboard work should stay inside the current boundary:
 - Avoid adding chart-review workflows.
 - Avoid dashboard-side recalculation or provider fetching.
 
+### 6.7 Watchlist Actionability
+
+The current ranked watchlist can contain many names that already made an explosive move.
+
+Needed:
+
+- Measure whether a ranked leader is extended, actionable, pulling back, compressing, or still early.
+- Use existing daily OHLCV and stored scores first.
+- Keep core stock scores and ranks unchanged until validation proves the new labels are useful.
+- Add an actionability review queue before adding new paid or advanced sources.
+
+Planning document:
+
+```text
+docs/watchlist_actionability_extension_filter_spec.md
+```
+
 ## 7. What Should Not Be Built Next
 
 Do not build these next:
@@ -268,10 +286,12 @@ Run the current system, accumulate forward bars for event-labeled rows, and reru
 If starting new planning work, the next document should be:
 
 ```text
-Phase 5D ETF Fund-Flow Source Decision Spec
+Watchlist Actionability And Extension Filter Spec
 ```
 
-That document should be written before any ETF flow implementation.
+That document should be used before any code change that tries to reduce late, already-extended watchlist names.
+
+Phase 5D ETF fund-flow source planning still remains the next source-expansion planning track, but it should not outrank the local actionability work because actionability uses data Merryl already stores.
 
 ## 9. Validation Commands
 

@@ -16,6 +16,7 @@ Related documents:
 - `docs/phase_5c_event_context_validation_spec.md`
 - `docs/phase_5c_source_coverage_review_spec.md`
 - `docs/watchlist_convergence_review_spec.md`
+- `docs/watchlist_actionability_extension_filter_spec.md`
 - `docs/application_state_remaining_work_spec.md`
 - `docs/implementation_spec.md`
 
@@ -55,14 +56,14 @@ Implemented:
 Latest recorded event-context validation result:
 
 ```text
-Rows with event context: 25
-Event-context forward observations: 0
+Rows with event context: 50
+Event-context forward observations: 25
 ```
 
 Interpretation:
 
 ```text
-Event context exists, but it does not yet have enough future bars for forward validation.
+Event context has first 1D forward observations, but it does not yet have enough 5D, 20D, or 60D history for formula decisions.
 ```
 
 Therefore:
@@ -146,7 +147,7 @@ Minimum review sequence:
 
 Do not tune weights from one short sample.
 
-### Step 4: If Starting New Phase 5 Work, Start With A Source Decision Document
+### Step 4: If Starting New Phase 5 Source Work, Start With A Source Decision Document
 
 The next source candidate in the Phase 5 order is:
 
@@ -163,6 +164,34 @@ But implementation should not start until a separate Phase 5D source decision do
 - What are `effective_date`, `processed_at`, and `fetched_at` semantics?
 - How will flow data be stored before it affects scoring?
 - What validation must pass before any sector-score change?
+
+### Step 5: If Improving The Watchlist Before New Sources, Use The Actionability Spec
+
+The current ranked watchlist can include names that have already made the explosive move.
+
+This is not a reason to add a new source first. It is a reason to classify the already-ranked names by setup state:
+
+```text
+extended leader
+actionable leader
+pullback leader
+base compression candidate
+early rotation candidate
+```
+
+Use:
+
+```text
+docs/watchlist_actionability_extension_filter_spec.md
+```
+
+Boundary:
+
+- No stock score formula change in the first pass.
+- No new provider.
+- No new public CLI command.
+- No dashboard charting.
+- Validate the buckets before using them as hard filters.
 
 ## 6. Readiness Gates
 
@@ -266,12 +295,13 @@ The next concrete work should be:
 
 1. Keep daily runs active so event-context history accumulates.
 2. Rerun event-context validation after future bars exist.
-3. If we want a new implementation track immediately, create a Phase 5D ETF fund-flow source decision document first, not code.
+3. If we want a new local watchlist improvement immediately, use `docs/watchlist_actionability_extension_filter_spec.md` before code.
+4. If we want a new source-expansion track, create a Phase 5D ETF fund-flow source decision document first, not code.
 
 Decision:
 
 ```text
-Current next step = readiness monitoring and Phase 5D source decision planning.
+Current next step = readiness monitoring plus watchlist actionability planning.
 No score formula changes are approved.
 No paid source implementation is approved.
 ```

@@ -252,6 +252,41 @@ Event-context rows exist, but they do not yet have enough future bars for forwar
 
 This is expected because structured Phase 5C event labels were captured on the latest score date. The checkpoint is implemented, but catalyst/event scoring changes are not approved. Let future daily runs accumulate event-labeled history before revisiting catalyst/event weights.
 
+Live update after the 2026-05-29 daily run:
+
+```text
+set -a; source .env; set +a; cargo run -- run daily --date latest
+  -> date: 2026-05-29
+  -> macro observations: 4843
+  -> news events: 272
+  -> earnings events: 44
+  -> filing events: 45
+
+cargo run -- run backtest --from 2025-07-01 --to 2026-05-29
+  -> event context validation report: reports/validations/2025-07-01_2026-05-29_event_context_validation.md
+  -> event context validation export: exports/validations/2025-07-01_2026-05-29_event_context_validation.csv
+  -> event context observations: 26350
+  -> backtest result id: 14
+```
+
+Updated event validation coverage:
+
+| Metric | Value |
+|---|---:|
+| Watchlist rows reviewed | 5750 |
+| Scored watchlist rows matched | 5750 |
+| Rows with event context | 50 |
+| Rows with pending source | 5700 |
+| Valid forward observations | 26350 |
+| Event-context forward observations | 25 |
+| Skipped horizons missing future bars | 2400 |
+
+Interpretation:
+
+```text
+The first event-context forward observations exist, but this is still only an early smoke check. It is not enough for catalyst/event score changes.
+```
+
 Verification passed:
 
 ```text

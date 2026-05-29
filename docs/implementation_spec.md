@@ -345,6 +345,12 @@ Watchlist convergence review:
 docs/watchlist_convergence_review_spec.md
 ```
 
+Watchlist actionability and extension filter:
+
+```text
+docs/watchlist_actionability_extension_filter_spec.md
+```
+
 Phase 5 readiness gate:
 
 ```text
@@ -440,6 +446,8 @@ The Phase 5C implementation is recorded in `docs/phase_5c_structured_catalyst_so
 The Phase 5C coverage checkpoint is recorded in `docs/phase_5c_source_coverage_review_spec.md`. It accepts Phase 5C as source-backed context for the current ranked stock surface, but it does not approve catalyst/event data as a score input.
 
 The watchlist convergence checkpoint is recorded in `docs/watchlist_convergence_review_spec.md`. It confirms the connected sources are converging toward the final filtered watchlist and implements explicit classification labels before any new provider, paid source, universe expansion, or scoring formula change.
+
+The watchlist actionability and extension filter plan is recorded in `docs/watchlist_actionability_extension_filter_spec.md`. It addresses the observed problem that many high-ranked names are already extended, and proposes a no-new-source actionability layer before any score formula or Phase 5D source work.
 
 The Phase 5C event-context validation checkpoint is recorded in `docs/phase_5c_event_context_validation_spec.md`. It writes event-context validation outputs from stored SQLite data and records that current event-context rows do not yet have enough future bars for formula decisions.
 

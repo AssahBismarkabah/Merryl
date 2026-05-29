@@ -13,6 +13,7 @@ Related documents:
 - `docs/phase_5c_structured_catalyst_source_spec.md`
 - `docs/phase_5c_source_coverage_review_spec.md`
 - `docs/market_regime_formula_decision_checkpoint_spec.md`
+- `docs/watchlist_actionability_extension_filter_spec.md`
 - `docs/implementation_spec.md`
 
 ## 1. Purpose
@@ -263,3 +264,11 @@ Do not move next to:
 - intraday data
 - universe expansion
 - catalyst/event score bonuses
+
+After live review, the next local watchlist improvement is recorded in:
+
+```text
+docs/watchlist_actionability_extension_filter_spec.md
+```
+
+That document addresses the problem that a ranked leader can be real but already extended. It should be handled as an actionability/classification layer first, not as a new data-source or score-formula change.
