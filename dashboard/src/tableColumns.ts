@@ -42,6 +42,21 @@ export const stockColumns: ColumnDef<Stock>[] = [
   { header: "Catalyst", cell: ({ row }) => statusTag(row.original.catalyst_status) }
 ];
 
+export const actionabilityQueueColumns: ColumnDef<Stock>[] = [
+  { header: "Bucket", cell: ({ row }) => actionabilityCell(row.original.primary_actionability) },
+  { header: "Rank", cell: ({ row }) => rankCell(row.original.rank) },
+  { header: "Symbol", cell: ({ row }) => symbolCell(row.original.symbol) },
+  { header: "Sector", cell: ({ row }) => dataTag(row.original.sector, "accent") },
+  { header: "Industry", cell: ({ row }) => dataTag(row.original.industry, "muted") },
+  { header: "Score", cell: ({ row }) => metricCell(number(row.original.score)) },
+  { header: "5D", cell: ({ row }) => percentCell(row.original.return_5d) },
+  { header: "20D", cell: ({ row }) => percentCell(row.original.return_20d) },
+  { header: "Vs Sector", cell: ({ row }) => percentCell(row.original.relative_return_vs_sector) },
+  { header: "Rel Vol", cell: ({ row }) => metricCell(number(row.original.relative_volume)) },
+  { header: "20D MA", cell: ({ row }) => percentCell(row.original.distance_from_20d_ma_pct) },
+  { header: "Catalyst", cell: ({ row }) => statusTag(row.original.catalyst_status) }
+];
+
 export const watchlistColumns: ColumnDef<WatchlistRow>[] = [
   { header: "Rank", cell: ({ row }) => rankCell(row.original.rank) },
   { header: "Symbol", cell: ({ row }) => symbolCell(row.original.symbol) },

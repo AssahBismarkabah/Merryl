@@ -32,6 +32,7 @@ Implementation checkpoint, 2026-05-29:
 - Core stock `score` and `rank` remain unchanged.
 - Daily Markdown reports include `Actionability Review Queue`.
 - Dashboard watchlist and leadership data expose actionability fields.
+- Dashboard `Actionability Review Queue` uses the stored top-50 stock scores, while the ranked watchlist remains the existing leadership list.
 - Existing `merryl run backtest --from YYYY-MM-DD --to YYYY-MM-DD` writes actionability validation outputs.
 - CSV watchlist shape remains unchanged.
 - No new provider, paid source, public CLI command, charting workspace, or scoring-weight change was added.
@@ -709,4 +710,12 @@ Current interpretation:
 The actionability layer is now implemented as a review and validation layer.
 It is not approved as a scoring-weight change.
 The next decision should come from observing the validation output over more live runs.
+```
+
+Dashboard correction, 2026-05-29:
+
+```text
+The top 25 ranked watchlist can all be extended in a strong momentum tape.
+The dashboard actionability queue now reads the stored top-50 stock score rows, orders them by actionability bucket, and leaves the ranked watchlist unchanged.
+This exposes non-extended candidates without expanding Merryl into a broad scanner.
 ```

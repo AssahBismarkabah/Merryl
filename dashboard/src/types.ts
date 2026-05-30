@@ -61,6 +61,10 @@ export interface Stock {
   industry: string;
   score: number;
   sector_score: number;
+  return_1d: number;
+  return_5d: number;
+  return_20d: number;
+  return_60d: number;
   relative_return_vs_sector: number;
   relative_return_vs_spy: number;
   relative_volume: number;

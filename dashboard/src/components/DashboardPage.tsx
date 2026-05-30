@@ -5,6 +5,7 @@ import { DashboardSidebar } from "./DashboardSidebar";
 import { MarketOverview } from "./MarketOverview";
 import { number, percent } from "../format";
 import {
+  actionabilityQueueColumns,
   industryColumns,
   sectorColumns,
   stockColumns,
@@ -236,6 +237,11 @@ function renderView(view: DashboardView, data: DashboardSnapshot) {
           </section>
 
           <section className="detailSection">
+            <ViewHeader title="Actionability Review Queue" />
+            <DataTable data={actionabilityQueueStocks(data)} columns={actionabilityQueueColumns} />
+          </section>
+
+          <section className="detailSection">
             <ViewHeader title="Watchlist" />
             <DataTable data={data.watchlist} columns={watchlistColumns} />
           </section>
@@ -430,35 +436,49 @@ function dashboardHealth(data: DashboardSnapshot): Partial<DashboardSnapshot["da
 }
 
 function actionabilityRows(data: DashboardSnapshot): ReactNode[][] {
-  const bucketOrder = [
-    "early_rotation_candidate",
-    "base_compression_candidate",
-    "pullback_leader",
-    "actionable_leader",
-    "extended_leader",
-    "event_watch_unconfirmed",
-    "unclassified_leader"
-  ];
-  const byBucket = new Map<string, typeof data.watchlist>();
-  for (const row of data.watchlist) {
-    const bucket = row.primary_actionability || "unclassified_leader";
-    byBucket.set(bucket, [...(byBucket.get(bucket) ?? []), row]);
+  const byBucket = new Map<string, typeof data.stocks>();
+  for (const stock of data.stocks) {
+    const bucket = stock.primary_actionability || "unclassified_leader";
+    byBucket.set(bucket, [...(byBucket.get(bucket) ?? []), stock]);
   }
 
-  return bucketOrder
+  return actionabilityBucketOrder
     .filter((bucket) => (byBucket.get(bucket)?.length ?? 0) > 0)
     .map((bucket) => {
-      const rows = byBucket.get(bucket) ?? [];
-      const lead = rows[0];
+      const stocks = byBucket.get(bucket) ?? [];
+      const lead = stocks[0];
       return [
         <DataTag tone={bucket === "extended_leader" ? "muted" : "accent"}>
           {bucketLabel(bucket)}
         </DataTag>,
-        rows.length,
+        stocks.length,
         lead ? `${lead.symbol} ${number(lead.score)}` : "None",
         actionabilityContext(bucket)
       ];
     });
+}
+
+function actionabilityQueueStocks(data: DashboardSnapshot) {
+  return [...data.stocks].sort((left, right) => {
+    const leftBucket = left.primary_actionability || "unclassified_leader";
+    const rightBucket = right.primary_actionability || "unclassified_leader";
+    return actionabilityBucketOrderIndex(leftBucket) - actionabilityBucketOrderIndex(rightBucket) || left.rank - right.rank;
+  });
+}
+
+const actionabilityBucketOrder = [
+  "early_rotation_candidate",
+  "base_compression_candidate",
+  "pullback_leader",
+  "actionable_leader",
+  "extended_leader",
+  "event_watch_unconfirmed",
+  "unclassified_leader"
+];
+
+function actionabilityBucketOrderIndex(bucket: string) {
+  const idx = actionabilityBucketOrder.indexOf(bucket);
+  return idx === -1 ? actionabilityBucketOrder.length : idx;
 }
 
 function bucketLabel(value: string) {
