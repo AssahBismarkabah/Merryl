@@ -252,6 +252,7 @@ Implemented in the current no-new-source pass:
 - Keeps core stock scores and ranks unchanged.
 - Adds an actionability review queue before the ranked watchlist.
 - Exposes actionability fields in the dashboard watchlist and leadership data.
+- Uses the stored top-50 stock score rows for the dashboard actionability queue so non-extended names can appear even when the top-25 ranked watchlist is fully extended.
 - Adds actionability validation to the existing backtest workflow.
 
 Implementation document:
