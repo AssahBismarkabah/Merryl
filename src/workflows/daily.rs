@@ -50,10 +50,16 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
     let mut db = Database::open(&db_path)?;
     db.migrate()?;
 
+    progress("loading market universe");
     let (symbols, warnings) = symbols_with_cached_fallback(&provider, &db)?;
     let sector_maps = provider.sector_maps();
     let industry_maps = provider.industry_maps(&symbols);
+    progress(format!(
+        "fetching daily prices for {} symbols",
+        symbols.len()
+    ));
     let prices = provider.daily_prices(&symbols, fetch_end_date)?;
+    progress("fetching macro context");
     let macro_observations = macro_provider.macro_observations(fetch_end_date)?;
 
     if prices.is_empty() {
@@ -68,6 +74,9 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         None => latest_date(&prices).context("could not determine latest date from price data")?,
     };
 
+    progress(format!(
+        "scoring historical market window through {score_date}"
+    ));
     let mut score_history = score_market_history(&score_date, &symbols, &prices, &sector_maps);
     let scores = score_history.last().context(
         "no valid historical score dates were produced; need at least 60 benchmark bars",
@@ -95,6 +104,10 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         .iter()
         .map(|stock| stock.symbol.clone())
         .collect::<Vec<_>>();
+    progress(format!(
+        "fetching event context for {} watchlist symbols",
+        watchlist_symbols.len()
+    ));
     let mut recent_events = provider.recent_news_events(&watchlist_symbols, report_date_value)?;
     let mut earnings_events = earnings_provider.upcoming_earnings_events(&watchlist_symbols)?;
     let mut filing_events =
@@ -127,6 +140,7 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         }
     }
 
+    progress("writing database rows and reports");
     db.upsert_symbols(&symbols)?;
     db.upsert_sector_maps(&sector_maps)?;
     db.upsert_industry_maps(&industry_maps)?;
@@ -173,6 +187,10 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         filing_events: filing_events.len(),
         warnings,
     })
+}
+
+fn progress(message: impl AsRef<str>) {
+    eprintln!("progress: {}", message.as_ref());
 }
 
 fn symbols_with_cached_fallback(

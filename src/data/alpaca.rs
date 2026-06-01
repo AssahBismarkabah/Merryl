@@ -313,8 +313,20 @@ impl DailyOhlcvProvider for AlpacaProvider {
             .map(|symbol| symbol.symbol.clone())
             .collect();
         let mut prices = Vec::new();
+        let batch_count = symbol_values.len().div_ceil(market_data::ALPACA_BATCH_SIZE);
 
-        for batch in symbol_values.chunks(market_data::ALPACA_BATCH_SIZE) {
+        for (idx, batch) in symbol_values
+            .chunks(market_data::ALPACA_BATCH_SIZE)
+            .enumerate()
+        {
+            eprintln!(
+                "progress: fetching Alpaca price batch {}/{} ({} symbols: {}..{})",
+                idx + 1,
+                batch_count,
+                batch.len(),
+                batch.first().map(String::as_str).unwrap_or("?"),
+                batch.last().map(String::as_str).unwrap_or("?"),
+            );
             prices.extend(self.fetch_batch(batch, start_date, end_date)?);
             thread::sleep(market_data::batch_sleep());
         }
