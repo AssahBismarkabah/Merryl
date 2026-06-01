@@ -4,7 +4,7 @@ use tempfile::tempdir;
 
 use merryl::domain::models::{
     IndustryScore, MacroObservation, MarketEvent, MarketEventMetadata, MarketRegimeScore,
-    SectorScore, StockScore,
+    SectorScore, StockScore, Symbol,
 };
 use merryl::storage::Database;
 
@@ -88,6 +88,30 @@ fn macro_observation_upserts_are_idempotent() -> Result<()> {
     assert_eq!(count, 1);
     assert_eq!(value, 19.4);
     assert_eq!(source, "fred:VIXCLS");
+
+    Ok(())
+}
+
+#[test]
+fn active_symbols_can_restore_cached_universe() -> Result<()> {
+    let dir = tempdir()?;
+    let db_path = dir.path().join("market.db");
+    let mut db = Database::open(&db_path)?;
+    db.migrate()?;
+
+    db.upsert_symbols(&[
+        symbol("MSFT", "Microsoft Corporation", "stock", true),
+        symbol("SPY", "SPDR S&P 500 ETF Trust", "broad_etf", true),
+        symbol("OLD", "Old Removed Company", "stock", false),
+    ])?;
+
+    let symbols = db.active_symbols()?;
+    let tickers = symbols
+        .iter()
+        .map(|symbol| symbol.symbol.as_str())
+        .collect::<Vec<_>>();
+
+    assert_eq!(tickers, vec!["MSFT", "SPY"]);
 
     Ok(())
 }
@@ -236,6 +260,19 @@ fn count_rows(conn: &Connection, table: &str) -> Result<i64> {
             row.get(0)
         })?,
     )
+}
+
+fn symbol(ticker: &str, name: &str, asset_type: &str, is_active: bool) -> Symbol {
+    Symbol {
+        symbol: ticker.to_string(),
+        name: name.to_string(),
+        asset_type: asset_type.to_string(),
+        sector: None,
+        industry: None,
+        exchange: "US".to_string(),
+        market_cap: None,
+        is_active,
+    }
 }
 
 fn market_regime_score(date: &str) -> MarketRegimeScore {

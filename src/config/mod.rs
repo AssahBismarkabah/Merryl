@@ -121,7 +121,9 @@ pub mod market_data {
     pub const NEWS_LOOKBACK_DAYS: i64 = 7;
     pub const ALPACA_BATCH_SIZE: usize = 25;
     pub const ALPACA_BATCH_SLEEP_MS: u64 = 350;
-    pub const HTTP_TIMEOUT_SECONDS: u64 = 45;
+    pub const ALPACA_REQUEST_ATTEMPTS: usize = 2;
+    pub const ALPACA_REQUEST_RETRY_SLEEP_MS: u64 = 1_000;
+    pub const HTTP_TIMEOUT_SECONDS: u64 = 90;
     pub const SOURCE_PREFIX: &str = "alpaca";
     pub const NEWS_EVENT_TYPE: &str = "news";
     pub const NEWS_SOURCE_PREFIX: &str = "alpaca_news";
@@ -132,6 +134,10 @@ pub mod market_data {
 
     pub fn batch_sleep() -> Duration {
         Duration::from_millis(ALPACA_BATCH_SLEEP_MS)
+    }
+
+    pub fn retry_sleep() -> Duration {
+        Duration::from_millis(ALPACA_REQUEST_RETRY_SLEEP_MS)
     }
 }
 

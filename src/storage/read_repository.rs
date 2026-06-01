@@ -6,12 +6,37 @@ use rusqlite::{OptionalExtension, params};
 use crate::config::scoring;
 use crate::domain::models::{
     BacktestResultRow, DailyPrice, IndustryScore, IndustryScoreSnapshot, MacroObservation,
-    MarketRegimeScore, SectorMap, SectorScore, StockScore, WatchlistRow,
+    MarketRegimeScore, SectorMap, SectorScore, StockScore, Symbol, WatchlistRow,
 };
 
 use super::sqlite::Database;
 
 impl Database {
+    pub fn active_symbols(&self) -> Result<Vec<Symbol>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT symbol, name, asset_type, sector, industry, exchange, market_cap, is_active
+            FROM symbols
+            WHERE is_active = 1
+            ORDER BY symbol
+            "#,
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(Symbol {
+                symbol: row.get(0)?,
+                name: row.get(1)?,
+                asset_type: row.get(2)?,
+                sector: row.get(3)?,
+                industry: row.get(4)?,
+                exchange: row.get(5)?,
+                market_cap: row.get(6)?,
+                is_active: row.get::<_, i64>(7)? == 1,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
     pub fn scored_dates(&self) -> Result<Vec<String>> {
         let mut stmt = self
             .conn

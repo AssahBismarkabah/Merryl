@@ -65,6 +65,9 @@ fn main() -> Result<()> {
                 println!("news events: {}", result.news_events);
                 println!("earnings events: {}", result.earnings_events);
                 println!("filing events: {}", result.filing_events);
+                for warning in result.warnings {
+                    println!("warning: {warning}");
+                }
             }
             RunWorkflow::Backtest { from, to } => {
                 let result = merryl::workflows::run_backtest(&from, &to)?;

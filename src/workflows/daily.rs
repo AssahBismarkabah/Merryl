@@ -10,7 +10,7 @@ use crate::data::{
     EarningsCalendarProvider, FilingEventProvider, FredProvider, MacroSeriesProvider,
     SecEdgarProvider, default_end_date,
 };
-use crate::domain::models::{MarketEvent, StockScore};
+use crate::domain::models::{MarketEvent, StockScore, Symbol};
 use crate::output::{DailyReportInput, write_daily_outputs};
 use crate::scoring::{
     apply_catalyst_status, latest_date, preserve_existing_catalyst_statuses,
@@ -33,6 +33,7 @@ pub struct RunDailyResult {
     pub news_events: usize,
     pub earnings_events: usize,
     pub filing_events: usize,
+    pub warnings: Vec<String>,
 }
 
 pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
@@ -45,7 +46,11 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
     let macro_provider = FredProvider::from_env()?;
     let earnings_provider = AlphaVantageProvider::from_env()?;
     let filing_provider = SecEdgarProvider::from_env()?;
-    let symbols = provider.symbols()?;
+    let db_path = default_db_path();
+    let mut db = Database::open(&db_path)?;
+    db.migrate()?;
+
+    let (symbols, warnings) = symbols_with_cached_fallback(&provider, &db)?;
     let sector_maps = provider.sector_maps();
     let industry_maps = provider.industry_maps(&symbols);
     let prices = provider.daily_prices(&symbols, fetch_end_date)?;
@@ -62,10 +67,6 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         Some(date) => date.format("%Y-%m-%d").to_string(),
         None => latest_date(&prices).context("could not determine latest date from price data")?,
     };
-
-    let db_path = default_db_path();
-    let mut db = Database::open(&db_path)?;
-    db.migrate()?;
 
     let mut score_history = score_market_history(&score_date, &symbols, &prices, &sector_maps);
     let scores = score_history.last().context(
@@ -170,7 +171,31 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         news_events: recent_events.len(),
         earnings_events: earnings_events.len(),
         filing_events: filing_events.len(),
+        warnings,
     })
+}
+
+fn symbols_with_cached_fallback(
+    provider: &impl DailyOhlcvProvider,
+    db: &Database,
+) -> Result<(Vec<Symbol>, Vec<String>)> {
+    match provider.symbols() {
+        Ok(symbols) => Ok((symbols, Vec::new())),
+        Err(err) => {
+            let cached_symbols = db.active_symbols()?;
+            if cached_symbols.is_empty() {
+                return Err(err).context(
+                    "live S&P 500 universe refresh failed and no cached universe is available",
+                );
+            }
+
+            let warning = format!(
+                "live S&P 500 universe refresh failed; using {} cached active symbols from SQLite ({err})",
+                cached_symbols.len()
+            );
+            Ok((cached_symbols, vec![warning]))
+        }
+    }
 }
 
 fn attach_event_sectors(events: &mut [MarketEvent], stock_scores: &[StockScore]) {

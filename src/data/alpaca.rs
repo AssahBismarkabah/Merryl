@@ -6,6 +6,7 @@ use anyhow::{Context, Result};
 use chrono::{DateTime, Duration as ChronoDuration, NaiveDate, Utc};
 use reqwest::blocking::Client;
 use serde::Deserialize;
+use serde::de::DeserializeOwned;
 
 use crate::config::{USER_AGENT, market_data};
 use crate::domain::models::{
@@ -93,29 +94,11 @@ impl AlpacaProvider {
 
         loop {
             let query = self.bars_query(symbols, start_date, end_date, &next_page_token);
-            let response = self
-                .client
-                .get(format!(
-                    "{}{}",
-                    self.base_url,
-                    market_data::ALPACA_BARS_PATH
-                ))
-                .header(market_data::ALPACA_KEY_HEADER, &self.key_id)
-                .header(market_data::ALPACA_SECRET_HEADER, &self.secret_key)
-                .query(&query)
-                .send()
-                .with_context(|| {
-                    format!(
-                        "failed to fetch Alpaca daily bars for {}",
-                        symbols.join(",")
-                    )
-                })?
-                .error_for_status()
-                .with_context(|| {
-                    format!("Alpaca daily bars request failed for {}", symbols.join(","))
-                })?
-                .json::<AlpacaBarsResponse>()
-                .context("failed to parse Alpaca daily bars response")?;
+            let response = self.get_json_with_retries::<AlpacaBarsResponse>(
+                market_data::ALPACA_BARS_PATH,
+                &query,
+                &format!("Alpaca daily bars for {}", symbols.join(",")),
+            )?;
 
             all_prices.extend(self.response_prices(response.bars)?);
 
@@ -182,22 +165,11 @@ impl AlpacaProvider {
 
         for _ in 0..market_data::ALPACA_NEWS_MAX_PAGES {
             let query = self.news_query(symbols, start_date, end_date, &next_page_token);
-            let response = self
-                .client
-                .get(format!(
-                    "{}{}",
-                    self.base_url,
-                    market_data::ALPACA_NEWS_PATH
-                ))
-                .header(market_data::ALPACA_KEY_HEADER, &self.key_id)
-                .header(market_data::ALPACA_SECRET_HEADER, &self.secret_key)
-                .query(&query)
-                .send()
-                .with_context(|| format!("failed to fetch Alpaca news for {}", symbols.join(",")))?
-                .error_for_status()
-                .with_context(|| format!("Alpaca news request failed for {}", symbols.join(",")))?
-                .json::<AlpacaNewsResponse>()
-                .context("failed to parse Alpaca news response")?;
+            let response = self.get_json_with_retries::<AlpacaNewsResponse>(
+                market_data::ALPACA_NEWS_PATH,
+                &query,
+                &format!("Alpaca news for {}", symbols.join(",")),
+            )?;
 
             events.extend(response_events(response.news, symbols)?);
 
@@ -240,6 +212,55 @@ impl AlpacaProvider {
         }
 
         query
+    }
+
+    fn get_json_with_retries<T>(
+        &self,
+        path: &str,
+        query: &[(String, String)],
+        label: &str,
+    ) -> Result<T>
+    where
+        T: DeserializeOwned,
+    {
+        let mut last_error = None;
+
+        for attempt in 1..=market_data::ALPACA_REQUEST_ATTEMPTS {
+            let result = self
+                .client
+                .get(format!("{}{}", self.base_url, path))
+                .header(market_data::ALPACA_KEY_HEADER, &self.key_id)
+                .header(market_data::ALPACA_SECRET_HEADER, &self.secret_key)
+                .query(query)
+                .send()
+                .with_context(|| format!("failed to fetch {label}"))
+                .and_then(|response| {
+                    response
+                        .error_for_status()
+                        .with_context(|| format!("{label} request failed"))
+                })
+                .and_then(|response| {
+                    response
+                        .json::<T>()
+                        .with_context(|| format!("failed to parse {label} response"))
+                });
+
+            match result {
+                Ok(response) => return Ok(response),
+                Err(err) if attempt < market_data::ALPACA_REQUEST_ATTEMPTS => {
+                    last_error = Some(err);
+                    thread::sleep(market_data::retry_sleep());
+                }
+                Err(err) => last_error = Some(err),
+            }
+        }
+
+        Err(last_error.expect("Alpaca request attempted at least once")).with_context(|| {
+            format!(
+                "{label} failed after {} attempts",
+                market_data::ALPACA_REQUEST_ATTEMPTS
+            )
+        })
     }
 
     fn response_prices(
