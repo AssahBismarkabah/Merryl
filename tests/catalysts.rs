@@ -3,6 +3,7 @@ use anyhow::Result;
 use merryl::data::{AlphaVantageProvider, SecEdgarProvider};
 use merryl::domain::models::{MarketEvent, MarketEventMetadata};
 use merryl::scoring::catalyst_status_for_symbol;
+use merryl::workflows::event_source_warning;
 
 #[test]
 fn catalyst_status_composes_news_earnings_filing_and_pending() {
@@ -124,6 +125,16 @@ fn sec_submissions_parser_extracts_recent_target_filings_and_urls() -> Result<()
     );
 
     Ok(())
+}
+
+#[test]
+fn event_source_warning_keeps_context_failure_nonfatal_and_visible() {
+    let error = anyhow::anyhow!("operation timed out").context("failed to read response");
+
+    assert_eq!(
+        event_source_warning("Alpha Vantage earnings calendar", &error),
+        "Alpha Vantage earnings calendar event source failed; continuing without Alpha Vantage earnings calendar context (failed to read response: operation timed out)"
+    );
 }
 
 fn event(symbol: &str, event_type: &str, date: &str, headline: &str) -> MarketEvent {

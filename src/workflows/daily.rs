@@ -51,7 +51,7 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
     db.migrate()?;
 
     progress("loading market universe");
-    let (symbols, warnings) = symbols_with_cached_fallback(&provider, &db)?;
+    let (symbols, mut warnings) = symbols_with_cached_fallback(&provider, &db)?;
     let sector_maps = provider.sector_maps();
     let industry_maps = provider.industry_maps(&symbols);
     progress(format!(
@@ -108,10 +108,19 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
         "fetching event context for {} watchlist symbols",
         watchlist_symbols.len()
     ));
-    let mut recent_events = provider.recent_news_events(&watchlist_symbols, report_date_value)?;
-    let mut earnings_events = earnings_provider.upcoming_earnings_events(&watchlist_symbols)?;
-    let mut filing_events =
-        filing_provider.recent_filing_events(&watchlist_symbols, report_date_value)?;
+    progress("fetching Alpaca recent news");
+    let mut recent_events = fetch_event_source_or_warn(&mut warnings, "Alpaca recent news", || {
+        provider.recent_news_events(&watchlist_symbols, report_date_value)
+    });
+    progress("fetching Alpha Vantage earnings calendar");
+    let mut earnings_events =
+        fetch_event_source_or_warn(&mut warnings, "Alpha Vantage earnings calendar", || {
+            earnings_provider.upcoming_earnings_events(&watchlist_symbols)
+        });
+    progress("fetching SEC recent filings");
+    let mut filing_events = fetch_event_source_or_warn(&mut warnings, "SEC recent filings", || {
+        filing_provider.recent_filing_events(&watchlist_symbols, report_date_value)
+    });
     let mut structured_events = Vec::new();
     structured_events.extend(earnings_events.clone());
     structured_events.extend(filing_events.clone());
@@ -191,6 +200,31 @@ pub fn run_daily(date_arg: &str) -> Result<RunDailyResult> {
 
 fn progress(message: impl AsRef<str>) {
     eprintln!("progress: {}", message.as_ref());
+}
+
+fn fetch_event_source_or_warn(
+    warnings: &mut Vec<String>,
+    source_label: &str,
+    fetch: impl FnOnce() -> Result<Vec<MarketEvent>>,
+) -> Vec<MarketEvent> {
+    match fetch() {
+        Ok(events) => events,
+        Err(err) => {
+            warnings.push(event_source_warning(source_label, &err));
+            Vec::new()
+        }
+    }
+}
+
+pub fn event_source_warning(source_label: &str, error: &anyhow::Error) -> String {
+    let detail = error
+        .chain()
+        .map(ToString::to_string)
+        .collect::<Vec<_>>()
+        .join(": ");
+    format!(
+        "{source_label} event source failed; continuing without {source_label} context ({detail})"
+    )
 }
 
 fn symbols_with_cached_fallback(
