@@ -6,7 +6,7 @@ Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 das
 
 ## Current Slice
 
-The current implementation target is:
+The current implemented slice is:
 
 ```text
 Merryl daily run
@@ -474,7 +474,7 @@ PDB-3.6 confirmed that the first-build boundaries are aligned with the source sp
 Current implementation priority:
 
 ```text
-Implement Phase 6A signal-only intraday execution readiness, then keep accumulating event/actionability/readiness observations before any scoring or execution change.
+Accumulate event, actionability, and intraday readiness observations; improve near-miss visibility before any scoring, source, or execution change.
 ```
 
 The first read-only dashboard/API slice from `docs/pre_dashboard_stability_backlog_spec.md` and `docs/phase_4_dashboard_api_spec.md` is implemented. Phase 4.1 dashboard stabilization is complete for the current pass. Phase 5 planning is recorded, and the first Phase 5A/B implementation is complete: FRED macro observations are fetched during the daily workflow, stored with provenance, counted in status, and checked by doctor/dashboard data health without changing scoring weights.
@@ -491,7 +491,7 @@ The Phase 5C event-context validation checkpoint is recorded in `docs/phase_5c_e
 
 The Phase 5 readiness gate is recorded in `docs/phase_5_readiness_gate_spec.md`. It blocks catalyst/event scoring changes, macro scoring changes, Phase 5D paid-source implementation, options, paid data sources, automated execution, and universe expansion until the required validation and source-decision gates pass. Phase 6A narrows the previously broad intraday idea into signal-only execution readiness.
 
-The Phase 6A intraday execution-readiness implementation is recorded in `docs/phase_6_intraday_execution_readiness_spec.md`. It adds one workflow, uses existing Alpaca credentials/feed, stores volume profiles, setups, and triggers, exposes a read-only dashboard view, and keeps all daily scores/ranks unchanged. Alpaca rate limiting is enforced at the provider request boundary so daily bars, intraday bars, news, pagination, and retries share the same request gate.
+The Phase 6A intraday execution-readiness implementation is recorded in `docs/phase_6_intraday_execution_readiness_spec.md`. It adds one workflow, uses existing Alpaca credentials/feed, stores volume profiles, setups, and triggers, exposes a read-only dashboard view, and keeps all daily scores/ranks unchanged. Alpaca rate limiting is enforced at the provider request boundary so daily bars, intraday bars, news, pagination, and retries share the same request gate. The next readiness improvement is visibility for Stage 1 near-misses approaching Stage 2 confluence, not looser thresholds or execution automation.
 
 The current application-state audit is recorded in `docs/application_state_remaining_work_spec.md`. It summarizes what is working now, which connected data is still non-scoring context, what remains blocked, and what application work is still needed before the next build phase.
 

@@ -2,7 +2,7 @@
 
 Version: 0.1
 Date: 2026-06-10
-Status: Implementation target
+Status: Implemented on `main`
 
 Related documents:
 

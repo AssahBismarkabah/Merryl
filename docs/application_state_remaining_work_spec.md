@@ -1,8 +1,8 @@
 # Application State And Remaining Work Spec
 
 Version: 0.1
-Date: 2026-05-29
-Status: Current application-state audit after Phase 5 readiness gate
+Date: 2026-06-10
+Status: Current application-state audit after Phase 6A signal-only intraday execution readiness
 
 Related documents reviewed:
 
@@ -93,7 +93,7 @@ It should not do at this stage:
 | Stock scores | Working | Current strongest validated layer for watchlist ranking |
 | Watchlist generation | Working | Produces top stock candidates from the scored market window |
 | Watchlist classification | Working | Connected sources now converge into explicit classification labels for the final list |
-| Intraday execution readiness | Phase 6A implementation target | Signal-only layer after actionability; does not execute trades or change scores |
+| Intraday execution readiness | Working | Signal-only layer after actionability; does not execute trades or change scores |
 | Alpaca News events | Working | Recent news context is attached to watchlist names |
 | Alpha Vantage earnings events | Working | Free-key earnings calendar context is connected |
 | SEC EDGAR filing events | Working | Filing-event context is connected with configured user agent |
@@ -118,6 +118,7 @@ The following are connected, stored, reported, or validated, but they do not cur
 | SEC filing labels | Watchlist context | Same event-validation gate applies |
 | Event-context validation results | Evidence layer | Current result has event rows but no forward observations |
 | Sector rank change | Reporting and stored context | Rank change is no longer a scoring component |
+| Intraday readiness rows | Execution-readiness context | Stored after daily scoring/actionability; not a daily score input and not an order signal |
 | Dashboard display | Read-only review surface | Dashboard must not recalculate, fetch new data, or change scores |
 
 ## 5. Current Blocking Facts
@@ -155,18 +156,19 @@ Current source-expansion state:
 
 - Phase 5D ETF fund-flow implementation is not approved yet.
 - Options, broader universe expansion, paid data sources, and any trade-execution automation remain deferred.
-- Intraday is unblocked only as Phase 6A signal-only execution readiness, documented in `docs/phase_6_intraday_execution_readiness_spec.md`.
+- Intraday is implemented only as Phase 6A signal-only execution readiness, documented in `docs/phase_6_intraday_execution_readiness_spec.md`.
 
 ## 6. What Is Still Needed
 
 ### 6.1 Operational Readiness
 
-Keep the current system running so event-labeled history can accumulate.
+Keep the current system running so event, actionability, and readiness history can accumulate.
 
 Required recurring checks:
 
 ```text
 merryl run daily --date latest
+merryl run intraday --date latest
 merryl doctor
 merryl status
 ```
@@ -175,11 +177,12 @@ For development, the equivalent command surface is:
 
 ```text
 cargo run -- run daily --date latest
+cargo run -- run intraday --date latest
 cargo run -- doctor
 cargo run -- status
 ```
 
-The purpose is not to add features. The purpose is to build enough real stored history for the already-connected sources to be judged.
+The purpose is not to add features. The purpose is to build enough real stored history for the already-connected sources and readiness labels to be judged.
 
 ### 6.2 Event Context Maturation
 
@@ -194,7 +197,28 @@ Needed:
 
 Do not change catalyst/event weights until this evidence exists.
 
-### 6.3 Macro Formula Candidate
+### 6.3 Intraday Readiness Observation
+
+Phase 6A is implemented, but the first live run produced high-momentum candidates without a full structural setup:
+
+```text
+Stage 1 high-momentum candidates: present
+Stage 2 structural pullbacks: none in the latest run
+Stage 3 trigger events: none in the latest run
+```
+
+This is a valid outcome, not a source failure. It means the current market did not provide the required pullback/confluence state.
+
+Needed before changing thresholds, adding paid sources, or treating readiness labels as trade signals:
+
+- Accumulate more daily and intraday readiness runs.
+- Track Stage 1 names that are close to Stage 2, such as 2-of-3 confluence near-misses.
+- Compare eventual Stage 2/Stage 3 rows against forward behavior.
+- Keep dashboard visibility focused on stored readiness state, not charting or order entry.
+
+Do not loosen confluence rules or add execution automation just to create more signals.
+
+### 6.4 Macro Formula Candidate
 
 Macro context is implemented, but a macro-adjusted regime formula is not approved.
 
@@ -206,7 +230,7 @@ Needed before any macro score change:
 - Fresh backtest comparison against Market Regime V1.
 - Decision on whether the candidate improves the market-map use case.
 
-### 6.4 Phase 5D ETF Fund-Flow Source Decision
+### 6.5 Phase 5D ETF Fund-Flow Source Decision
 
 The next planned source candidate is ETF fund flows, but implementation should not start until the source is chosen.
 
@@ -220,7 +244,7 @@ Needed:
 
 No flow data should be added as a scoring input in the first ingestion pass.
 
-### 6.5 Universe Expansion Gate
+### 6.6 Universe Expansion Gate
 
 The original system can grow beyond the S&P 500, but the docs intentionally keep the first build anchored.
 
@@ -234,19 +258,20 @@ Needed before expansion:
 
 Until then, the S&P 500 anchor universe is the controlled scope.
 
-### 6.6 Dashboard Application Polish
+### 6.7 Dashboard Application Polish
 
 The dashboard is working as a read-only application surface.
 
 Remaining dashboard work should stay inside the current boundary:
 
 - Improve clarity of stored validation/readiness state.
+- Show near-miss readiness state for Stage 1 names approaching structural confluence.
 - Keep views consistent with the leadership/watchlist design language.
 - Keep selected-date behavior stable.
 - Avoid adding chart-review workflows.
 - Avoid dashboard-side recalculation or provider fetching.
 
-### 6.7 Watchlist Actionability
+### 6.8 Watchlist Actionability
 
 The current ranked watchlist can contain many names that already made an explosive move.
 
