@@ -1,10 +1,13 @@
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::thread;
+use std::time::Duration;
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Duration as ChronoDuration, NaiveDate, Utc};
+use reqwest::StatusCode;
 use reqwest::blocking::Client;
+use reqwest::header::{HeaderMap, RETRY_AFTER};
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 
@@ -265,24 +268,30 @@ impl AlpacaProvider {
         let mut last_error = None;
 
         for attempt in 1..=market_data::ALPACA_REQUEST_ATTEMPTS {
-            let result = self
+            let response_result = self
                 .client
                 .get(format!("{}{}", self.base_url, path))
                 .header(market_data::ALPACA_KEY_HEADER, &self.key_id)
                 .header(market_data::ALPACA_SECRET_HEADER, &self.secret_key)
                 .query(query)
                 .send()
-                .with_context(|| format!("failed to fetch {label}"))
-                .and_then(|response| {
-                    response
-                        .error_for_status()
-                        .with_context(|| format!("{label} request failed"))
-                })
-                .and_then(|response| {
-                    response
-                        .json::<T>()
-                        .with_context(|| format!("failed to parse {label} response"))
-                });
+                .with_context(|| format!("failed to fetch {label}"));
+
+            let result = response_result.and_then(|response| {
+                if response.status() == StatusCode::TOO_MANY_REQUESTS {
+                    let retry_after = retry_after_duration(response.headers())
+                        .unwrap_or_else(market_data::retry_sleep);
+                    thread::sleep(retry_after);
+                }
+                response
+                    .error_for_status()
+                    .with_context(|| format!("{label} request failed"))
+                    .and_then(|response| {
+                        response
+                            .json::<T>()
+                            .with_context(|| format!("failed to parse {label} response"))
+                    })
+            });
 
             match result {
                 Ok(response) => return Ok(response),
@@ -356,6 +365,16 @@ impl AlpacaProvider {
 
         Ok(prices)
     }
+}
+
+fn retry_after_duration(headers: &HeaderMap) -> Option<Duration> {
+    headers
+        .get(RETRY_AFTER)?
+        .to_str()
+        .ok()?
+        .parse::<u64>()
+        .ok()
+        .map(Duration::from_secs)
 }
 
 impl DailyOhlcvProvider for AlpacaProvider {

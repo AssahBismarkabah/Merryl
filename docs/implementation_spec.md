@@ -116,6 +116,7 @@ MERRYL_ALPACA_REQUESTS_PER_MINUTE=180
 MERRYL_INTRADAY_PROFILE_TIMEFRAME=30Min
 MERRYL_INTRADAY_TRIGGER_TIMEFRAME=5Min
 MERRYL_INTRADAY_CANDIDATE_LIMIT=50
+MERRYL_INTRADAY_OPENING_RANGE_MINUTES=30
 ```
 
 The default feed is `iex`, which is the practical free-tier starting point. If the account supports delayed SIP or another feed later, set `ALPACA_FEED`. Phase 6A intraday readiness uses the same credentials and feed; it does not introduce a paid provider.

@@ -8,7 +8,7 @@ use merryl::domain::models::{DailyPrice, IntradayPrice, SectorMap, Symbol};
 use merryl::intraday::{
     IntradayReadinessInput, adr_pct, build_volume_profile, confluence_labels,
     detect_intraday_triggers, ema_close, high_momentum_candidate_symbols, mansfield_rs,
-    run_intraday_readiness, rvol_ratio, session_vwap,
+    opening_range_bars, run_intraday_readiness, rvol_ratio, session_vwap, volume_profile_bin_size,
 };
 use merryl::scoring::histories_by_symbol;
 
@@ -73,11 +73,52 @@ fn volume_profile_calculates_poc_value_area_and_vwap() {
     ];
 
     let profile = build_volume_profile("LEAD", "2026-03-01", "30Min", &bars).expect("profile");
+    let bin_size = volume_profile_bin_size(103.0);
 
-    assert_eq!(profile.poc, 101.0);
-    assert_eq!(profile.val, 101.0);
-    assert_eq!(profile.vah, 102.0);
+    assert!((profile.poc - 101.0).abs() <= bin_size);
+    assert!((profile.val - 101.0).abs() <= bin_size);
+    assert!((profile.vah - 102.0).abs() <= bin_size);
     assert!((session_vwap(&bars).expect("vwap") - profile.vwap).abs() < 0.000000001);
+}
+
+#[test]
+fn volume_profile_uses_dynamic_bins_for_high_priced_tickers() {
+    let bars = vec![
+        intraday_bar(
+            "MSTR",
+            "2026-03-01T14:30:00Z",
+            1600.00,
+            1600.40,
+            1599.90,
+            1600.10,
+            100.0,
+        ),
+        intraday_bar(
+            "MSTR",
+            "2026-03-01T15:00:00Z",
+            1600.35,
+            1600.70,
+            1600.05,
+            1600.45,
+            150.0,
+        ),
+        intraday_bar(
+            "MSTR",
+            "2026-03-01T15:30:00Z",
+            1600.55,
+            1600.95,
+            1600.25,
+            1600.65,
+            200.0,
+        ),
+    ];
+
+    let profile = build_volume_profile("MSTR", "2026-03-01", "30Min", &bars).expect("profile");
+    let bin_size = volume_profile_bin_size(1600.65);
+
+    assert!(bin_size > 0.01);
+    assert!((profile.poc - 1600.0).abs() <= bin_size);
+    assert_eq!(profile.total_volume, 450.0);
 }
 
 #[test]
@@ -109,6 +150,7 @@ fn trigger_detection_finds_breakout_dryup_and_cluster_signals() {
         &breakout_bars,
         &[10.0],
         intraday_config::CONFLUENCE_WINDOW,
+        intraday_config::DEFAULT_OPENING_RANGE_MINUTES,
     );
     let breakout_types = trigger_types(&breakout_triggers);
 
@@ -129,11 +171,39 @@ fn trigger_detection_finds_breakout_dryup_and_cluster_signals() {
         &confluence_bars,
         &[10.0],
         intraday_config::CONFLUENCE_WINDOW,
+        intraday_config::DEFAULT_OPENING_RANGE_MINUTES,
     );
     let confluence_types = trigger_types(&confluence_triggers);
 
     assert!(confluence_types.contains(intraday_config::TRIGGER_VOLUME_DRYUP_CONFIRMATION));
     assert!(confluence_types.contains(intraday_config::TRIGGER_MICRO_CLUSTER_BREAK));
+}
+
+#[test]
+fn orb_lookback_uses_timeframe_and_opening_range_minutes() {
+    assert_eq!(opening_range_bars(10, 2), 5);
+
+    let bars = vec![
+        trigger_bar(0, 10.0, 9.95, 9.98, 100.0),
+        trigger_bar(1, 10.0, 9.95, 9.99, 100.0),
+        trigger_bar(2, 10.0, 9.95, 9.98, 100.0),
+        trigger_bar(3, 10.0, 9.95, 9.99, 100.0),
+        trigger_bar(4, 10.0, 9.95, 9.98, 100.0),
+        trigger_bar(5, 10.6, 10.0, 10.5, 260.0),
+    ];
+
+    let triggers = detect_intraday_triggers(
+        "2026-03-01",
+        "LEAD",
+        "2Min",
+        &bars,
+        &[10.0],
+        intraday_config::CONFLUENCE_WINDOW,
+        10,
+    );
+    let trigger_types = trigger_types(&triggers);
+
+    assert!(trigger_types.contains(intraday_config::TRIGGER_ORB_BREAKOUT));
 }
 
 #[test]
@@ -162,6 +232,7 @@ fn readiness_pipeline_produces_stage_one_two_and_three_rows() -> Result<()> {
         profile_timeframe: "30Min".to_string(),
         trigger_timeframe: "5Min".to_string(),
         candidate_limit: 50,
+        opening_range_minutes: intraday_config::DEFAULT_OPENING_RANGE_MINUTES,
     })?;
 
     assert_eq!(result.stage1_count, 1);

@@ -77,6 +77,7 @@ pub fn run_intraday(date_arg: &str) -> Result<RunIntradayResult> {
         profile_timeframe: config.profile_timeframe.clone(),
         trigger_timeframe: config.trigger_timeframe.clone(),
         candidate_limit: config.candidate_limit,
+        opening_range_minutes: config.opening_range_minutes,
     })?;
     let stage2_symbols = stage2_preview
         .setups
@@ -101,6 +102,7 @@ pub fn run_intraday(date_arg: &str) -> Result<RunIntradayResult> {
         profile_timeframe: config.profile_timeframe.clone(),
         trigger_timeframe: config.trigger_timeframe.clone(),
         candidate_limit: config.candidate_limit,
+        opening_range_minutes: config.opening_range_minutes,
     })?;
     db.replace_intraday_readiness(
         &score_date,
@@ -141,6 +143,7 @@ struct IntradayWorkflowConfig {
     profile_timeframe: String,
     trigger_timeframe: String,
     candidate_limit: usize,
+    opening_range_minutes: usize,
 }
 
 impl IntradayWorkflowConfig {
@@ -156,11 +159,17 @@ impl IntradayWorkflowConfig {
             .and_then(|value| value.parse::<usize>().ok())
             .unwrap_or(intraday::DEFAULT_CANDIDATE_LIMIT)
             .max(1);
+        let opening_range_minutes = env::var(intraday::OPENING_RANGE_MINUTES_ENV)
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(intraday::DEFAULT_OPENING_RANGE_MINUTES)
+            .max(1);
 
         Ok(Self {
             profile_timeframe,
             trigger_timeframe,
             candidate_limit,
+            opening_range_minutes,
         })
     }
 }

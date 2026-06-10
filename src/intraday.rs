@@ -20,6 +20,7 @@ pub struct IntradayReadinessInput {
     pub profile_timeframe: String,
     pub trigger_timeframe: String,
     pub candidate_limit: usize,
+    pub opening_range_minutes: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -115,6 +116,7 @@ pub fn run_intraday_readiness(input: IntradayReadinessInput) -> Result<IntradayR
                     candidate.ema_20,
                 ],
                 intraday::CONFLUENCE_WINDOW,
+                input.opening_range_minutes,
             );
             triggers.extend(candidate_triggers.clone());
         }
@@ -382,9 +384,11 @@ pub fn build_volume_profile(
     let mut high = f64::NEG_INFINITY;
     let mut low = f64::INFINITY;
 
+    let bin_size = volume_profile_bin_size(bars.last()?.close);
+
     for bar in bars {
         let hlc3 = hlc3(bar);
-        let price_bin = (hlc3 * 100.0).round() as i64;
+        let price_bin = (hlc3 / bin_size).round() as i64;
         *bins.entry(price_bin).or_default() += bar.volume;
         total_volume += bar.volume;
         weighted_price_volume += hlc3 * bar.volume;
@@ -407,9 +411,9 @@ pub fn build_volume_profile(
         poc_idx,
         total_volume * intraday::VALUE_AREA_SHARE,
     );
-    let poc = ordered_bins[poc_idx].0 as f64 / 100.0;
-    let val = ordered_bins[val_idx].0 as f64 / 100.0;
-    let vah = ordered_bins[vah_idx].0 as f64 / 100.0;
+    let poc = ordered_bins[poc_idx].0 as f64 * bin_size;
+    let val = ordered_bins[val_idx].0 as f64 * bin_size;
+    let vah = ordered_bins[vah_idx].0 as f64 * bin_size;
     let vwap = weighted_price_volume / total_volume;
 
     Some(VolumeProfile {
@@ -431,10 +435,15 @@ pub fn build_volume_profile(
             "bar_count": bars.len(),
             "captured_value_area_volume": captured_volume,
             "value_area_share": intraday::VALUE_AREA_SHARE,
-            "price_bin": "rounded_hlc3_cents"
+            "bin_size": bin_size,
+            "price_bin": "rounded_hlc3_dynamic"
         })
         .to_string(),
     })
+}
+
+pub fn volume_profile_bin_size(close_price: f64) -> f64 {
+    intraday::VOLUME_PROFILE_MIN_BIN_SIZE.max(close_price * intraday::VOLUME_PROFILE_BIN_WIDTH_PCT)
 }
 
 fn value_area_bounds(
@@ -495,9 +504,11 @@ pub fn detect_intraday_triggers(
     bars: &[IntradayPrice],
     confluence_levels: &[f64],
     confluence_window: f64,
+    opening_range_minutes: usize,
 ) -> Vec<IntradayTrigger> {
     let mut triggers = Vec::new();
-    if let Some(trigger) = detect_orb_breakout(date, symbol, timeframe, bars) {
+    if let Some(trigger) = detect_orb_breakout(date, symbol, timeframe, bars, opening_range_minutes)
+    {
         triggers.push(trigger);
     }
     if let Some(trigger) = detect_hod_break(date, symbol, timeframe, bars) {
@@ -538,11 +549,17 @@ fn detect_orb_breakout(
     symbol: &str,
     timeframe: &str,
     bars: &[IntradayPrice],
+    opening_range_minutes: usize,
 ) -> Option<IntradayTrigger> {
-    if bars.len() < 7 {
+    if bars.is_empty() {
         return None;
     }
-    let opening_range_bars = 6.min(bars.len() - 1);
+    let timeframe_minutes = timeframe_minutes(timeframe)?;
+    let opening_range_bars =
+        opening_range_bars(opening_range_minutes, timeframe_minutes).min(bars.len() - 1);
+    if bars.len() <= opening_range_bars || opening_range_bars == 0 {
+        return None;
+    }
     let opening_high = bars[..opening_range_bars]
         .iter()
         .map(|bar| bar.high)
@@ -756,6 +773,23 @@ fn recent_average_volume(bars: &[IntradayPrice], idx: usize, lookback: usize) ->
             .map(|bar| bar.volume)
             .collect::<Vec<_>>(),
     )
+}
+
+pub fn opening_range_bars(opening_range_minutes: usize, timeframe_minutes: usize) -> usize {
+    if timeframe_minutes == 0 {
+        return 0;
+    }
+    opening_range_minutes.div_ceil(timeframe_minutes).max(1)
+}
+
+pub fn timeframe_minutes(timeframe: &str) -> Option<usize> {
+    if let Some(value) = timeframe.strip_suffix("Min") {
+        return value.parse::<usize>().ok();
+    }
+    if let Some(value) = timeframe.strip_suffix("Hour") {
+        return value.parse::<usize>().ok().map(|hours| hours * 60);
+    }
+    None
 }
 
 fn volume_spike(volume: f64, average_volume: f64) -> Option<f64> {

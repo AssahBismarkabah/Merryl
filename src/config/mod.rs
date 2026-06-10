@@ -160,11 +160,13 @@ pub mod intraday {
     pub const PROFILE_TIMEFRAME_ENV: &str = "MERRYL_INTRADAY_PROFILE_TIMEFRAME";
     pub const TRIGGER_TIMEFRAME_ENV: &str = "MERRYL_INTRADAY_TRIGGER_TIMEFRAME";
     pub const CANDIDATE_LIMIT_ENV: &str = "MERRYL_INTRADAY_CANDIDATE_LIMIT";
+    pub const OPENING_RANGE_MINUTES_ENV: &str = "MERRYL_INTRADAY_OPENING_RANGE_MINUTES";
 
     pub const DEFAULT_ALPACA_REQUESTS_PER_MINUTE: usize = 180;
     pub const DEFAULT_PROFILE_TIMEFRAME: &str = "30Min";
     pub const DEFAULT_TRIGGER_TIMEFRAME: &str = "5Min";
     pub const DEFAULT_CANDIDATE_LIMIT: usize = 50;
+    pub const DEFAULT_OPENING_RANGE_MINUTES: usize = 30;
 
     pub const ADR_LOOKBACK: usize = 20;
     pub const ADR_MIN: f64 = 0.04;
@@ -175,6 +177,8 @@ pub mod intraday {
     pub const MANSFIELD_LOOKBACK: usize = 50;
     pub const RS_TOP_PERCENTILE: f64 = 0.10;
     pub const VALUE_AREA_SHARE: f64 = 0.70;
+    pub const VOLUME_PROFILE_MIN_BIN_SIZE: f64 = 0.01;
+    pub const VOLUME_PROFILE_BIN_WIDTH_PCT: f64 = 0.0005;
     pub const CONFLUENCE_WINDOW: f64 = 0.0075;
     pub const CONFLUENCE_MIN: usize = 3;
     pub const MATERIAL_EMA20_BREAK: f64 = -0.01;
