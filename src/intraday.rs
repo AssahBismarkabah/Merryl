@@ -46,6 +46,7 @@ struct Stage1Candidate {
     ema_10: f64,
     ema_20: f64,
     latest_price: f64,
+    profile_bin_size: f64,
 }
 
 pub fn run_intraday_readiness(input: IntradayReadinessInput) -> Result<IntradayReadinessResult> {
@@ -70,6 +71,7 @@ pub fn run_intraday_readiness(input: IntradayReadinessInput) -> Result<IntradayR
             &input.date,
             &input.profile_timeframe,
             &bars,
+            candidate.profile_bin_size,
         );
         let mut latest_price = candidate.latest_price;
         let mut confluence = Vec::new();
@@ -156,6 +158,7 @@ pub fn run_intraday_readiness(input: IntradayReadinessInput) -> Result<IntradayR
                 "rvol_threshold": intraday::RVOL_MIN,
                 "confluence_window": intraday::CONFLUENCE_WINDOW,
                 "confluence_min": intraday::CONFLUENCE_MIN,
+                "profile_bin_size": candidate.profile_bin_size,
                 "signal_only": true
             })
             .to_string(),
@@ -214,6 +217,8 @@ fn stage1_metrics(
             let rvol_ratio = rvol_ratio(history, idx, intraday::RVOL_LOOKBACK)?;
             let ema_10 = ema_close(history, idx, intraday::EMA_FAST)?;
             let ema_20 = ema_close(history, idx, intraday::EMA_SLOW)?;
+            let atr = atr_amount(history, idx, intraday::VOLUME_PROFILE_ATR_LOOKBACK)?;
+            let profile_bin_size = volume_profile_bin_size(history[idx].adjusted_close, Some(atr));
             let mansfield_rs_spy = mansfield_rs(
                 histories,
                 &symbol.symbol,
@@ -238,6 +243,7 @@ fn stage1_metrics(
                 ema_10,
                 ema_20,
                 latest_price: history[idx].adjusted_close,
+                profile_bin_size,
             })
         })
         .collect()
@@ -334,6 +340,27 @@ pub fn ema_close(history: &[DailyPrice], idx: usize, lookback: usize) -> Option<
     Some(ema)
 }
 
+pub fn atr_amount(history: &[DailyPrice], idx: usize, lookback: usize) -> Option<f64> {
+    if idx + 1 < lookback {
+        return None;
+    }
+    let start = idx + 1 - lookback;
+    let values = (start..=idx)
+        .map(|current_idx| {
+            let price = &history[current_idx];
+            let previous_close = if current_idx > 0 {
+                history[current_idx - 1].adjusted_close
+            } else {
+                price.adjusted_close
+            };
+            (price.high - price.low)
+                .max((price.high - previous_close).abs())
+                .max((price.low - previous_close).abs())
+        })
+        .collect::<Vec<_>>();
+    average(&values)
+}
+
 pub fn mansfield_rs(
     histories: &PriceHistories,
     symbol: &str,
@@ -373,6 +400,7 @@ pub fn build_volume_profile(
     date: &str,
     timeframe: &str,
     bars: &[IntradayPrice],
+    bin_size: f64,
 ) -> Option<VolumeProfile> {
     if bars.is_empty() {
         return None;
@@ -383,8 +411,7 @@ pub fn build_volume_profile(
     let mut weighted_price_volume = 0.0;
     let mut high = f64::NEG_INFINITY;
     let mut low = f64::INFINITY;
-
-    let bin_size = volume_profile_bin_size(bars.last()?.close);
+    let bin_size = bin_size.max(intraday::VOLUME_PROFILE_MIN_BIN_SIZE);
 
     for bar in bars {
         let hlc3 = hlc3(bar);
@@ -436,14 +463,27 @@ pub fn build_volume_profile(
             "captured_value_area_volume": captured_volume,
             "value_area_share": intraday::VALUE_AREA_SHARE,
             "bin_size": bin_size,
-            "price_bin": "rounded_hlc3_dynamic"
+            "bin_size_policy": "max(price_pct, atr_pct)_clamped",
+            "price_bin": "rounded_hlc3_dynamic",
+            "value_area_tie_break": intraday::VALUE_AREA_TIE_BREAK_POLICY
         })
         .to_string(),
     })
 }
 
-pub fn volume_profile_bin_size(close_price: f64) -> f64 {
-    intraday::VOLUME_PROFILE_MIN_BIN_SIZE.max(close_price * intraday::VOLUME_PROFILE_BIN_WIDTH_PCT)
+pub fn volume_profile_bin_size(close_price: f64, atr: Option<f64>) -> f64 {
+    let close = close_price.abs();
+    let price_bin = close * intraday::VOLUME_PROFILE_BIN_WIDTH_PCT;
+    let atr_bin = atr
+        .filter(|value| value.is_finite() && *value > 0.0)
+        .map(|value| value * intraday::VOLUME_PROFILE_ATR_BIN_WIDTH_PCT)
+        .unwrap_or(price_bin);
+    let max_bin = intraday::VOLUME_PROFILE_MIN_BIN_SIZE
+        .max(close * intraday::VOLUME_PROFILE_MAX_BIN_SIZE_PCT);
+    price_bin
+        .max(atr_bin)
+        .max(intraday::VOLUME_PROFILE_MIN_BIN_SIZE)
+        .min(max_bin)
 }
 
 fn value_area_bounds(
@@ -467,7 +507,9 @@ fn value_area_bounds(
             f64::NEG_INFINITY
         };
 
-        if upper_volume >= lower_volume && high_idx + 1 < bins.len() {
+        if should_expand_upper_value_area_bin(upper_volume, lower_volume)
+            && high_idx + 1 < bins.len()
+        {
             high_idx += 1;
             captured_volume += bins[high_idx].1;
         } else if low_idx > 0 {
@@ -479,6 +521,14 @@ fn value_area_bounds(
     }
 
     (low_idx, high_idx, captured_volume)
+}
+
+fn should_expand_upper_value_area_bin(upper_volume: f64, lower_volume: f64) -> bool {
+    // Equal-volume expansion intentionally moves upward first.
+    matches!(
+        upper_volume.total_cmp(&lower_volume),
+        std::cmp::Ordering::Greater | std::cmp::Ordering::Equal
+    )
 }
 
 pub fn session_vwap(bars: &[IntradayPrice]) -> Option<f64> {

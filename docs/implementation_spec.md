@@ -491,7 +491,7 @@ The Phase 5C event-context validation checkpoint is recorded in `docs/phase_5c_e
 
 The Phase 5 readiness gate is recorded in `docs/phase_5_readiness_gate_spec.md`. It blocks catalyst/event scoring changes, macro scoring changes, Phase 5D paid-source implementation, options, paid data sources, automated execution, and universe expansion until the required validation and source-decision gates pass. Phase 6A narrows the previously broad intraday idea into signal-only execution readiness.
 
-The Phase 6A intraday execution-readiness implementation is recorded in `docs/phase_6_intraday_execution_readiness_spec.md`. It adds one workflow, uses existing Alpaca credentials/feed, stores volume profiles, setups, and triggers, exposes a read-only dashboard view, and keeps all daily scores/ranks unchanged.
+The Phase 6A intraday execution-readiness implementation is recorded in `docs/phase_6_intraday_execution_readiness_spec.md`. It adds one workflow, uses existing Alpaca credentials/feed, stores volume profiles, setups, and triggers, exposes a read-only dashboard view, and keeps all daily scores/ranks unchanged. Alpaca rate limiting is enforced at the provider request boundary so daily bars, intraday bars, news, pagination, and retries share the same request gate.
 
 The current application-state audit is recorded in `docs/application_state_remaining_work_spec.md`. It summarizes what is working now, which connected data is still non-scoring context, what remains blocked, and what application work is still needed before the next build phase.
 

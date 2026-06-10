@@ -27,6 +27,7 @@ pub struct AlpacaProvider {
     feed: String,
     base_url: String,
     lookback_calendar_days: i64,
+    request_orchestrator: RequestOrchestrator,
     client: Client,
 }
 
@@ -64,6 +65,7 @@ impl AlpacaProvider {
             feed,
             base_url,
             lookback_calendar_days,
+            request_orchestrator: RequestOrchestrator::from_env(),
             client,
         })
     }
@@ -108,6 +110,7 @@ impl AlpacaProvider {
                 market_data::ALPACA_BARS_PATH,
                 &query,
                 &format!("Alpaca daily bars for {}", symbols.join(",")),
+                RequestPriority::Batch,
             )?;
 
             all_prices.extend(self.response_prices(response.bars)?);
@@ -128,20 +131,19 @@ impl AlpacaProvider {
         symbols: &[String],
         date: NaiveDate,
         timeframe: &str,
-        orchestrator: &RequestOrchestrator,
     ) -> Result<Vec<IntradayPrice>> {
         let mut all_prices = Vec::new();
         let mut next_page_token: Option<String> = None;
         let request_end_date = date + ChronoDuration::days(1);
 
         loop {
-            orchestrator.wait(RequestPriority::RealTime);
             let query =
                 self.bars_query(symbols, date, request_end_date, timeframe, &next_page_token);
             let response = self.get_json_with_retries::<AlpacaBarsResponse>(
                 market_data::ALPACA_BARS_PATH,
                 &query,
                 &format!("Alpaca {timeframe} bars for {}", symbols.join(",")),
+                RequestPriority::RealTime,
             )?;
 
             all_prices.extend(self.response_intraday_prices(response.bars, date, timeframe)?);
@@ -211,6 +213,7 @@ impl AlpacaProvider {
                 market_data::ALPACA_NEWS_PATH,
                 &query,
                 &format!("Alpaca news for {}", symbols.join(",")),
+                RequestPriority::Background,
             )?;
 
             events.extend(response_events(response.news, symbols)?);
@@ -261,6 +264,7 @@ impl AlpacaProvider {
         path: &str,
         query: &[(String, String)],
         label: &str,
+        priority: RequestPriority,
     ) -> Result<T>
     where
         T: DeserializeOwned,
@@ -268,6 +272,7 @@ impl AlpacaProvider {
         let mut last_error = None;
 
         for attempt in 1..=market_data::ALPACA_REQUEST_ATTEMPTS {
+            self.request_orchestrator.wait(priority);
             let response_result = self
                 .client
                 .get(format!("{}{}", self.base_url, path))
@@ -443,7 +448,6 @@ impl IntradayOhlcvProvider for AlpacaProvider {
         date: NaiveDate,
         timeframe: &str,
     ) -> Result<Vec<IntradayPrice>> {
-        let orchestrator = RequestOrchestrator::from_env();
         let mut prices = Vec::new();
         let batch_count = symbols.len().div_ceil(market_data::ALPACA_BATCH_SIZE);
 
@@ -456,7 +460,7 @@ impl IntradayOhlcvProvider for AlpacaProvider {
                 batch.first().map(String::as_str).unwrap_or("?"),
                 batch.last().map(String::as_str).unwrap_or("?"),
             );
-            prices.extend(self.fetch_intraday_batch(batch, date, timeframe, &orchestrator)?);
+            prices.extend(self.fetch_intraday_batch(batch, date, timeframe)?);
         }
 
         Ok(prices)

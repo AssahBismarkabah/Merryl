@@ -179,6 +179,10 @@ pub mod intraday {
     pub const VALUE_AREA_SHARE: f64 = 0.70;
     pub const VOLUME_PROFILE_MIN_BIN_SIZE: f64 = 0.01;
     pub const VOLUME_PROFILE_BIN_WIDTH_PCT: f64 = 0.0005;
+    pub const VOLUME_PROFILE_ATR_LOOKBACK: usize = 20;
+    pub const VOLUME_PROFILE_ATR_BIN_WIDTH_PCT: f64 = 0.05;
+    pub const VOLUME_PROFILE_MAX_BIN_SIZE_PCT: f64 = 0.002;
+    pub const VALUE_AREA_TIE_BREAK_POLICY: &str = "upper_on_equal_volume";
     pub const CONFLUENCE_WINDOW: f64 = 0.0075;
     pub const CONFLUENCE_MIN: usize = 3;
     pub const MATERIAL_EMA20_BREAK: f64 = -0.01;

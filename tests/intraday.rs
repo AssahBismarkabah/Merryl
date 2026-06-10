@@ -6,7 +6,7 @@ use chrono::{Duration, NaiveDate};
 use merryl::config::intraday as intraday_config;
 use merryl::domain::models::{DailyPrice, IntradayPrice, SectorMap, Symbol};
 use merryl::intraday::{
-    IntradayReadinessInput, adr_pct, build_volume_profile, confluence_labels,
+    IntradayReadinessInput, adr_pct, atr_amount, build_volume_profile, confluence_labels,
     detect_intraday_triggers, ema_close, high_momentum_candidate_symbols, mansfield_rs,
     opening_range_bars, run_intraday_readiness, rvol_ratio, session_vwap, volume_profile_bin_size,
 };
@@ -22,6 +22,7 @@ fn daily_intraday_metrics_calculate_stage_one_inputs() {
     assert!(
         ema_close(&prices, idx, 10).expect("ema10") > ema_close(&prices, idx, 20).expect("ema20")
     );
+    assert!(atr_amount(&prices, idx, 20).expect("atr") > 0.0);
 
     let mut all_prices = prices.clone();
     all_prices.extend(daily_series("SPY", 100.0, 0.001, 60, 1_000.0, 1_000.0));
@@ -72,8 +73,9 @@ fn volume_profile_calculates_poc_value_area_and_vwap() {
         ),
     ];
 
-    let profile = build_volume_profile("LEAD", "2026-03-01", "30Min", &bars).expect("profile");
-    let bin_size = volume_profile_bin_size(103.0);
+    let bin_size = volume_profile_bin_size(103.0, Some(1.0));
+    let profile =
+        build_volume_profile("LEAD", "2026-03-01", "30Min", &bars, bin_size).expect("profile");
 
     assert!((profile.poc - 101.0).abs() <= bin_size);
     assert!((profile.val - 101.0).abs() <= bin_size);
@@ -113,12 +115,62 @@ fn volume_profile_uses_dynamic_bins_for_high_priced_tickers() {
         ),
     ];
 
-    let profile = build_volume_profile("MSTR", "2026-03-01", "30Min", &bars).expect("profile");
-    let bin_size = volume_profile_bin_size(1600.65);
+    let bin_size = volume_profile_bin_size(1600.65, Some(20.0));
+    let profile =
+        build_volume_profile("MSTR", "2026-03-01", "30Min", &bars, bin_size).expect("profile");
 
     assert!(bin_size > 0.01);
     assert!((profile.poc - 1600.0).abs() <= bin_size);
     assert_eq!(profile.total_volume, 450.0);
+}
+
+#[test]
+fn volume_profile_bin_size_uses_atr_and_clamps_gap_days() {
+    let atr_clamped = volume_profile_bin_size(1600.0, Some(200.0));
+    let max_bin = 1600.0 * intraday_config::VOLUME_PROFILE_MAX_BIN_SIZE_PCT;
+    let min_bin = volume_profile_bin_size(5.0, Some(0.01));
+
+    assert_eq!(atr_clamped, max_bin);
+    assert_eq!(min_bin, intraday_config::VOLUME_PROFILE_MIN_BIN_SIZE);
+}
+
+#[test]
+fn value_area_tie_break_is_explicitly_upper_on_equal_volume() {
+    let bars = vec![
+        intraday_bar(
+            "LEAD",
+            "2026-03-01T14:30:00Z",
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            50.0,
+        ),
+        intraday_bar(
+            "LEAD",
+            "2026-03-01T15:00:00Z",
+            101.0,
+            101.0,
+            101.0,
+            101.0,
+            100.0,
+        ),
+        intraday_bar(
+            "LEAD",
+            "2026-03-01T15:30:00Z",
+            102.0,
+            102.0,
+            102.0,
+            102.0,
+            50.0,
+        ),
+    ];
+
+    let profile = build_volume_profile("LEAD", "2026-03-01", "30Min", &bars, 1.0).expect("profile");
+
+    assert_eq!(profile.val, 101.0);
+    assert_eq!(profile.vah, 102.0);
+    assert!(profile.components_json.contains("upper_on_equal_volume"));
 }
 
 #[test]
