@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { createElement } from "react";
 import { number, percent, signed, toneClass } from "./format";
-import type { Industry, Sector, Stock, WatchlistRow } from "./types";
+import type { Industry, IntradaySetup, IntradayTrigger, Sector, Stock, WatchlistRow } from "./types";
 
 export const sectorColumns: ColumnDef<Sector>[] = [
   { header: "Rank", cell: ({ row }) => rankCell(row.original.rank) },
@@ -70,6 +70,33 @@ export const watchlistColumns: ColumnDef<WatchlistRow>[] = [
   { header: "Catalyst", cell: ({ row }) => statusTag(row.original.catalyst_status) }
 ];
 
+export const intradaySetupColumns: ColumnDef<IntradaySetup>[] = [
+  { header: "Label", cell: ({ row }) => readinessCell(row.original.primary_label) },
+  { header: "Symbol", cell: ({ row }) => symbolCell(row.original.symbol) },
+  { header: "Name", accessorKey: "name" },
+  { header: "Sector", cell: ({ row }) => dataTag(row.original.sector, "accent") },
+  { header: "Industry", cell: ({ row }) => dataTag(row.original.industry, "muted") },
+  { header: "ADR", cell: ({ row }) => percentCell(row.original.adr_pct) },
+  { header: "rVOL", cell: ({ row }) => metricCell(number(row.original.rvol_ratio)) },
+  { header: "RS SPY", cell: ({ row }) => metricCell(row.original.mansfield_rs_spy.toFixed(3)) },
+  { header: "Price", cell: ({ row }) => metricCell(row.original.latest_price.toFixed(2)) },
+  { header: "EMA 10", cell: ({ row }) => metricCell(row.original.ema_10.toFixed(2)) },
+  { header: "EMA 20", cell: ({ row }) => metricCell(row.original.ema_20.toFixed(2)) },
+  { header: "Confluence", cell: ({ row }) => metricCell(String(row.original.confluence_count)) },
+  { header: "Triggers", cell: ({ row }) => metricCell(String(row.original.trigger_count)) }
+];
+
+export const intradayTriggerColumns: ColumnDef<IntradayTrigger>[] = [
+  { header: "Symbol", cell: ({ row }) => symbolCell(row.original.symbol) },
+  { header: "Time", cell: ({ row }) => metricCell(row.original.ts) },
+  { header: "Trigger", cell: ({ row }) => dataTag(shortLabel(row.original.trigger_type), "accent") },
+  { header: "Frame", cell: ({ row }) => dataTag(row.original.timeframe, "muted") },
+  { header: "Price", cell: ({ row }) => metricCell(row.original.trigger_price.toFixed(2)) },
+  { header: "Reference", cell: ({ row }) => metricCell(row.original.reference_level.toFixed(2)) },
+  { header: "Vol Spike", cell: ({ row }) => metricCell(number(row.original.volume_spike)) },
+  { header: "Action", accessorKey: "price_action" }
+];
+
 type TagTone = "accent" | "muted";
 
 function rankCell(value: number) {
@@ -111,6 +138,13 @@ function actionabilityCell(value: string) {
   return dataTag(shortLabel(value || "unclassified_leader"), value === "extended_leader" ? "muted" : "accent");
 }
 
+function readinessCell(value: string) {
+  return dataTag(
+    shortLabel(value || "high_momentum_universe"),
+    value === "intraday_execution_ready" ? "accent" : "muted"
+  );
+}
+
 function shortLabel(value: string) {
   switch (value) {
     case "sector_leader":
@@ -143,6 +177,20 @@ function shortLabel(value: string) {
       return "event watch";
     case "unclassified_leader":
       return "unclassified";
+    case "high_momentum_universe":
+      return "stage 1";
+    case "structural_pullback_setup":
+      return "stage 2";
+    case "intraday_execution_ready":
+      return "ready";
+    case "orb_breakout":
+      return "ORB";
+    case "hod_break":
+      return "HOD";
+    case "volume_dryup_confirmation":
+      return "dry-up";
+    case "micro_cluster_break":
+      return "cluster";
     default:
       return value.replaceAll("_", " ");
   }

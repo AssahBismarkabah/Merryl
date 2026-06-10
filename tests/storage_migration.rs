@@ -3,8 +3,8 @@ use rusqlite::Connection;
 use tempfile::tempdir;
 
 use merryl::domain::models::{
-    IndustryScore, MacroObservation, MarketEvent, MarketEventMetadata, MarketRegimeScore,
-    SectorScore, StockScore, Symbol,
+    IndustryScore, IntradayPrice, IntradaySetup, IntradayTrigger, MacroObservation, MarketEvent,
+    MarketEventMetadata, MarketRegimeScore, SectorScore, StockScore, Symbol, VolumeProfile,
 };
 use merryl::storage::Database;
 
@@ -254,12 +254,172 @@ fn score_replacement_writes_are_idempotent() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn intraday_schema_migrations_are_idempotent() -> Result<()> {
+    let dir = tempdir()?;
+    let db_path = dir.path().join("market.db");
+    let db = Database::open(&db_path)?;
+
+    db.migrate()?;
+    db.migrate()?;
+
+    let conn = Connection::open(db_path)?;
+    let intraday_columns = table_columns(&conn, "prices_intraday")?;
+    assert!(intraday_columns.iter().any(|column| column == "vwap"));
+
+    for table in ["volume_profiles", "intraday_setups", "intraday_triggers"] {
+        assert_eq!(count_sqlite_table(&conn, table)?, 1, "missing {table}");
+    }
+
+    Ok(())
+}
+
+#[test]
+fn intraday_price_and_readiness_writes_are_idempotent() -> Result<()> {
+    let dir = tempdir()?;
+    let db_path = dir.path().join("market.db");
+    let mut db = Database::open(&db_path)?;
+    db.migrate()?;
+
+    db.upsert_intraday_prices(&[intraday_price("2026-03-01T14:30:00Z", 100.0)])?;
+    db.upsert_intraday_prices(&[intraday_price("2026-03-01T14:30:00Z", 101.0)])?;
+    db.replace_intraday_readiness(
+        "2026-03-01",
+        &[volume_profile("LEAD", 100.0)],
+        &[intraday_setup("LEAD", "high_momentum_universe", false, 0)],
+        &[],
+    )?;
+    db.replace_intraday_readiness(
+        "2026-03-01",
+        &[volume_profile("LEAD", 101.0)],
+        &[intraday_setup("LEAD", "intraday_execution_ready", true, 1)],
+        &[intraday_trigger("LEAD")],
+    )?;
+    drop(db);
+
+    let conn = Connection::open(db_path)?;
+    assert_eq!(count_rows(&conn, "prices_intraday")?, 1);
+    assert_eq!(count_rows(&conn, "volume_profiles")?, 1);
+    assert_eq!(count_rows(&conn, "intraday_setups")?, 1);
+    assert_eq!(count_rows(&conn, "intraday_triggers")?, 1);
+
+    let close: f64 = conn.query_row("SELECT close FROM prices_intraday", [], |row| row.get(0))?;
+    let label: String = conn.query_row("SELECT primary_label FROM intraday_setups", [], |row| {
+        row.get(0)
+    })?;
+    let trigger_count: i64 =
+        conn.query_row("SELECT trigger_count FROM intraday_setups", [], |row| {
+            row.get(0)
+        })?;
+
+    assert_eq!(close, 101.0);
+    assert_eq!(label, "intraday_execution_ready");
+    assert_eq!(trigger_count, 1);
+
+    Ok(())
+}
+
 fn count_rows(conn: &Connection, table: &str) -> Result<i64> {
     Ok(
         conn.query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| {
             row.get(0)
         })?,
     )
+}
+
+fn table_columns(conn: &Connection, table: &str) -> Result<Vec<String>> {
+    let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
+    Ok(stmt
+        .query_map([], |row| row.get::<_, String>(1))?
+        .collect::<Result<Vec<_>, _>>()?)
+}
+
+fn count_sqlite_table(conn: &Connection, table: &str) -> Result<i64> {
+    Ok(conn.query_row(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?1",
+        [table],
+        |row| row.get(0),
+    )?)
+}
+
+fn intraday_price(ts: &str, close: f64) -> IntradayPrice {
+    IntradayPrice {
+        symbol: "LEAD".to_string(),
+        ts: ts.to_string(),
+        timeframe: "5Min".to_string(),
+        open: close,
+        high: close,
+        low: close,
+        close,
+        volume: 1000.0,
+        vwap: Some(close),
+        source: "test-fixture".to_string(),
+    }
+}
+
+fn volume_profile(symbol: &str, poc: f64) -> VolumeProfile {
+    VolumeProfile {
+        symbol: symbol.to_string(),
+        date: "2026-03-01".to_string(),
+        timeframe: "30Min".to_string(),
+        poc,
+        vah: poc + 1.0,
+        val: poc - 1.0,
+        vwap: poc,
+        high: poc + 1.0,
+        low: poc - 1.0,
+        total_volume: 1000.0,
+        source: "test-fixture".to_string(),
+        components_json: "{}".to_string(),
+    }
+}
+
+fn intraday_setup(
+    symbol: &str,
+    label: &str,
+    stage3_passed: bool,
+    trigger_count: usize,
+) -> IntradaySetup {
+    IntradaySetup {
+        date: "2026-03-01".to_string(),
+        symbol: symbol.to_string(),
+        name: "Leader Inc.".to_string(),
+        sector: "Technology".to_string(),
+        industry: "Software".to_string(),
+        direction: "long".to_string(),
+        stage1_passed: true,
+        stage2_passed: stage3_passed,
+        stage3_passed,
+        primary_label: label.to_string(),
+        adr_pct: 0.05,
+        rvol_ratio: 2.0,
+        mansfield_rs_spy: 1.1,
+        mansfield_rs_sector: 1.05,
+        ema_10: 100.0,
+        ema_20: 99.0,
+        latest_price: 100.5,
+        confluence_count: 3,
+        confluence_json: r#"["poc","val","vwap"]"#.to_string(),
+        trigger_count,
+        components_json: "{}".to_string(),
+    }
+}
+
+fn intraday_trigger(symbol: &str) -> IntradayTrigger {
+    IntradayTrigger {
+        date: "2026-03-01".to_string(),
+        symbol: symbol.to_string(),
+        ts: "2026-03-01T15:00:00Z".to_string(),
+        timeframe: "5Min".to_string(),
+        trigger_type: "orb_breakout".to_string(),
+        direction: "long".to_string(),
+        trigger_price: 101.0,
+        reference_level: 100.0,
+        volume_spike: 2.0,
+        price_action: "fixture trigger".to_string(),
+        components_json: "{}".to_string(),
+        source: "test-fixture".to_string(),
+    }
 }
 
 fn symbol(ticker: &str, name: &str, asset_type: &str, is_active: bool) -> Symbol {

@@ -5,6 +5,7 @@ pub mod config;
 pub mod dashboard;
 pub mod data;
 pub mod domain;
+pub mod intraday;
 pub mod output;
 pub mod scoring;
 pub mod storage;

@@ -10,10 +10,11 @@ use serde::de::DeserializeOwned;
 
 use crate::config::{USER_AGENT, market_data};
 use crate::domain::models::{
-    DailyPrice, IndustryMap, MarketEvent, MarketEventMetadata, SectorMap, Symbol,
+    DailyPrice, IndustryMap, IntradayPrice, MarketEvent, MarketEventMetadata, SectorMap, Symbol,
 };
 
-use super::provider::{CatalystEventProvider, DailyOhlcvProvider};
+use super::provider::{CatalystEventProvider, DailyOhlcvProvider, IntradayOhlcvProvider};
+use super::request_orchestrator::{RequestOrchestrator, RequestPriority};
 use super::sector_map::sector_maps;
 use super::universe::{etf_symbols, fetch_sp500_symbols, industry_maps};
 
@@ -93,7 +94,13 @@ impl AlpacaProvider {
         let mut next_page_token: Option<String> = None;
 
         loop {
-            let query = self.bars_query(symbols, start_date, end_date, &next_page_token);
+            let query = self.bars_query(
+                symbols,
+                start_date,
+                end_date,
+                market_data::DAILY_TIMEFRAME,
+                &next_page_token,
+            );
             let response = self.get_json_with_retries::<AlpacaBarsResponse>(
                 market_data::ALPACA_BARS_PATH,
                 &query,
@@ -113,19 +120,51 @@ impl AlpacaProvider {
         Ok(all_prices)
     }
 
+    fn fetch_intraday_batch(
+        &self,
+        symbols: &[String],
+        date: NaiveDate,
+        timeframe: &str,
+        orchestrator: &RequestOrchestrator,
+    ) -> Result<Vec<IntradayPrice>> {
+        let mut all_prices = Vec::new();
+        let mut next_page_token: Option<String> = None;
+        let request_end_date = date + ChronoDuration::days(1);
+
+        loop {
+            orchestrator.wait(RequestPriority::RealTime);
+            let query =
+                self.bars_query(symbols, date, request_end_date, timeframe, &next_page_token);
+            let response = self.get_json_with_retries::<AlpacaBarsResponse>(
+                market_data::ALPACA_BARS_PATH,
+                &query,
+                &format!("Alpaca {timeframe} bars for {}", symbols.join(",")),
+            )?;
+
+            all_prices.extend(self.response_intraday_prices(response.bars, date, timeframe)?);
+
+            match response.next_page_token {
+                Some(token) if !token.is_empty() => {
+                    next_page_token = Some(token);
+                }
+                _ => break,
+            }
+        }
+
+        Ok(all_prices)
+    }
+
     fn bars_query(
         &self,
         symbols: &[String],
         start_date: NaiveDate,
         end_date: NaiveDate,
+        timeframe: &str,
         next_page_token: &Option<String>,
     ) -> Vec<(String, String)> {
         let mut query = vec![
             ("symbols".to_string(), symbols.join(",")),
-            (
-                "timeframe".to_string(),
-                market_data::DAILY_TIMEFRAME.to_string(),
-            ),
+            ("timeframe".to_string(), timeframe.to_string()),
             (
                 "start".to_string(),
                 start_date.format("%Y-%m-%d").to_string(),
@@ -286,6 +325,37 @@ impl AlpacaProvider {
 
         Ok(prices)
     }
+
+    fn response_intraday_prices(
+        &self,
+        bars_by_symbol: HashMap<String, Vec<AlpacaBar>>,
+        date: NaiveDate,
+        timeframe: &str,
+    ) -> Result<Vec<IntradayPrice>> {
+        let target_date = date.format("%Y-%m-%d").to_string();
+        let mut prices = Vec::new();
+        for (symbol, bars) in bars_by_symbol {
+            for bar in bars {
+                if alpaca_date(&bar.t)? != target_date {
+                    continue;
+                }
+                prices.push(IntradayPrice {
+                    symbol: symbol.clone(),
+                    ts: bar.t,
+                    timeframe: timeframe.to_string(),
+                    open: bar.o,
+                    high: bar.h,
+                    low: bar.l,
+                    close: bar.c,
+                    volume: bar.v,
+                    vwap: bar.vw,
+                    source: format!("{}:{}", market_data::SOURCE_PREFIX, self.feed),
+                });
+            }
+        }
+
+        Ok(prices)
+    }
 }
 
 impl DailyOhlcvProvider for AlpacaProvider {
@@ -347,6 +417,33 @@ impl CatalystEventProvider for AlpacaProvider {
     }
 }
 
+impl IntradayOhlcvProvider for AlpacaProvider {
+    fn intraday_prices(
+        &self,
+        symbols: &[String],
+        date: NaiveDate,
+        timeframe: &str,
+    ) -> Result<Vec<IntradayPrice>> {
+        let orchestrator = RequestOrchestrator::from_env();
+        let mut prices = Vec::new();
+        let batch_count = symbols.len().div_ceil(market_data::ALPACA_BATCH_SIZE);
+
+        for (idx, batch) in symbols.chunks(market_data::ALPACA_BATCH_SIZE).enumerate() {
+            eprintln!(
+                "progress: fetching Alpaca {timeframe} batch {}/{} ({} symbols: {}..{})",
+                idx + 1,
+                batch_count,
+                batch.len(),
+                batch.first().map(String::as_str).unwrap_or("?"),
+                batch.last().map(String::as_str).unwrap_or("?"),
+            );
+            prices.extend(self.fetch_intraday_batch(batch, date, timeframe, &orchestrator)?);
+        }
+
+        Ok(prices)
+    }
+}
+
 fn alpaca_date(timestamp: &str) -> Result<String> {
     let parsed = DateTime::parse_from_rfc3339(timestamp)
         .with_context(|| format!("invalid Alpaca timestamp: {timestamp}"))?;
@@ -371,6 +468,7 @@ struct AlpacaBar {
     l: f64,
     c: f64,
     v: f64,
+    vw: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]

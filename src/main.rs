@@ -40,6 +40,10 @@ enum RunWorkflow {
         #[arg(long)]
         to: String,
     },
+    Intraday {
+        #[arg(long, default_value = "latest")]
+        date: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -124,6 +128,20 @@ fn main() -> Result<()> {
                     result.actionability_observation_count
                 );
                 println!("backtest result id: {}", result.backtest_result_id);
+            }
+            RunWorkflow::Intraday { date } => {
+                let result = merryl::workflows::run_intraday(&date)?;
+                println!("Intraday execution readiness run:");
+                println!("score date: {}", result.date);
+                println!("database: {}", result.database.display());
+                println!("profile timeframe: {}", result.profile_timeframe);
+                println!("trigger timeframe: {}", result.trigger_timeframe);
+                println!("candidate count: {}", result.candidate_count);
+                println!("stage 1 count: {}", result.stage1_count);
+                println!("stage 2 count: {}", result.stage2_count);
+                println!("stage 3 trigger count: {}", result.stage3_trigger_count);
+                println!("report: {}", result.report.display());
+                println!("export: {}", result.export.display());
             }
         },
         Commands::Status => {

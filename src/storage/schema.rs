@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS prices_intraday (
     low REAL NOT NULL,
     close REAL NOT NULL,
     volume REAL NOT NULL,
+    vwap REAL,
     source TEXT NOT NULL,
     inserted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (symbol, ts, timeframe)
@@ -194,6 +195,66 @@ CREATE TABLE IF NOT EXISTS backtest_results (
     metrics_json TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS volume_profiles (
+    symbol TEXT NOT NULL,
+    date TEXT NOT NULL,
+    timeframe TEXT NOT NULL,
+    poc REAL NOT NULL,
+    vah REAL NOT NULL,
+    val REAL NOT NULL,
+    vwap REAL NOT NULL,
+    high REAL NOT NULL,
+    low REAL NOT NULL,
+    total_volume REAL NOT NULL,
+    source TEXT NOT NULL,
+    components_json TEXT NOT NULL,
+    inserted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (symbol, date, timeframe)
+);
+
+CREATE TABLE IF NOT EXISTS intraday_setups (
+    date TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    name TEXT NOT NULL,
+    sector TEXT NOT NULL,
+    industry TEXT NOT NULL,
+    direction TEXT NOT NULL,
+    stage1_passed INTEGER NOT NULL,
+    stage2_passed INTEGER NOT NULL,
+    stage3_passed INTEGER NOT NULL,
+    primary_label TEXT NOT NULL,
+    adr_pct REAL NOT NULL,
+    rvol_ratio REAL NOT NULL,
+    mansfield_rs_spy REAL NOT NULL,
+    mansfield_rs_sector REAL NOT NULL,
+    ema_10 REAL NOT NULL,
+    ema_20 REAL NOT NULL,
+    latest_price REAL NOT NULL,
+    confluence_count INTEGER NOT NULL,
+    confluence_json TEXT NOT NULL,
+    trigger_count INTEGER NOT NULL,
+    components_json TEXT NOT NULL,
+    inserted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (date, symbol)
+);
+
+CREATE TABLE IF NOT EXISTS intraday_triggers (
+    date TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    ts TEXT NOT NULL,
+    timeframe TEXT NOT NULL,
+    trigger_type TEXT NOT NULL,
+    direction TEXT NOT NULL,
+    trigger_price REAL NOT NULL,
+    reference_level REAL NOT NULL,
+    volume_spike REAL NOT NULL,
+    price_action TEXT NOT NULL,
+    components_json TEXT NOT NULL,
+    source TEXT NOT NULL,
+    inserted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (date, symbol, ts, trigger_type)
+);
 "#;
 
 impl Database {
@@ -203,6 +264,11 @@ impl Database {
             "stock_scores",
             "components_json",
             "ALTER TABLE stock_scores ADD COLUMN components_json TEXT NOT NULL DEFAULT '{}'",
+        )?;
+        self.add_column_if_missing(
+            "prices_intraday",
+            "vwap",
+            "ALTER TABLE prices_intraday ADD COLUMN vwap REAL",
         )?;
         self.add_column_if_missing(
             "macro_series",

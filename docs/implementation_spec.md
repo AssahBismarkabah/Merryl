@@ -1,8 +1,8 @@
 # Merryl Implementation Runbook
 
-Version: 0.3
-Date: 2026-05-29
-Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, Phase 5A/B FRED macro ingestion and macro/regime validation, Phase 5C structured catalyst/event context, Phase 5C event-context validation, and watchlist actionability validation
+Version: 0.4
+Date: 2026-06-10
+Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, Phase 5A/B FRED macro ingestion and macro/regime validation, Phase 5C structured catalyst/event context, Phase 5C event-context validation, watchlist actionability validation, and Phase 6A signal-only intraday execution readiness
 
 ## Current Slice
 
@@ -37,6 +37,15 @@ Merryl backtest run
   -> store metrics in backtest_results
   -> write Markdown and CSV backtest summaries plus macro/regime, event-context, and actionability validation outputs
 
+Merryl intraday run
+  -> read the latest/requested stored daily market map from SQLite
+  -> screen active stock history for ADR, rVOL, and Mansfield relative strength
+  -> fetch intraday bars only for the configured candidate set
+  -> build stored volume profiles and signal-only readiness rows
+  -> detect long-side 5-minute trigger events for structurally aligned candidates
+  -> write Markdown/CSV readiness outputs
+  -> leave all daily scores, ranks, and formulas unchanged
+
 Merryl doctor run
   -> verify required docs, workflow config, credentials, and generated paths
   -> verify required market symbols and sector maps exist
@@ -65,6 +74,7 @@ src/domain/      shared domain models
 src/data/        provider traits, Alpaca/FRED/Alpha Vantage/SEC adapters, S&P 500 universe, sector ETF mapping
 src/storage/     SQLite connection, schema migration, write repositories
 src/scoring/     indicators, sector scoring, industry scoring, stock scoring, market orchestration
+src/intraday.rs  signal-only intraday readiness calculations
 src/dashboard/   read-only dashboard DTOs, repositories, and local axum server
 src/output/      report paths, Markdown rendering, CSV exports
 src/workflows/   user workflows such as daily run, status, and doctor
@@ -102,9 +112,13 @@ Optional environment variables:
 ALPACA_FEED=iex
 ALPACA_DATA_URL=https://data.alpaca.markets
 MERRYL_LOOKBACK_DAYS=420
+MERRYL_ALPACA_REQUESTS_PER_MINUTE=180
+MERRYL_INTRADAY_PROFILE_TIMEFRAME=30Min
+MERRYL_INTRADAY_TRIGGER_TIMEFRAME=5Min
+MERRYL_INTRADAY_CANDIDATE_LIMIT=50
 ```
 
-The default feed is `iex`, which is the practical free-tier starting point. If the account supports a different feed later, set `ALPACA_FEED`.
+The default feed is `iex`, which is the practical free-tier starting point. If the account supports delayed SIP or another feed later, set `ALPACA_FEED`. Phase 6A intraday readiness uses the same credentials and feed; it does not introduce a paid provider.
 
 Current macro provider:
 
@@ -178,6 +192,12 @@ Run the backtest workflow:
 cargo run -- run backtest --from YYYY-MM-DD --to YYYY-MM-DD
 ```
 
+Run the signal-only intraday readiness workflow:
+
+```text
+cargo run -- run intraday --date latest
+```
+
 Check stored data counts:
 
 ```text
@@ -248,6 +268,13 @@ Backtest outputs:
 ```text
 reports/backtests/YYYY-MM-DD_YYYY-MM-DD_backtest_report.md
 exports/backtests/YYYY-MM-DD_YYYY-MM-DD_backtest_summary.csv
+```
+
+Intraday readiness outputs:
+
+```text
+reports/intraday/YYYY-MM-DD_intraday_execution_readiness.md
+exports/intraday/YYYY-MM-DD_intraday_execution_readiness.csv
 ```
 
 Macro/regime validation outputs:
@@ -354,6 +381,12 @@ Watchlist actionability and extension filter:
 docs/watchlist_actionability_extension_filter_spec.md
 ```
 
+Phase 6A intraday execution readiness:
+
+```text
+docs/phase_6_intraday_execution_readiness_spec.md
+```
+
 Phase 5 readiness gate:
 
 ```text
@@ -427,6 +460,7 @@ Do not treat Markdown or CSV as the system-of-record.
 - Sector ranking is useful as a market-map and attention layer, but PDB-2 labels it as map-only / not yet a proven forward-return predictor. PDB-3.5 removed the neutral rank-change placeholder from sector scoring. Current rank-change is stored and reported, but it is not a scoring component.
 - Industry scoring now uses transparent price, relative return, volume, breadth, and 20D-high components. Industry-specific validation is supportive, but it still does not include news/catalyst or industry ETF/fund-flow confirmation.
 - Backtesting validates score behavior, not trade profitability. Reports and stored metrics now include validation scope. It does not model transaction costs, slippage, taxes, position sizing, portfolio constraints, or portfolio P&L.
+- Intraday readiness is signal-only. It uses intraday bars to label readiness after the watchlist/actionability layer, but it does not place orders, size positions, manage stops, create alerts, or change daily score formulas.
 - Data quality checks now run through `doctor` and can catch missing core symbols, ETF price coverage, score-date coverage, latest score row coverage, and replacement-write duplication before report/dashboard use.
 - Phase 4 dashboard/API planning is locked and the first read-only slice is implemented: local browser dashboard first, Rust `axum` API, Vite React TypeScript frontend, Tauri later only if packaging is needed, and no Electron in the first dashboard path.
 
@@ -439,7 +473,7 @@ PDB-3.6 confirmed that the first-build boundaries are aligned with the source sp
 Current implementation priority:
 
 ```text
-Keep the current system running, accumulate event-labeled history, and do not change formulas or add paid sources until the Phase 5 readiness gates pass.
+Implement Phase 6A signal-only intraday execution readiness, then keep accumulating event/actionability/readiness observations before any scoring or execution change.
 ```
 
 The first read-only dashboard/API slice from `docs/pre_dashboard_stability_backlog_spec.md` and `docs/phase_4_dashboard_api_spec.md` is implemented. Phase 4.1 dashboard stabilization is complete for the current pass. Phase 5 planning is recorded, and the first Phase 5A/B implementation is complete: FRED macro observations are fetched during the daily workflow, stored with provenance, counted in status, and checked by doctor/dashboard data health without changing scoring weights.
@@ -454,7 +488,9 @@ The watchlist actionability and extension filter implementation is recorded in `
 
 The Phase 5C event-context validation checkpoint is recorded in `docs/phase_5c_event_context_validation_spec.md`. It writes event-context validation outputs from stored SQLite data and records that current event-context rows do not yet have enough future bars for formula decisions.
 
-The Phase 5 readiness gate is recorded in `docs/phase_5_readiness_gate_spec.md`. It blocks catalyst/event scoring changes, macro scoring changes, Phase 5D paid-source implementation, options, intraday, and universe expansion until the required validation and source-decision gates pass.
+The Phase 5 readiness gate is recorded in `docs/phase_5_readiness_gate_spec.md`. It blocks catalyst/event scoring changes, macro scoring changes, Phase 5D paid-source implementation, options, paid data sources, automated execution, and universe expansion until the required validation and source-decision gates pass. Phase 6A narrows the previously broad intraday idea into signal-only execution readiness.
+
+The Phase 6A intraday execution-readiness implementation is recorded in `docs/phase_6_intraday_execution_readiness_spec.md`. It adds one workflow, uses existing Alpaca credentials/feed, stores volume profiles, setups, and triggers, exposes a read-only dashboard view, and keeps all daily scores/ranks unchanged.
 
 The current application-state audit is recorded in `docs/application_state_remaining_work_spec.md`. It summarizes what is working now, which connected data is still non-scoring context, what remains blocked, and what application work is still needed before the next build phase.
 
@@ -475,7 +511,7 @@ selected-date dashboard loading
 
 The Phase 5 planning and implementation reference is recorded in `docs/phase_5_data_source_expansion_spec.md`.
 
-The dashboard must remain a reader over the controlled market-map chain. Do not turn Merryl into a charting platform, trade execution surface, portfolio simulator, or alert engine while expanding data sources.
+The dashboard must remain a reader over the controlled market-map chain. Do not turn Merryl into a charting platform, trade execution surface, portfolio simulator, or alert engine while expanding data sources or intraday signals.
 
 ## Guardrails
 
@@ -483,4 +519,5 @@ The dashboard must remain a reader over the controlled market-map chain. Do not 
 - Do not expose internal scoring or ingest steps as public commands.
 - Keep provider code replaceable.
 - Keep watchlist output separate from trade signals.
+- Keep intraday readiness separate from trade execution.
 - Preserve the top-down flow: market -> sector -> industry/theme -> stock.

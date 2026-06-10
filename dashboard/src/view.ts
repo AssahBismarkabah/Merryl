@@ -5,4 +5,5 @@ export type DashboardView =
   | "industries"
   | "leadership"
   | "watchlist"
+  | "execution"
   | "validation";

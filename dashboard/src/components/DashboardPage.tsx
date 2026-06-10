@@ -7,6 +7,8 @@ import { number, percent } from "../format";
 import {
   actionabilityQueueColumns,
   industryColumns,
+  intradaySetupColumns,
+  intradayTriggerColumns,
   sectorColumns,
   stockColumns,
   watchlistColumns
@@ -247,6 +249,36 @@ function renderView(view: DashboardView, data: DashboardSnapshot) {
           </section>
         </div>
       );
+    case "execution":
+      return (
+        <div className="viewSurface validationStack">
+          <section className="detailSection">
+            <ViewHeader title="Execution Readiness" note="Signal-only intraday layer" />
+            <SimpleTable
+              columns={["Stage", "Count", "Lead", "Context"]}
+              rows={executionRows(data)}
+            />
+          </section>
+
+          <section className="detailSection">
+            <ViewHeader title="Readiness Queue" />
+            {(data.intraday_setups ?? []).length > 0 ? (
+              <DataTable data={data.intraday_setups ?? []} columns={intradaySetupColumns} />
+            ) : (
+              <p className="empty">No intraday readiness rows are stored for this date.</p>
+            )}
+          </section>
+
+          <section className="detailSection">
+            <ViewHeader title="Trigger Events" />
+            {(data.intraday_triggers ?? []).length > 0 ? (
+              <DataTable data={data.intraday_triggers ?? []} columns={intradayTriggerColumns} />
+            ) : (
+              <p className="empty">No Stage 3 trigger events are stored for this date.</p>
+            )}
+          </section>
+        </div>
+      );
     case "validation":
       return (
         <div className="viewSurface validationStack">
@@ -466,6 +498,34 @@ function actionabilityQueueStocks(data: DashboardSnapshot) {
   });
 }
 
+function executionRows(data: DashboardSnapshot): ReactNode[][] {
+  const setups = data.intraday_setups ?? [];
+  const stage2 = setups.filter((setup) => setup.stage2_passed);
+  const stage3 = setups.filter((setup) => setup.stage3_passed);
+  const lead = setups[0];
+
+  return [
+    [
+      <DataTag tone="accent">Stage 1</DataTag>,
+      String(setups.length),
+      lead ? `${lead.symbol} ${number(lead.mansfield_rs_spy)}` : "None",
+      "High ADR, rVOL, and relative strength"
+    ],
+    [
+      <DataTag tone={stage2.length > 0 ? "accent" : "muted"}>Stage 2</DataTag>,
+      String(stage2.length),
+      stage2[0] ? `${stage2[0].symbol} ${stage2[0].confluence_count}` : "None",
+      "Structural confluence near value/EMA levels"
+    ],
+    [
+      <DataTag tone={stage3.length > 0 ? "accent" : "muted"}>Stage 3</DataTag>,
+      String(data.intraday_triggers?.length ?? 0),
+      stage3[0] ? `${stage3[0].symbol} ${stage3[0].trigger_count}` : "None",
+      "Execution-readiness trigger detected"
+    ]
+  ];
+}
+
 const actionabilityBucketOrder = [
   "early_rotation_candidate",
   "base_compression_candidate",
@@ -665,6 +725,8 @@ function viewTitle(view: DashboardView) {
       return { eyebrow: "Stock layer", heading: "Leadership" };
     case "watchlist":
       return { eyebrow: "Chart review", heading: "Watchlist" };
+    case "execution":
+      return { eyebrow: "Intraday layer", heading: "Execution Readiness" };
     case "validation":
       return { eyebrow: "Controls", heading: "Validation" };
   }

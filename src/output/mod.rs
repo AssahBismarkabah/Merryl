@@ -3,6 +3,7 @@ mod backtest;
 mod csv;
 mod event_context_validation;
 mod formatting;
+mod intraday;
 mod macro_regime_validation;
 mod markdown;
 mod paths;
@@ -15,6 +16,7 @@ pub use backtest::{BacktestOutputPaths, write_backtest_outputs};
 pub use event_context_validation::{
     EventContextValidationOutputPaths, write_event_context_validation_outputs,
 };
+pub use intraday::{IntradayOutputPaths, write_intraday_outputs};
 pub use macro_regime_validation::{
     MacroRegimeValidationOutputPaths, write_macro_regime_validation_outputs,
 };

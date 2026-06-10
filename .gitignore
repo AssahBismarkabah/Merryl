@@ -20,9 +20,11 @@
 /data/*.db-wal
 /reports/*.md
 /reports/backtests/
+/reports/intraday/
 /reports/validations/
 /exports/*.csv
 /exports/backtests/
+/exports/intraday/
 /exports/validations/
 
 # Dashboard frontend generated files

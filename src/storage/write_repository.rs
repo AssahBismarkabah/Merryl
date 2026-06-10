@@ -4,8 +4,9 @@ use serde_json::json;
 
 use crate::config::{market_data, scoring::REPORT_WATCHLIST_LIMIT};
 use crate::domain::models::{
-    DailyPrice, IndustryMap, IndustryScore, MacroObservation, MarketEvent, MarketRegimeScore,
-    SectorMap, SectorScore, StockScore, Symbol,
+    DailyPrice, IndustryMap, IndustryScore, IntradayPrice, IntradaySetup, IntradayTrigger,
+    MacroObservation, MarketEvent, MarketRegimeScore, SectorMap, SectorScore, StockScore, Symbol,
+    VolumeProfile,
 };
 
 use super::sqlite::Database;
@@ -80,6 +81,46 @@ impl Database {
                     price.close,
                     price.adjusted_close,
                     price.volume,
+                    &price.source,
+                ])?;
+            }
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn upsert_intraday_prices(&mut self, prices: &[IntradayPrice]) -> Result<()> {
+        let tx = self.conn.transaction()?;
+        {
+            let mut stmt = tx.prepare(
+                r#"
+                INSERT INTO prices_intraday (
+                    symbol, ts, timeframe, open, high, low, close, volume, vwap, source, inserted_at
+                )
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, CURRENT_TIMESTAMP)
+                ON CONFLICT(symbol, ts, timeframe) DO UPDATE SET
+                    open = excluded.open,
+                    high = excluded.high,
+                    low = excluded.low,
+                    close = excluded.close,
+                    volume = excluded.volume,
+                    vwap = excluded.vwap,
+                    source = excluded.source,
+                    inserted_at = CURRENT_TIMESTAMP
+                "#,
+            )?;
+
+            for price in prices {
+                stmt.execute(params![
+                    &price.symbol,
+                    &price.ts,
+                    &price.timeframe,
+                    price.open,
+                    price.high,
+                    price.low,
+                    price.close,
+                    price.volume,
+                    price.vwap,
                     &price.source,
                 ])?;
             }
@@ -495,6 +536,123 @@ impl Database {
         )?;
         Ok(self.conn.last_insert_rowid())
     }
+
+    pub fn replace_intraday_readiness(
+        &mut self,
+        date: &str,
+        profiles: &[VolumeProfile],
+        setups: &[IntradaySetup],
+        triggers: &[IntradayTrigger],
+    ) -> Result<()> {
+        let tx = self.conn.transaction()?;
+        tx.execute("DELETE FROM volume_profiles WHERE date = ?1", params![date])?;
+        tx.execute("DELETE FROM intraday_setups WHERE date = ?1", params![date])?;
+        tx.execute(
+            "DELETE FROM intraday_triggers WHERE date = ?1",
+            params![date],
+        )?;
+
+        {
+            let mut stmt = tx.prepare(
+                r#"
+                INSERT INTO volume_profiles (
+                    symbol, date, timeframe, poc, vah, val, vwap, high, low,
+                    total_volume, source, components_json, inserted_at
+                )
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, CURRENT_TIMESTAMP)
+                "#,
+            )?;
+            for profile in profiles {
+                stmt.execute(params![
+                    &profile.symbol,
+                    &profile.date,
+                    &profile.timeframe,
+                    profile.poc,
+                    profile.vah,
+                    profile.val,
+                    profile.vwap,
+                    profile.high,
+                    profile.low,
+                    profile.total_volume,
+                    &profile.source,
+                    &profile.components_json,
+                ])?;
+            }
+        }
+
+        {
+            let mut stmt = tx.prepare(
+                r#"
+                INSERT INTO intraday_setups (
+                    date, symbol, name, sector, industry, direction, stage1_passed,
+                    stage2_passed, stage3_passed, primary_label, adr_pct, rvol_ratio,
+                    mansfield_rs_spy, mansfield_rs_sector, ema_10, ema_20, latest_price,
+                    confluence_count, confluence_json, trigger_count, components_json,
+                    inserted_at
+                )
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13,
+                        ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, CURRENT_TIMESTAMP)
+                "#,
+            )?;
+            for setup in setups {
+                stmt.execute(params![
+                    &setup.date,
+                    &setup.symbol,
+                    &setup.name,
+                    &setup.sector,
+                    &setup.industry,
+                    &setup.direction,
+                    bool_int(setup.stage1_passed),
+                    bool_int(setup.stage2_passed),
+                    bool_int(setup.stage3_passed),
+                    &setup.primary_label,
+                    setup.adr_pct,
+                    setup.rvol_ratio,
+                    setup.mansfield_rs_spy,
+                    setup.mansfield_rs_sector,
+                    setup.ema_10,
+                    setup.ema_20,
+                    setup.latest_price,
+                    setup.confluence_count as i64,
+                    &setup.confluence_json,
+                    setup.trigger_count as i64,
+                    &setup.components_json,
+                ])?;
+            }
+        }
+
+        {
+            let mut stmt = tx.prepare(
+                r#"
+                INSERT INTO intraday_triggers (
+                    date, symbol, ts, timeframe, trigger_type, direction, trigger_price,
+                    reference_level, volume_spike, price_action, components_json, source,
+                    inserted_at
+                )
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, CURRENT_TIMESTAMP)
+                "#,
+            )?;
+            for trigger in triggers {
+                stmt.execute(params![
+                    &trigger.date,
+                    &trigger.symbol,
+                    &trigger.ts,
+                    &trigger.timeframe,
+                    &trigger.trigger_type,
+                    &trigger.direction,
+                    trigger.trigger_price,
+                    trigger.reference_level,
+                    trigger.volume_spike,
+                    &trigger.price_action,
+                    &trigger.components_json,
+                    &trigger.source,
+                ])?;
+            }
+        }
+
+        tx.commit()?;
+        Ok(())
+    }
 }
 
 fn sector_components_json(score: &SectorScore) -> String {
@@ -510,4 +668,8 @@ fn sector_components_json(score: &SectorScore) -> String {
         "rank_change": score.rank_change
     })
     .to_string()
+}
+
+fn bool_int(value: bool) -> i64 {
+    if value { 1 } else { 0 }
 }
