@@ -2,7 +2,7 @@ use anyhow::Result;
 use chrono::NaiveDate;
 
 use crate::domain::models::{
-    DailyPrice, IndustryMap, MacroObservation, MarketEvent, SectorMap, Symbol,
+    DailyPrice, IndustryMap, IntradayPrice, MacroObservation, MarketEvent, SectorMap, Symbol,
 };
 
 pub trait DailyOhlcvProvider {
@@ -10,6 +10,15 @@ pub trait DailyOhlcvProvider {
     fn sector_maps(&self) -> Vec<SectorMap>;
     fn industry_maps(&self, symbols: &[Symbol]) -> Vec<IndustryMap>;
     fn daily_prices(&self, symbols: &[Symbol], end_date: NaiveDate) -> Result<Vec<DailyPrice>>;
+}
+
+pub trait IntradayOhlcvProvider {
+    fn intraday_prices(
+        &self,
+        symbols: &[String],
+        date: NaiveDate,
+        timeframe: &str,
+    ) -> Result<Vec<IntradayPrice>>;
 }
 
 pub trait CatalystEventProvider {

@@ -8,7 +8,8 @@ use tower::ServiceExt;
 use merryl::config::macro_data;
 use merryl::dashboard::{load_dashboard_for_date, load_latest_dashboard, router};
 use merryl::domain::models::{
-    IndustryScore, MacroObservation, MarketRegimeScore, SectorScore, StockScore, Symbol,
+    IndustryScore, IntradaySetup, IntradayTrigger, MacroObservation, MarketRegimeScore,
+    SectorScore, StockScore, Symbol, VolumeProfile,
 };
 use merryl::storage::Database;
 
@@ -60,6 +61,12 @@ fn dashboard_snapshot_reads_latest_market_map() -> Result<()> {
             .contains(&"base_compression_candidate".to_string())
     );
     assert_eq!(snapshot.stocks[0].distance_from_20d_ma_pct, 0.03);
+    assert_eq!(snapshot.intraday_setups[0].symbol, "MSFT");
+    assert_eq!(
+        snapshot.intraday_setups[0].primary_label,
+        "intraday_execution_ready"
+    );
+    assert_eq!(snapshot.intraday_triggers[0].trigger_type, "orb_breakout");
     assert!(snapshot.latest_backtest.is_none());
     assert_eq!(
         snapshot.data_health.latest_score_date.as_deref(),
@@ -130,6 +137,12 @@ async fn dashboard_api_returns_latest_snapshot_json() -> Result<()> {
         json["watchlist"][0]["primary_actionability"],
         "base_compression_candidate"
     );
+    assert_eq!(json["intraday_setups"][0]["symbol"], "MSFT");
+    assert_eq!(
+        json["intraday_setups"][0]["primary_label"],
+        "intraday_execution_ready"
+    );
+    assert_eq!(json["intraday_triggers"][0]["trigger_type"], "orb_breakout");
 
     Ok(())
 }
@@ -233,6 +246,12 @@ fn seed_dashboard_fixture(db_path: &std::path::Path) -> Result<()> {
         db.replace_stock_scores(date, &[stock_score(date)])?;
         db.replace_watchlist(date, &[stock_score(date)])?;
     }
+    db.replace_intraday_readiness(
+        "2026-05-27",
+        &[volume_profile()],
+        &[intraday_setup()],
+        &[intraday_trigger()],
+    )?;
 
     Ok(())
 }
@@ -403,5 +422,65 @@ fn stock_score(date: &str) -> StockScore {
         catalyst_status: "recent_news:2".to_string(),
         components_json: r#"{"relative_strength_component":80.0,"ma_20d":100.0,"ma_50d":98.0,"distance_from_20d_ma_pct":0.03,"distance_from_50d_ma_pct":0.05,"atr_14d":2.0,"atr_14d_pct":0.02,"atr_extension_from_20d_ma":1.5,"atr_extension_from_50d_ma":2.4,"high_20d":104.0,"high_60d":106.0,"distance_from_20d_high_pct":-0.01,"distance_from_60d_high_pct":-0.04,"range_10d_pct":0.04,"gap_pct":0.0,"true_range_pct":0.02,"primary_actionability":"base_compression_candidate","actionability_labels":["base_compression_candidate","early_rotation_candidate","actionable_leader"]}"#.to_string(),
         explanation: "fixture stock".to_string(),
+    }
+}
+
+fn volume_profile() -> VolumeProfile {
+    VolumeProfile {
+        symbol: "MSFT".to_string(),
+        date: "2026-05-27".to_string(),
+        timeframe: "30Min".to_string(),
+        poc: 100.0,
+        vah: 101.0,
+        val: 99.0,
+        vwap: 100.2,
+        high: 102.0,
+        low: 98.0,
+        total_volume: 1_000_000.0,
+        source: "test-fixture".to_string(),
+        components_json: "{}".to_string(),
+    }
+}
+
+fn intraday_setup() -> IntradaySetup {
+    IntradaySetup {
+        date: "2026-05-27".to_string(),
+        symbol: "MSFT".to_string(),
+        name: "Microsoft Corporation".to_string(),
+        sector: "Technology".to_string(),
+        industry: "Software".to_string(),
+        direction: "long".to_string(),
+        stage1_passed: true,
+        stage2_passed: true,
+        stage3_passed: true,
+        primary_label: "intraday_execution_ready".to_string(),
+        adr_pct: 0.05,
+        rvol_ratio: 1.8,
+        mansfield_rs_spy: 1.08,
+        mansfield_rs_sector: 1.03,
+        ema_10: 100.0,
+        ema_20: 99.0,
+        latest_price: 100.5,
+        confluence_count: 3,
+        confluence_json: r#"["poc","val","vwap"]"#.to_string(),
+        trigger_count: 1,
+        components_json: "{}".to_string(),
+    }
+}
+
+fn intraday_trigger() -> IntradayTrigger {
+    IntradayTrigger {
+        date: "2026-05-27".to_string(),
+        symbol: "MSFT".to_string(),
+        ts: "2026-05-27T15:00:00Z".to_string(),
+        timeframe: "5Min".to_string(),
+        trigger_type: "orb_breakout".to_string(),
+        direction: "long".to_string(),
+        trigger_price: 101.0,
+        reference_level: 100.0,
+        volume_spike: 2.0,
+        price_action: "fixture trigger".to_string(),
+        components_json: "{}".to_string(),
+        source: "test-fixture".to_string(),
     }
 }

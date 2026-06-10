@@ -10,6 +10,8 @@ pub struct DashboardSnapshot {
     pub industries: Vec<IndustryDto>,
     pub stocks: Vec<StockDto>,
     pub watchlist: Vec<WatchlistDto>,
+    pub intraday_setups: Vec<IntradaySetupDto>,
+    pub intraday_triggers: Vec<IntradayTriggerDto>,
     pub latest_backtest: Option<BacktestDto>,
     pub data_health: DataHealthDto,
 }
@@ -129,6 +131,44 @@ pub struct WatchlistDto {
     pub atr_extension_from_20d_ma: f64,
     pub distance_from_20d_high_pct: f64,
     pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct IntradaySetupDto {
+    pub date: String,
+    pub symbol: String,
+    pub name: String,
+    pub sector: String,
+    pub industry: String,
+    pub direction: String,
+    pub primary_label: String,
+    pub stage1_passed: bool,
+    pub stage2_passed: bool,
+    pub stage3_passed: bool,
+    pub adr_pct: f64,
+    pub rvol_ratio: f64,
+    pub mansfield_rs_spy: f64,
+    pub mansfield_rs_sector: f64,
+    pub ema_10: f64,
+    pub ema_20: f64,
+    pub latest_price: f64,
+    pub confluence_count: usize,
+    pub confluence: Value,
+    pub trigger_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct IntradayTriggerDto {
+    pub date: String,
+    pub symbol: String,
+    pub ts: String,
+    pub timeframe: String,
+    pub trigger_type: String,
+    pub direction: String,
+    pub trigger_price: f64,
+    pub reference_level: f64,
+    pub volume_spike: f64,
+    pub price_action: String,
 }
 
 #[derive(Debug, Clone, Serialize)]

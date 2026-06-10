@@ -28,6 +28,20 @@ pub struct DailyPrice {
 }
 
 #[derive(Debug, Clone)]
+pub struct IntradayPrice {
+    pub symbol: String,
+    pub ts: String,
+    pub timeframe: String,
+    pub open: f64,
+    pub high: f64,
+    pub low: f64,
+    pub close: f64,
+    pub volume: f64,
+    pub vwap: Option<f64>,
+    pub source: String,
+}
+
+#[derive(Debug, Clone)]
 pub struct MacroObservation {
     pub series: String,
     pub series_name: String,
@@ -133,6 +147,63 @@ pub struct BacktestResultRow {
     pub config_json: String,
     pub metrics_json: String,
     pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct VolumeProfile {
+    pub symbol: String,
+    pub date: String,
+    pub timeframe: String,
+    pub poc: f64,
+    pub vah: f64,
+    pub val: f64,
+    pub vwap: f64,
+    pub high: f64,
+    pub low: f64,
+    pub total_volume: f64,
+    pub source: String,
+    pub components_json: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct IntradaySetup {
+    pub date: String,
+    pub symbol: String,
+    pub name: String,
+    pub sector: String,
+    pub industry: String,
+    pub direction: String,
+    pub stage1_passed: bool,
+    pub stage2_passed: bool,
+    pub stage3_passed: bool,
+    pub primary_label: String,
+    pub adr_pct: f64,
+    pub rvol_ratio: f64,
+    pub mansfield_rs_spy: f64,
+    pub mansfield_rs_sector: f64,
+    pub ema_10: f64,
+    pub ema_20: f64,
+    pub latest_price: f64,
+    pub confluence_count: usize,
+    pub confluence_json: String,
+    pub trigger_count: usize,
+    pub components_json: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct IntradayTrigger {
+    pub date: String,
+    pub symbol: String,
+    pub ts: String,
+    pub timeframe: String,
+    pub trigger_type: String,
+    pub direction: String,
+    pub trigger_price: f64,
+    pub reference_level: f64,
+    pub volume_spike: f64,
+    pub price_action: String,
+    pub components_json: String,
+    pub source: String,
 }
 
 #[derive(Debug, Clone, Serialize)]

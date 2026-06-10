@@ -6,6 +6,8 @@ export interface DashboardSnapshot {
   industries: Industry[];
   stocks: Stock[];
   watchlist: WatchlistRow[];
+  intraday_setups: IntradaySetup[];
+  intraday_triggers: IntradayTrigger[];
   latest_backtest: Backtest | null;
   data_health: DataHealth;
 }
@@ -95,6 +97,42 @@ export interface WatchlistRow {
   atr_extension_from_20d_ma: number;
   distance_from_20d_high_pct: number;
   reason: string;
+}
+
+export interface IntradaySetup {
+  date: string;
+  symbol: string;
+  name: string;
+  sector: string;
+  industry: string;
+  direction: string;
+  primary_label: string;
+  stage1_passed: boolean;
+  stage2_passed: boolean;
+  stage3_passed: boolean;
+  adr_pct: number;
+  rvol_ratio: number;
+  mansfield_rs_spy: number;
+  mansfield_rs_sector: number;
+  ema_10: number;
+  ema_20: number;
+  latest_price: number;
+  confluence_count: number;
+  confluence: string[];
+  trigger_count: number;
+}
+
+export interface IntradayTrigger {
+  date: string;
+  symbol: string;
+  ts: string;
+  timeframe: string;
+  trigger_type: string;
+  direction: string;
+  trigger_price: number;
+  reference_level: number;
+  volume_spike: number;
+  price_action: string;
 }
 
 export interface Backtest {

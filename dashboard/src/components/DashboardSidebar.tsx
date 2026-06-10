@@ -4,6 +4,7 @@ import {
   Database,
   Layers3,
   LineChart,
+  MousePointer2,
   ShieldCheck,
   Target
 } from "lucide-react";
@@ -28,6 +29,7 @@ export function DashboardSidebar({
     { view: "industries", label: "Industries", icon: <Layers3 size={16} /> },
     { view: "leadership", label: "Leadership", icon: <LineChart size={16} /> },
     { view: "watchlist", label: "Watchlist", icon: <Target size={16} /> },
+    { view: "execution", label: "Execution", icon: <MousePointer2 size={16} /> },
     { view: "validation", label: "Validation", icon: <Database size={16} /> }
   ];
 

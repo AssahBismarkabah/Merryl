@@ -5,8 +5,9 @@ use rusqlite::{OptionalExtension, params};
 
 use crate::config::scoring;
 use crate::domain::models::{
-    BacktestResultRow, DailyPrice, IndustryScore, IndustryScoreSnapshot, MacroObservation,
-    MarketRegimeScore, SectorMap, SectorScore, StockScore, Symbol, WatchlistRow,
+    BacktestResultRow, DailyPrice, IndustryScore, IndustryScoreSnapshot, IntradaySetup,
+    IntradayTrigger, MacroObservation, MarketRegimeScore, SectorMap, SectorScore, StockScore,
+    Symbol, VolumeProfile, WatchlistRow,
 };
 
 use super::sqlite::Database;
@@ -242,6 +243,107 @@ impl Database {
                 symbol: row.get(2)?,
                 score: row.get(3)?,
                 reason: row.get(4)?,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn intraday_setups_for_date(&self, date: &str) -> Result<Vec<IntradaySetup>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT date, symbol, name, sector, industry, direction, stage1_passed,
+                   stage2_passed, stage3_passed, primary_label, adr_pct, rvol_ratio,
+                   mansfield_rs_spy, mansfield_rs_sector, ema_10, ema_20, latest_price,
+                   confluence_count, confluence_json, trigger_count, components_json
+            FROM intraday_setups
+            WHERE date = ?1
+            ORDER BY stage3_passed DESC, stage2_passed DESC, mansfield_rs_spy DESC, symbol
+            "#,
+        )?;
+        let rows = stmt.query_map(params![date], |row| {
+            Ok(IntradaySetup {
+                date: row.get(0)?,
+                symbol: row.get(1)?,
+                name: row.get(2)?,
+                sector: row.get(3)?,
+                industry: row.get(4)?,
+                direction: row.get(5)?,
+                stage1_passed: row.get::<_, i64>(6)? == 1,
+                stage2_passed: row.get::<_, i64>(7)? == 1,
+                stage3_passed: row.get::<_, i64>(8)? == 1,
+                primary_label: row.get(9)?,
+                adr_pct: row.get(10)?,
+                rvol_ratio: row.get(11)?,
+                mansfield_rs_spy: row.get(12)?,
+                mansfield_rs_sector: row.get(13)?,
+                ema_10: row.get(14)?,
+                ema_20: row.get(15)?,
+                latest_price: row.get(16)?,
+                confluence_count: row.get::<_, i64>(17)? as usize,
+                confluence_json: row.get(18)?,
+                trigger_count: row.get::<_, i64>(19)? as usize,
+                components_json: row.get(20)?,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn intraday_triggers_for_date(&self, date: &str) -> Result<Vec<IntradayTrigger>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT date, symbol, ts, timeframe, trigger_type, direction, trigger_price,
+                   reference_level, volume_spike, price_action, components_json, source
+            FROM intraday_triggers
+            WHERE date = ?1
+            ORDER BY symbol, ts, trigger_type
+            "#,
+        )?;
+        let rows = stmt.query_map(params![date], |row| {
+            Ok(IntradayTrigger {
+                date: row.get(0)?,
+                symbol: row.get(1)?,
+                ts: row.get(2)?,
+                timeframe: row.get(3)?,
+                trigger_type: row.get(4)?,
+                direction: row.get(5)?,
+                trigger_price: row.get(6)?,
+                reference_level: row.get(7)?,
+                volume_spike: row.get(8)?,
+                price_action: row.get(9)?,
+                components_json: row.get(10)?,
+                source: row.get(11)?,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    pub fn volume_profiles_for_date(&self, date: &str) -> Result<Vec<VolumeProfile>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT symbol, date, timeframe, poc, vah, val, vwap, high, low,
+                   total_volume, source, components_json
+            FROM volume_profiles
+            WHERE date = ?1
+            ORDER BY symbol, timeframe
+            "#,
+        )?;
+        let rows = stmt.query_map(params![date], |row| {
+            Ok(VolumeProfile {
+                symbol: row.get(0)?,
+                date: row.get(1)?,
+                timeframe: row.get(2)?,
+                poc: row.get(3)?,
+                vah: row.get(4)?,
+                val: row.get(5)?,
+                vwap: row.get(6)?,
+                high: row.get(7)?,
+                low: row.get(8)?,
+                total_volume: row.get(9)?,
+                source: row.get(10)?,
+                components_json: row.get(11)?,
             })
         })?;
 

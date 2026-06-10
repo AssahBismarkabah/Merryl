@@ -27,6 +27,10 @@ pub struct DbCounts {
     pub stock_scores: i64,
     pub watchlist_rows: i64,
     pub backtest_results: i64,
+    pub intraday_prices: i64,
+    pub volume_profiles: i64,
+    pub intraday_setups: i64,
+    pub intraday_triggers: i64,
 }
 
 impl Database {
@@ -57,6 +61,10 @@ impl Database {
             stock_scores: self.count_table("stock_scores")?,
             watchlist_rows: self.count_table("watchlists")?,
             backtest_results: self.count_table("backtest_results")?,
+            intraday_prices: self.count_table("prices_intraday")?,
+            volume_profiles: self.count_table("volume_profiles")?,
+            intraday_setups: self.count_table("intraday_setups")?,
+            intraday_triggers: self.count_table("intraday_triggers")?,
         })
     }
 

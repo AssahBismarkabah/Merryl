@@ -9,9 +9,10 @@ pub fn missing_database(path: impl Display) -> String {
 
 pub fn database_status(path: impl Display, counts: &DbCounts) -> String {
     format!(
-        "database: {path}\nsymbols: {}\ndaily prices: {}\nmacro series observations: {}\nevents: {}\nmarket regime scores: {}\nscore dates: {}\nsector scores: {}\nindustry scores: {}\nstock scores: {}\nwatchlist rows: {}\nbacktest results: {}",
+        "database: {path}\nsymbols: {}\ndaily prices: {}\nintraday prices: {}\nmacro series observations: {}\nevents: {}\nmarket regime scores: {}\nscore dates: {}\nsector scores: {}\nindustry scores: {}\nstock scores: {}\nwatchlist rows: {}\nvolume profiles: {}\nintraday setups: {}\nintraday triggers: {}\nbacktest results: {}",
         counts.symbols,
         counts.prices_daily,
+        counts.intraday_prices,
         counts.macro_series,
         counts.events,
         counts.market_regime_scores,
@@ -20,6 +21,9 @@ pub fn database_status(path: impl Display, counts: &DbCounts) -> String {
         counts.industry_scores,
         counts.stock_scores,
         counts.watchlist_rows,
+        counts.volume_profiles,
+        counts.intraday_setups,
+        counts.intraday_triggers,
         counts.backtest_results,
     )
 }

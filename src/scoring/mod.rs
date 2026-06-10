@@ -13,8 +13,8 @@ pub use catalysts::{
 };
 pub use history::{previous_watchlist_symbols_for_date, score_market_history};
 pub use indicators::{
-    average_true_range, distance_pct, forward_return, gap_pct, highest_close, histories_by_symbol,
-    latest_date, lowest_close, range_pct, true_range,
+    PriceHistories, average_true_range, distance_pct, effective_index, forward_return, gap_pct,
+    highest_close, histories_by_symbol, latest_date, lowest_close, range_pct, true_range,
 };
 pub use market::{MarketScores, score_market};
 pub use sectors::apply_sector_rank_changes;

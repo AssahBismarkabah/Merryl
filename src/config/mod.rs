@@ -20,6 +20,8 @@ pub mod paths {
     pub const EXPORTS_DIR: &str = "exports";
     pub const BACKTEST_REPORTS_DIR: &str = "reports/backtests";
     pub const BACKTEST_EXPORTS_DIR: &str = "exports/backtests";
+    pub const INTRADAY_REPORTS_DIR: &str = "reports/intraday";
+    pub const INTRADAY_EXPORTS_DIR: &str = "exports/intraday";
     pub const VALIDATION_REPORTS_DIR: &str = "reports/validations";
     pub const VALIDATION_EXPORTS_DIR: &str = "exports/validations";
     pub const DAILY_WORKFLOW_CONFIG: &str = "config/workflows/daily.toml";
@@ -93,6 +95,18 @@ pub mod paths {
             "{VALIDATION_EXPORTS_DIR}/{from_date}_{to_date}_actionability_validation.csv"
         ))
     }
+
+    pub fn intraday_readiness_report_path(date: &str) -> PathBuf {
+        PathBuf::from(format!(
+            "{INTRADAY_REPORTS_DIR}/{date}_intraday_execution_readiness.md"
+        ))
+    }
+
+    pub fn intraday_readiness_export_path(date: &str) -> PathBuf {
+        PathBuf::from(format!(
+            "{INTRADAY_EXPORTS_DIR}/{date}_intraday_execution_readiness.csv"
+        ))
+    }
 }
 
 pub mod market_data {
@@ -139,6 +153,54 @@ pub mod market_data {
     pub fn retry_sleep() -> Duration {
         Duration::from_millis(ALPACA_REQUEST_RETRY_SLEEP_MS)
     }
+}
+
+pub mod intraday {
+    pub const ALPACA_REQUESTS_PER_MINUTE_ENV: &str = "MERRYL_ALPACA_REQUESTS_PER_MINUTE";
+    pub const PROFILE_TIMEFRAME_ENV: &str = "MERRYL_INTRADAY_PROFILE_TIMEFRAME";
+    pub const TRIGGER_TIMEFRAME_ENV: &str = "MERRYL_INTRADAY_TRIGGER_TIMEFRAME";
+    pub const CANDIDATE_LIMIT_ENV: &str = "MERRYL_INTRADAY_CANDIDATE_LIMIT";
+    pub const OPENING_RANGE_MINUTES_ENV: &str = "MERRYL_INTRADAY_OPENING_RANGE_MINUTES";
+
+    pub const DEFAULT_ALPACA_REQUESTS_PER_MINUTE: usize = 180;
+    pub const DEFAULT_PROFILE_TIMEFRAME: &str = "30Min";
+    pub const DEFAULT_TRIGGER_TIMEFRAME: &str = "5Min";
+    pub const DEFAULT_CANDIDATE_LIMIT: usize = 50;
+    pub const DEFAULT_OPENING_RANGE_MINUTES: usize = 30;
+
+    pub const ADR_LOOKBACK: usize = 20;
+    pub const ADR_MIN: f64 = 0.04;
+    pub const RVOL_LOOKBACK: usize = 20;
+    pub const RVOL_MIN: f64 = 1.5;
+    pub const EMA_FAST: usize = 10;
+    pub const EMA_SLOW: usize = 20;
+    pub const MANSFIELD_LOOKBACK: usize = 50;
+    pub const RS_TOP_PERCENTILE: f64 = 0.10;
+    pub const VALUE_AREA_SHARE: f64 = 0.70;
+    pub const VOLUME_PROFILE_MIN_BIN_SIZE: f64 = 0.01;
+    pub const VOLUME_PROFILE_BIN_WIDTH_PCT: f64 = 0.0005;
+    pub const VOLUME_PROFILE_ATR_LOOKBACK: usize = 20;
+    pub const VOLUME_PROFILE_ATR_BIN_WIDTH_PCT: f64 = 0.05;
+    pub const VOLUME_PROFILE_MAX_BIN_SIZE_PCT: f64 = 0.002;
+    pub const VALUE_AREA_TIE_BREAK_POLICY: &str = "upper_on_equal_volume";
+    pub const CONFLUENCE_WINDOW: f64 = 0.0075;
+    pub const CONFLUENCE_MIN: usize = 3;
+    pub const MATERIAL_EMA20_BREAK: f64 = -0.01;
+    pub const VOLUME_SPIKE_MIN: f64 = 1.5;
+    pub const DRYUP_RATIO_MAX: f64 = 0.65;
+    pub const MICRO_CLUSTER_BAR_COUNT: usize = 3;
+    pub const MICRO_CLUSTER_MAX_RANGE: f64 = 0.01;
+
+    pub const DIRECTION_LONG: &str = "long";
+    pub const LABEL_STAGE1: &str = "high_momentum_universe";
+    pub const LABEL_STAGE2: &str = "structural_pullback_setup";
+    pub const LABEL_STAGE3: &str = "intraday_execution_ready";
+    pub const LABEL_MONITOR: &str = "monitor";
+
+    pub const TRIGGER_ORB_BREAKOUT: &str = "orb_breakout";
+    pub const TRIGGER_HOD_BREAK: &str = "hod_break";
+    pub const TRIGGER_VOLUME_DRYUP_CONFIRMATION: &str = "volume_dryup_confirmation";
+    pub const TRIGGER_MICRO_CLUSTER_BREAK: &str = "micro_cluster_break";
 }
 
 pub mod macro_data {

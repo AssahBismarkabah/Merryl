@@ -25,6 +25,7 @@ Related documents reviewed:
 - `docs/phase_5c_event_context_validation_spec.md`
 - `docs/phase_5c_source_coverage_review_spec.md`
 - `docs/phase_5c_structured_catalyst_source_spec.md`
+- `docs/phase_6_intraday_execution_readiness_spec.md`
 - `docs/pre_dashboard_stability_backlog_spec.md`
 - `docs/sector_formula_decision_checkpoint_spec.md`
 - `docs/sector_score_review_spec.md`
@@ -42,11 +43,12 @@ It preserves the original product chain:
 Market regime
   -> Sector rotation
     -> Industry/theme strength
-      -> Stock leadership
-        -> classified watchlist for chart review elsewhere
+  -> Stock leadership
+    -> classified watchlist
+      -> signal-only intraday execution-readiness rows
 ```
 
-The application is not meant to become the chart-review surface. Merryl identifies where attention should go and why, then the user reviews charts in a separate charting tool.
+The application is not meant to become the chart-review or trade-execution surface. Merryl identifies where attention should go and why, then the user reviews charts and execution elsewhere.
 
 ## 2. Current Application Boundary
 
@@ -58,6 +60,7 @@ It should do:
 - Store source-backed observations with provenance.
 - Score the historical market window.
 - Classify the final watchlist.
+- Identify signal-only intraday execution-readiness rows after the watchlist/actionability layer.
 - Explain what is driving attention.
 - Validate whether score behavior has forward usefulness.
 - Display the stored market map in a read-only dashboard.
@@ -90,6 +93,7 @@ It should not do at this stage:
 | Stock scores | Working | Current strongest validated layer for watchlist ranking |
 | Watchlist generation | Working | Produces top stock candidates from the scored market window |
 | Watchlist classification | Working | Connected sources now converge into explicit classification labels for the final list |
+| Intraday execution readiness | Phase 6A implementation target | Signal-only layer after actionability; does not execute trades or change scores |
 | Alpaca News events | Working | Recent news context is attached to watchlist names |
 | Alpha Vantage earnings events | Working | Free-key earnings calendar context is connected |
 | SEC EDGAR filing events | Working | Filing-event context is connected with configured user agent |
@@ -150,7 +154,8 @@ Current sector state:
 Current source-expansion state:
 
 - Phase 5D ETF fund-flow implementation is not approved yet.
-- Options, intraday, broader universe expansion, and paid data sources remain deferred.
+- Options, broader universe expansion, paid data sources, and any trade-execution automation remain deferred.
+- Intraday is unblocked only as Phase 6A signal-only execution readiness, documented in `docs/phase_6_intraday_execution_readiness_spec.md`.
 
 ## 6. What Is Still Needed
 
@@ -261,6 +266,36 @@ Implementation document:
 docs/watchlist_actionability_extension_filter_spec.md
 ```
 
+### 6.8 Phase 6A Intraday Execution Readiness
+
+Issue #1 is unblocked as a signal-only layer after the current actionability queue.
+
+Implemented scope:
+
+- Adds `merryl run intraday --date latest`.
+- Uses existing Alpaca credentials and configured feed.
+- Uses free delayed/basic market data first.
+- Screens active daily stock history for ADR, rVOL, and Mansfield relative strength.
+- Builds 30-minute volume profiles for selected candidates.
+- Detects 5-minute long-side readiness triggers for candidates with structural confluence.
+- Stores readiness rows in SQLite for reports, exports, and dashboard display.
+
+Still out of scope:
+
+- Broker order placement.
+- Paper trading.
+- Alerts.
+- Position sizing.
+- Stop management.
+- Dashboard chart review.
+- Score-weight changes from intraday signals.
+
+Implementation document:
+
+```text
+docs/phase_6_intraday_execution_readiness_spec.md
+```
+
 ## 7. What Should Not Be Built Next
 
 Do not build these next:
@@ -271,7 +306,7 @@ Do not build these next:
 - Position sizing.
 - Alerts.
 - Options flow.
-- Intraday flow.
+- Intraday trade execution or charting workflow.
 - Broader stock universe.
 - Paid fund-flow data ingestion.
 - Automatic formula tuning.
@@ -289,10 +324,10 @@ Run the current system, accumulate forward bars for event-labeled and actionabil
 The local actionability work is now implemented. The next source-expansion planning track remains:
 
 ```text
-Phase 5D ETF fund-flow source planning
+Phase 6A signal-only intraday execution readiness, then continued event/actionability evidence accumulation
 ```
 
-Do not promote actionability labels into scoring weights yet. Use the validation output first.
+Do not promote actionability or intraday readiness labels into scoring weights yet. Use validation output and stored observations first.
 
 ## 9. Validation Commands
 
@@ -308,6 +343,7 @@ For application readiness:
 
 ```text
 cargo run -- run daily --date latest
+cargo run -- run intraday --date latest
 cargo run -- run backtest --from 2025-07-01 --to <latest scored date>
 cargo run -- doctor
 cargo run -- status
@@ -334,6 +370,7 @@ Merryl currently has the foundation working:
 - Event context.
 - Event validation output.
 - Watchlist classification.
+- Signal-only intraday execution readiness.
 - Read-only dashboard.
 
 The main remaining work is not to rebuild the foundation. The remaining work is to accumulate evidence, keep the gates strict, and only promote new sources into score formulas after validation shows that they improve the market-map and final watchlist use case.

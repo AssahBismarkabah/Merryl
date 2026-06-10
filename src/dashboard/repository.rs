@@ -8,15 +8,16 @@ use crate::actionability::{classification_for_stock, metrics_from_components};
 use crate::classification::WatchlistClassifier;
 use crate::config::{macro_data, scoring, universe};
 use crate::domain::models::{
-    BacktestResultRow, IndustryScore, MarketRegimeScore, SectorScore, StockScore, WatchlistRow,
+    BacktestResultRow, IndustryScore, IntradaySetup, IntradayTrigger, MarketRegimeScore,
+    SectorScore, StockScore, WatchlistRow,
 };
 use crate::storage::{DataQualitySnapshot, Database};
 use crate::validation::{MacroContextOverlay, macro_context_overlay};
 
 use super::models::{
-    BacktestDto, DashboardSnapshot, DataHealthDto, HealthDto, IndustryDto, LatestScoreCoverageDto,
-    MacroContextDto, MacroCoverageDto, PriceCoverageDto, RegimeDto, SectorDto, StockDto,
-    WatchlistDto,
+    BacktestDto, DashboardSnapshot, DataHealthDto, HealthDto, IndustryDto, IntradaySetupDto,
+    IntradayTriggerDto, LatestScoreCoverageDto, MacroContextDto, MacroCoverageDto,
+    PriceCoverageDto, RegimeDto, SectorDto, StockDto, WatchlistDto,
 };
 
 const RUN_DAILY_MESSAGE: &str =
@@ -115,6 +116,8 @@ fn dashboard_for_date(db_path: &Path, db: &Database, date: &str) -> Result<Dashb
     let watchlist = watchlist_dtos(&watchlist, &stocks, &classifier);
     let regime = regime.map(|regime| regime_dto(regime, macro_context));
     let latest_backtest = db.latest_backtest_result()?;
+    let intraday_setups = db.intraday_setups_for_date(date)?;
+    let intraday_triggers = db.intraday_triggers_for_date(date)?;
     let data_quality = db.data_quality_snapshot(
         &universe::required_market_symbols(),
         universe::SECTOR_ETFS,
@@ -129,6 +132,14 @@ fn dashboard_for_date(db_path: &Path, db: &Database, date: &str) -> Result<Dashb
         industries: industries.into_iter().map(industry_dto).collect(),
         watchlist,
         stocks: stocks.into_iter().map(stock_dto).collect(),
+        intraday_setups: intraday_setups
+            .into_iter()
+            .map(intraday_setup_dto)
+            .collect(),
+        intraday_triggers: intraday_triggers
+            .into_iter()
+            .map(intraday_trigger_dto)
+            .collect(),
         latest_backtest: latest_backtest.map(backtest_dto).transpose()?,
         data_health: data_health_dto(db_path, data_quality),
     })
@@ -299,6 +310,46 @@ fn watchlist_dtos(
             }
         })
         .collect()
+}
+
+fn intraday_setup_dto(setup: IntradaySetup) -> IntradaySetupDto {
+    IntradaySetupDto {
+        date: setup.date,
+        symbol: setup.symbol,
+        name: setup.name,
+        sector: setup.sector,
+        industry: setup.industry,
+        direction: setup.direction,
+        primary_label: setup.primary_label,
+        stage1_passed: setup.stage1_passed,
+        stage2_passed: setup.stage2_passed,
+        stage3_passed: setup.stage3_passed,
+        adr_pct: setup.adr_pct,
+        rvol_ratio: setup.rvol_ratio,
+        mansfield_rs_spy: setup.mansfield_rs_spy,
+        mansfield_rs_sector: setup.mansfield_rs_sector,
+        ema_10: setup.ema_10,
+        ema_20: setup.ema_20,
+        latest_price: setup.latest_price,
+        confluence_count: setup.confluence_count,
+        confluence: json_value(&setup.confluence_json),
+        trigger_count: setup.trigger_count,
+    }
+}
+
+fn intraday_trigger_dto(trigger: IntradayTrigger) -> IntradayTriggerDto {
+    IntradayTriggerDto {
+        date: trigger.date,
+        symbol: trigger.symbol,
+        ts: trigger.ts,
+        timeframe: trigger.timeframe,
+        trigger_type: trigger.trigger_type,
+        direction: trigger.direction,
+        trigger_price: trigger.trigger_price,
+        reference_level: trigger.reference_level,
+        volume_spike: trigger.volume_spike,
+        price_action: trigger.price_action,
+    }
 }
 
 fn backtest_dto(row: BacktestResultRow) -> Result<BacktestDto> {
