@@ -30,6 +30,7 @@ Related documents reviewed:
 - `docs/sector_formula_decision_checkpoint_spec.md`
 - `docs/sector_score_review_spec.md`
 - `docs/spec_completeness_gate_spec.md`
+- `docs/static_dashboard_deployment_spec.md`
 - `docs/watchlist_actionability_extension_filter_spec.md`
 - `docs/watchlist_convergence_review_spec.md`
 
@@ -104,6 +105,7 @@ It should not do at this stage:
 | CSV exports | Working | Portable sector and stock-watchlist exports |
 | Dashboard API | Working | Localhost-only Rust API reads stored SQLite data |
 | Dashboard frontend | Working | Read-only Vite React dashboard over the controlled market-map chain |
+| Static dashboard deployment | Implemented path | GitHub Actions can generate static dashboard JSON and publish `dashboard/dist` to GitHub Pages after repository secrets are configured |
 
 ## 4. What Is Implemented But Not A Score Input
 
@@ -120,6 +122,7 @@ The following are connected, stored, reported, or validated, but they do not cur
 | Sector rank change | Reporting and stored context | Rank change is no longer a scoring component |
 | Intraday readiness rows | Execution-readiness context | Stored after daily scoring/actionability; not a daily score input and not an order signal |
 | Dashboard display | Read-only review surface | Dashboard must not recalculate, fetch new data, or change scores |
+| GitHub Pages dashboard | Published snapshot surface | Pages serves generated JSON/frontend files only; it does not host SQLite or provider credentials |
 
 ## 5. Current Blocking Facts
 
@@ -183,6 +186,8 @@ cargo run -- status
 ```
 
 The purpose is not to add features. The purpose is to build enough real stored history for the already-connected sources and readiness labels to be judged.
+
+For zero-server hosted viewing, the GitHub Pages workflow runs this same recurring-refresh idea inside GitHub Actions, exports static dashboard snapshots, and publishes the frontend build. That path is deployment convenience, not a new scoring or execution layer.
 
 ### 6.2 Event Context Maturation
 

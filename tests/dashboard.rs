@@ -6,7 +6,9 @@ use tempfile::tempdir;
 use tower::ServiceExt;
 
 use merryl::config::macro_data;
-use merryl::dashboard::{load_dashboard_for_date, load_latest_dashboard, router};
+use merryl::dashboard::{
+    export_static_dashboard, load_dashboard_for_date, load_latest_dashboard, router,
+};
 use merryl::domain::models::{
     IndustryScore, IntradaySetup, IntradayTrigger, MacroObservation, MarketRegimeScore,
     SectorScore, StockScore, Symbol, VolumeProfile,
@@ -197,6 +199,34 @@ async fn dashboard_api_returns_selected_date_snapshot_json() -> Result<()> {
     assert_eq!(json["stocks"][0]["symbol"], "AMGN");
     assert_eq!(json["watchlist"][0]["date"], "2026-05-20");
     assert_eq!(json["watchlist"][0]["symbol"], "AMGN");
+
+    Ok(())
+}
+
+#[test]
+fn static_dashboard_export_writes_snapshot_files() -> Result<()> {
+    let dir = tempdir()?;
+    let db_path = dir.path().join("market.db");
+    let output_dir = dir.path().join("static-data");
+    seed_dashboard_fixture(&db_path)?;
+
+    let export = export_static_dashboard(&db_path, &output_dir)?;
+
+    assert_eq!(export.snapshot_count, 2);
+    assert!(export.dates_path.exists());
+    assert!(export.latest_snapshot_path.exists());
+    assert!(output_dir.join("dashboard/2026-05-27.json").exists());
+    assert!(output_dir.join("dashboard/2026-05-20.json").exists());
+
+    let dates: Value = serde_json::from_slice(&std::fs::read(export.dates_path)?)?;
+    let latest: Value = serde_json::from_slice(&std::fs::read(export.latest_snapshot_path)?)?;
+    let selected: Value = serde_json::from_slice(&std::fs::read(
+        output_dir.join("dashboard/2026-05-20.json"),
+    )?)?;
+
+    assert_eq!(dates["dates"][0], "2026-05-27");
+    assert_eq!(latest["score_date"], "2026-05-27");
+    assert_eq!(selected["score_date"], "2026-05-20");
 
     Ok(())
 }

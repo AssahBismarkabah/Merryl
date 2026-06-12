@@ -1,0 +1,77 @@
+name: Static dashboard
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 23 * * 1-5"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      ALPACA_API_KEY_ID: ${{ secrets.ALPACA_API_KEY_ID }}
+      ALPACA_API_SECRET_KEY: ${{ secrets.ALPACA_API_SECRET_KEY }}
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+      ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+      MERRYL_SEC_USER_AGENT: ${{ secrets.MERRYL_SEC_USER_AGENT }}
+      ALPACA_FEED: ${{ vars.ALPACA_FEED || 'iex' }}
+      MERRYL_LOOKBACK_DAYS: ${{ vars.MERRYL_LOOKBACK_DAYS || '420' }}
+      MERRYL_ALPACA_REQUESTS_PER_MINUTE: ${{ vars.MERRYL_ALPACA_REQUESTS_PER_MINUTE || '180' }}
+      MERRYL_INTRADAY_PROFILE_TIMEFRAME: ${{ vars.MERRYL_INTRADAY_PROFILE_TIMEFRAME || '30Min' }}
+      MERRYL_INTRADAY_TRIGGER_TIMEFRAME: ${{ vars.MERRYL_INTRADAY_TRIGGER_TIMEFRAME || '5Min' }}
+      MERRYL_INTRADAY_CANDIDATE_LIMIT: ${{ vars.MERRYL_INTRADAY_CANDIDATE_LIMIT || '50' }}
+      MERRYL_INTRADAY_OPENING_RANGE_MINUTES: ${{ vars.MERRYL_INTRADAY_OPENING_RANGE_MINUTES || '30' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
+      - uses: actions/configure-pages@v5
+
+      - name: Install dashboard dependencies
+        run: npm --prefix dashboard ci
+
+      - name: Build Merryl
+        run: cargo build
+
+      - name: Run daily market map
+        run: cargo run -- run daily --date latest
+
+      - name: Run intraday readiness
+        run: cargo run -- run intraday --date latest
+
+      - name: Verify generated state
+        run: |
+          cargo run -- doctor
+          cargo run -- status
+
+      - name: Build static dashboard
+        env:
+          VITE_MERRYL_STATIC_DASHBOARD: "true"
+        run: npm --prefix dashboard run build
+
+      - name: Export dashboard snapshots
+        run: cargo run -- dashboard --export-static dashboard/dist/static-data
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dashboard/dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

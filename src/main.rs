@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use merryl::config::dashboard::DEFAULT_PORT;
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "merryl")]
@@ -21,6 +22,8 @@ enum Commands {
     Dashboard {
         #[arg(long, default_value_t = DEFAULT_PORT)]
         port: u16,
+        #[arg(long, value_name = "DIR")]
+        export_static: Option<PathBuf>,
     },
     Db {
         #[command(subcommand)]
@@ -154,11 +157,26 @@ fn main() -> Result<()> {
                 println!("{check}");
             }
         }
-        Commands::Dashboard { port } => {
-            let runtime = tokio::runtime::Runtime::new()?;
-            runtime.block_on(merryl::dashboard::run_dashboard(
-                merryl::dashboard::DashboardServerConfig::local(port),
-            ))?;
+        Commands::Dashboard {
+            port,
+            export_static,
+        } => {
+            if let Some(output_dir) = export_static {
+                let export = merryl::dashboard::export_static_dashboard(
+                    &merryl::storage::default_db_path(),
+                    &output_dir,
+                )?;
+                println!("Static dashboard export:");
+                println!("output: {}", export.output_dir.display());
+                println!("dates: {}", export.dates_path.display());
+                println!("latest: {}", export.latest_snapshot_path.display());
+                println!("snapshots: {}", export.snapshot_count);
+            } else {
+                let runtime = tokio::runtime::Runtime::new()?;
+                runtime.block_on(merryl::dashboard::run_dashboard(
+                    merryl::dashboard::DashboardServerConfig::local(port),
+                ))?;
+            }
         }
         Commands::Db { command } => match command {
             DbCommand::Migrate => {

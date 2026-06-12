@@ -10,6 +10,7 @@ pub mod dashboard {
     pub const DEFAULT_PORT: u16 = 8787;
     pub const HOST: &str = "127.0.0.1";
     pub const FRONTEND_DIST_DIR: &str = "dashboard/dist";
+    pub const STATIC_DATA_DIR: &str = "dashboard/dist/static-data";
 }
 
 pub mod paths {

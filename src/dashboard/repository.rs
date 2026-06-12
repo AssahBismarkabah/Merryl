@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use std::path::Path;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
 use serde_json::Value;
@@ -22,6 +23,14 @@ use super::models::{
 
 const RUN_DAILY_MESSAGE: &str =
     "missing dashboard data; run `merryl run daily --date latest` first";
+
+#[derive(Debug, Clone)]
+pub struct StaticDashboardExport {
+    pub output_dir: PathBuf,
+    pub dates_path: PathBuf,
+    pub latest_snapshot_path: PathBuf,
+    pub snapshot_count: usize,
+}
 
 pub fn load_health(db_path: &Path) -> Result<HealthDto> {
     if !db_path.exists() {
@@ -76,6 +85,40 @@ pub fn load_dashboard_for_date(db_path: &Path, date: &str) -> Result<DashboardSn
     let db = Database::open(db_path)?;
     db.migrate()?;
     dashboard_for_date(db_path, &db, date)
+}
+
+pub fn export_static_dashboard(db_path: &Path, output_dir: &Path) -> Result<StaticDashboardExport> {
+    let dates = load_scored_dates(db_path)?;
+    if dates.is_empty() {
+        bail!(RUN_DAILY_MESSAGE);
+    }
+
+    let dates_path = output_dir.join("dates.json");
+    write_json(
+        &dates_path,
+        &super::models::DatesDto {
+            dates: dates.clone(),
+        },
+    )?;
+
+    let snapshot_dir = output_dir.join("dashboard");
+    let mut latest_snapshot_path = output_dir.join("latest.json");
+    for (idx, date) in dates.iter().enumerate() {
+        let snapshot = load_dashboard_for_date(db_path, date)?;
+        let snapshot_path = snapshot_dir.join(format!("{date}.json"));
+        write_json(&snapshot_path, &snapshot)?;
+        if idx == 0 {
+            latest_snapshot_path = output_dir.join("latest.json");
+            write_json(&latest_snapshot_path, &snapshot)?;
+        }
+    }
+
+    Ok(StaticDashboardExport {
+        output_dir: output_dir.to_path_buf(),
+        dates_path,
+        latest_snapshot_path,
+        snapshot_count: dates.len(),
+    })
 }
 
 pub fn is_missing_dashboard_data_error(message: &str) -> bool {
@@ -409,4 +452,14 @@ fn json_value(raw: &str) -> Value {
 
 fn json_f64(value: &Value, key: &str) -> f64 {
     value.get(key).and_then(Value::as_f64).unwrap_or_default()
+}
+
+fn write_json<T: serde::Serialize>(path: &Path, value: &T) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("failed to create {}", parent.display()))?;
+    }
+    let json = serde_json::to_vec_pretty(value)
+        .with_context(|| format!("failed to serialize {}", path.display()))?;
+    fs::write(path, json).with_context(|| format!("failed to write {}", path.display()))
 }

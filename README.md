@@ -104,10 +104,35 @@ Backtests and validation read from SQLite only. They do not fetch new prices or 
 cargo run -- run backtest --from YYYY-MM-DD --to YYYY-MM-DD
 ```
 
+## Static dashboard
+
+Merryl can also publish a zero-server dashboard snapshot through GitHub Actions and GitHub Pages. The Action runs the same Rust workflows, builds the React dashboard in static mode, exports dashboard JSON from SQLite, and publishes `dashboard/dist`.
+
+This is not a live hosted Merryl server. GitHub Pages only serves generated files.
+
+Required repository Secrets:
+
+```text
+ALPACA_API_KEY_ID
+ALPACA_API_SECRET_KEY
+FRED_API_KEY
+ALPHA_VANTAGE_API_KEY
+MERRYL_SEC_USER_AGENT
+```
+
+Manual local export:
+
+```bash
+npm --prefix dashboard run build
+cargo run -- dashboard --export-static dashboard/dist/static-data
+```
+
+More detail is in the [static dashboard deployment spec](docs/static_dashboard_deployment_spec.md).
+
 ## Design choices
 
 - **Top-down first.** The system starts with regime, sector, and industry context, then narrows into stocks.
-- **Local-first.** SQLite, Markdown, CSV, and a localhost dashboard are enough for the current workflow. Public deployment would add authentication, key management, backups, and licensing questions that are not needed yet.
+- **Local-first, static when hosted.** SQLite remains the local system of record. The hosted path publishes generated dashboard snapshots to GitHub Pages instead of running a stateful cloud server.
 - **Real data only.** Missing credentials and source failures should be visible. The daily workflow should not replace real data with dummy candles.
 - **Small command surface.** The CLI runs workflows and maintenance checks. Internal ingest and scoring steps are not exposed as a long list of public commands.
 - **Context before scoring changes.** Macro data, news, earnings, filings, and actionability labels are stored and validated before they are allowed to change formulas.
@@ -119,6 +144,7 @@ cargo run -- run backtest --from YYYY-MM-DD --to YYYY-MM-DD
 - [MVP technical plan](docs/mvp_technical_plan_spec.md)
 - [Phase 0 decisions](docs/phase_0_decisions_spec.md)
 - [Implementation runbook](docs/implementation_spec.md)
+- [Static dashboard deployment](docs/static_dashboard_deployment_spec.md)
 - [Phase 5 data-source expansion](docs/phase_5_data_source_expansion_spec.md)
 - [Structured catalyst source spec](docs/phase_5c_structured_catalyst_source_spec.md)
 - [Watchlist convergence review](docs/watchlist_convergence_review_spec.md)

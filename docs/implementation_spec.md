@@ -2,7 +2,7 @@
 
 Version: 0.4
 Date: 2026-06-10
-Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, Phase 5A/B FRED macro ingestion and macro/regime validation, Phase 5C structured catalyst/event context, Phase 5C event-context validation, watchlist actionability validation, and Phase 6A signal-only intraday execution readiness
+Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, Phase 5A/B FRED macro ingestion and macro/regime validation, Phase 5C structured catalyst/event context, Phase 5C event-context validation, watchlist actionability validation, Phase 6A signal-only intraday execution readiness, and static dashboard deployment path
 
 ## Current Slice
 
@@ -60,6 +60,12 @@ Merryl dashboard run
   -> read dashboard-ready JSON from SQLite
   -> serve the Vite React dashboard build from dashboard/dist when present
   -> show the stored market map without fetching new data or recalculating scores
+
+Merryl static dashboard export
+  -> run only after stored daily/intraday state exists
+  -> reuse the same dashboard DTOs as the local API
+  -> write static JSON snapshots into dashboard/dist/static-data
+  -> allow GitHub Pages to serve a read-only snapshot without a live Rust server
 ```
 
 The implementation does not generate fake market candles. If real data credentials are missing, the daily run stops.
@@ -215,6 +221,12 @@ Optional dashboard port:
 
 ```text
 cargo run -- dashboard --port 8787
+```
+
+Export static dashboard snapshots for GitHub Pages:
+
+```text
+cargo run -- dashboard --export-static dashboard/dist/static-data
 ```
 
 The installed binary command name is:
@@ -388,6 +400,12 @@ Phase 6A intraday execution readiness:
 docs/phase_6_intraday_execution_readiness_spec.md
 ```
 
+Static dashboard deployment:
+
+```text
+docs/static_dashboard_deployment_spec.md
+```
+
 Phase 5 readiness gate:
 
 ```text
@@ -464,6 +482,7 @@ Do not treat Markdown or CSV as the system-of-record.
 - Intraday readiness is signal-only. It uses intraday bars to label readiness after the watchlist/actionability layer, but it does not place orders, size positions, manage stops, create alerts, or change daily score formulas.
 - Data quality checks now run through `doctor` and can catch missing core symbols, ETF price coverage, score-date coverage, latest score row coverage, and replacement-write duplication before report/dashboard use.
 - Phase 4 dashboard/API planning is locked and the first read-only slice is implemented: local browser dashboard first, Rust `axum` API, Vite React TypeScript frontend, Tauri later only if packaging is needed, and no Electron in the first dashboard path.
+- Static GitHub Pages deployment is supported as a generated snapshot path. It does not host SQLite, run the Rust dashboard API, or make the browser fetch provider data.
 
 ## Current Next Step
 
@@ -492,6 +511,8 @@ The Phase 5C event-context validation checkpoint is recorded in `docs/phase_5c_e
 The Phase 5 readiness gate is recorded in `docs/phase_5_readiness_gate_spec.md`. It blocks catalyst/event scoring changes, macro scoring changes, Phase 5D paid-source implementation, options, paid data sources, automated execution, and universe expansion until the required validation and source-decision gates pass. Phase 6A narrows the previously broad intraday idea into signal-only execution readiness.
 
 The Phase 6A intraday execution-readiness implementation is recorded in `docs/phase_6_intraday_execution_readiness_spec.md`. It adds one workflow, uses existing Alpaca credentials/feed, stores volume profiles, setups, and triggers, exposes a read-only dashboard view, and keeps all daily scores/ranks unchanged. Alpaca rate limiting is enforced at the provider request boundary so daily bars, intraday bars, news, pagination, and retries share the same request gate. The next readiness improvement is visibility for Stage 1 near-misses approaching Stage 2 confluence, not looser thresholds or execution automation.
+
+The static dashboard deployment path is recorded in `docs/static_dashboard_deployment_spec.md`. It uses GitHub Actions plus GitHub Pages as a zero-server snapshot publisher while preserving the local SQLite/Rust workflow as the source of truth.
 
 The current application-state audit is recorded in `docs/application_state_remaining_work_spec.md`. It summarizes what is working now, which connected data is still non-scoring context, what remains blocked, and what application work is still needed before the next build phase.
 

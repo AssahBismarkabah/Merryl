@@ -56,6 +56,7 @@ Implemented first Phase 4 slice:
 - TanStack Table for data-dense market tables.
 - Local static serving from `dashboard/dist`.
 - Direct missing-data message: run `merryl run daily --date latest` first.
+- Static snapshot export for GitHub Pages, documented separately in `docs/static_dashboard_deployment_spec.md`.
 
 The implemented slice is intentionally read-only:
 
@@ -362,10 +363,12 @@ Do not add:
 - app-router complexity
 - authentication
 - user accounts
-- cloud deployment
+- stateful cloud deployment
 - drag-and-drop dashboard builders
 
 Phase 4 is local and read-only.
+
+After the local read-only dashboard proved useful, a static GitHub Pages deployment path was added. That path publishes generated dashboard snapshots only. It does not run the Rust API server in the cloud, host SQLite, or fetch provider data from the browser.
 
 Implemented frontend structure:
 
@@ -458,7 +461,7 @@ Do not add these in the first dashboard slice:
 - full macro provider
 - custom AI theme engine
 - multi-user authentication
-- cloud deployment
+- stateful cloud deployment
 
 These remain later phases.
 
