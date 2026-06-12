@@ -56,6 +56,21 @@ jobs:
       - name: Run intraday readiness
         run: cargo run -- run intraday --date latest
 
+      - name: Run backtest validation
+        run: |
+          read FROM_DATE TO_DATE <<EOF
+          $(python3 - <<'PY'
+          import sqlite3
+          conn = sqlite3.connect("data/market.db")
+          row = conn.execute("select min(date), max(date) from market_regime_scores").fetchone()
+          if row is None or row[0] is None or row[1] is None:
+              raise SystemExit("no scored dates found")
+          print(row[0], row[1])
+          PY
+          )
+          EOF
+          cargo run -- run backtest --from "$FROM_DATE" --to "$TO_DATE"
+
       - name: Verify generated state
         run: |
           cargo run -- doctor

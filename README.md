@@ -106,7 +106,7 @@ cargo run -- run backtest --from YYYY-MM-DD --to YYYY-MM-DD
 
 ## Static dashboard
 
-Merryl can also publish a zero-server dashboard snapshot through GitHub Actions and GitHub Pages. The Action runs the same Rust workflows, builds the React dashboard in static mode, exports dashboard JSON from SQLite, and publishes `dashboard/dist`.
+Merryl can also publish a zero-server dashboard snapshot through GitHub Actions and GitHub Pages. The Action runs the same Rust workflows, runs backtest validation over the generated scored-date window, builds the React dashboard in static mode, exports dashboard JSON from SQLite, and publishes `dashboard/dist`.
 
 This is not a live hosted Merryl server. GitHub Pages only serves generated files.
 

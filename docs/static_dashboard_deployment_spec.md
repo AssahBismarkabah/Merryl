@@ -1,8 +1,8 @@
 # Static Dashboard Deployment Spec
 
-Version: 0.1
+Version: 0.2
 Date: 2026-06-12
-Status: Implemented deployment path; repository secrets and GitHub Pages settings must be configured before first hosted run
+Status: Live GitHub Pages deployment with custom domain and scheduled snapshot publishing
 
 Related documents:
 
@@ -22,6 +22,7 @@ The selected path is:
 ```text
 GitHub Actions scheduled workflow
   -> run Merryl daily/intraday workflows
+  -> run backtest validation over the generated scored-date window
   -> build the dashboard in static mode
   -> export dashboard JSON snapshots from SQLite
   -> publish dashboard/dist to GitHub Pages
@@ -110,6 +111,7 @@ npm --prefix dashboard ci
 cargo build
 cargo run -- run daily --date latest
 cargo run -- run intraday --date latest
+cargo run -- run backtest --from FIRST_SCORED_DATE --to LATEST_SCORED_DATE
 cargo run -- doctor
 cargo run -- status
 VITE_MERRYL_STATIC_DASHBOARD=true npm --prefix dashboard run build
@@ -120,6 +122,12 @@ deploy dashboard/dist to GitHub Pages
 ## 5. Required Repository Settings
 
 GitHub Pages must be configured to deploy from GitHub Actions.
+
+Live domain:
+
+```text
+https://app.merryl.gt.tc
+```
 
 Required repository Secrets:
 
@@ -151,6 +159,7 @@ Tradeoffs:
 
 - The hosted dashboard updates only when the scheduled/manual workflow completes.
 - GitHub Actions storage is ephemeral; each run rebuilds the SQLite state from source data.
+- Backtest results are generated inside the Action from that run's rebuilt SQLite database.
 - GitHub scheduled workflows can be delayed, so this is not a real-time market system.
 - If the repository's GitHub Pages site is public, the generated dashboard data is public.
 - Large historical expansion may eventually need artifact/state caching or a real hosted database.
@@ -162,7 +171,8 @@ The static deployment path is accepted when:
 - `npm --prefix dashboard run build` still works for local API mode.
 - `VITE_MERRYL_STATIC_DASHBOARD=true npm --prefix dashboard run build` builds static mode.
 - `cargo run -- dashboard --export-static dashboard/dist/static-data` writes all snapshot files from the existing SQLite database.
-- The GitHub workflow publishes `dashboard/dist` to Pages after provider secrets are configured.
+- The GitHub workflow runs daily, intraday, backtest, doctor, status, static build, snapshot export, and Pages deployment.
+- `https://app.merryl.gt.tc` serves the deployed dashboard over HTTPS.
 
 Reference docs:
 

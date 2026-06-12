@@ -1,8 +1,8 @@
 # Merryl Implementation Runbook
 
-Version: 0.4
-Date: 2026-06-10
-Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, Phase 5A/B FRED macro ingestion and macro/regime validation, Phase 5C structured catalyst/event context, Phase 5C event-context validation, watchlist actionability validation, Phase 6A signal-only intraday execution readiness, and static dashboard deployment path
+Version: 0.5
+Date: 2026-06-12
+Status: Daily scoring, Phase 3 backtesting, pre-dashboard stability, Phase 4 dashboard/API stabilization, Phase 5A/B FRED macro ingestion and macro/regime validation, Phase 5C structured catalyst/event context, Phase 5C event-context validation, watchlist actionability validation, Phase 6A signal-only intraday execution readiness, and live static dashboard deployment
 
 ## Current Slice
 
@@ -66,6 +66,12 @@ Merryl static dashboard export
   -> reuse the same dashboard DTOs as the local API
   -> write static JSON snapshots into dashboard/dist/static-data
   -> allow GitHub Pages to serve a read-only snapshot without a live Rust server
+
+Merryl hosted snapshot workflow
+  -> run daily, intraday readiness, and backtest validation inside GitHub Actions
+  -> verify generated state with doctor/status
+  -> build dashboard in static mode
+  -> publish dashboard/dist to GitHub Pages and the custom domain
 ```
 
 The implementation does not generate fake market candles. If real data credentials are missing, the daily run stops.
@@ -513,6 +519,12 @@ The Phase 5 readiness gate is recorded in `docs/phase_5_readiness_gate_spec.md`.
 The Phase 6A intraday execution-readiness implementation is recorded in `docs/phase_6_intraday_execution_readiness_spec.md`. It adds one workflow, uses existing Alpaca credentials/feed, stores volume profiles, setups, and triggers, exposes a read-only dashboard view, and keeps all daily scores/ranks unchanged. Alpaca rate limiting is enforced at the provider request boundary so daily bars, intraday bars, news, pagination, and retries share the same request gate. The next readiness improvement is visibility for Stage 1 near-misses approaching Stage 2 confluence, not looser thresholds or execution automation.
 
 The static dashboard deployment path is recorded in `docs/static_dashboard_deployment_spec.md`. It uses GitHub Actions plus GitHub Pages as a zero-server snapshot publisher while preserving the local SQLite/Rust workflow as the source of truth.
+
+The live hosted dashboard is:
+
+```text
+https://app.merryl.gt.tc
+```
 
 The current application-state audit is recorded in `docs/application_state_remaining_work_spec.md`. It summarizes what is working now, which connected data is still non-scoring context, what remains blocked, and what application work is still needed before the next build phase.
 
