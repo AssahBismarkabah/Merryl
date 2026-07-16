@@ -1,4 +1,8 @@
-# Merryl
+<h1 align="center">Merryl</h1>
+
+<p align="center">
+  <img src="docs/images/merryl-dashboard.png" alt="Merryl dashboard">
+</p>
 
 ----
 
