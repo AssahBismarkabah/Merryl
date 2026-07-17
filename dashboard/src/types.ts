@@ -186,3 +186,21 @@ export interface LatestScoreCoverage {
   stock_rows: number;
   watchlist_rows: number;
 }
+
+export interface ScreenerResult {
+  ticker: string;
+  company: string;
+  sector: string;
+  industry: string;
+  market_cap: string;
+  pe_ratio: string;
+  price: string;
+  change: string;
+  volume: string;
+}
+
+export interface ScreenerResponse {
+  results: ScreenerResult[];
+  sector: string | null;
+  count: number;
+}

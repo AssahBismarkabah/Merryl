@@ -1,4 +1,4 @@
-import type { DashboardSnapshot } from "./types";
+import type { DashboardSnapshot, ScreenerResponse } from "./types";
 
 const STATIC_MODE = import.meta.env.VITE_MERRYL_STATIC_DASHBOARD === "true";
 const STATIC_DATA_BASE = `${import.meta.env.BASE_URL}static-data`;
@@ -46,6 +46,28 @@ async function fetchDashboard(url: string): Promise<DashboardSnapshot> {
   }
 
   return response.json() as Promise<DashboardSnapshot>;
+}
+
+export async function fetchScreener(sector?: string): Promise<ScreenerResponse> {
+  if (STATIC_MODE) {
+    const filename = sector
+      ? `${encodeURIComponent(sector)}.json`
+      : "all.json";
+    const response = await fetch(
+      `${STATIC_DATA_BASE}/screener/${filename}`,
+    );
+    if (!response.ok) {
+      throw new Error(await errorMessage(response));
+    }
+    return response.json() as Promise<ScreenerResponse>;
+  }
+
+  const params = sector ? `?sector=${encodeURIComponent(sector)}` : "";
+  const response = await fetch(`/api/screener${params}`);
+  if (!response.ok) {
+    throw new Error(await errorMessage(response));
+  }
+  return response.json() as Promise<ScreenerResponse>;
 }
 
 async function errorMessage(response: Response): Promise<string> {

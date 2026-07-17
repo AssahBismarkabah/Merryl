@@ -234,6 +234,26 @@ pub struct DatesDto {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct ScreenerResultDto {
+    pub ticker: String,
+    pub company: String,
+    pub sector: String,
+    pub industry: String,
+    pub market_cap: String,
+    pub pe_ratio: String,
+    pub price: String,
+    pub change: String,
+    pub volume: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ScreenerResponseDto {
+    pub results: Vec<ScreenerResultDto>,
+    pub sector: Option<String>,
+    pub count: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct ApiErrorDto {
     pub message: String,
 }

@@ -56,6 +56,9 @@ jobs:
       - name: Run intraday readiness
         run: cargo run -- run intraday --date latest
 
+      - name: Refresh screener cache
+        run: cargo run -- run screener
+
       - name: Run backtest validation
         run: |
           read FROM_DATE TO_DATE <<EOF

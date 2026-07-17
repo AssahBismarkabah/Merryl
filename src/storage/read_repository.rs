@@ -6,8 +6,8 @@ use rusqlite::{OptionalExtension, params};
 use crate::config::scoring;
 use crate::domain::models::{
     BacktestResultRow, DailyPrice, IndustryScore, IndustryScoreSnapshot, IntradaySetup,
-    IntradayTrigger, MacroObservation, MarketRegimeScore, SectorMap, SectorScore, StockScore,
-    Symbol, VolumeProfile, WatchlistRow,
+    IntradayTrigger, MacroObservation, MarketRegimeScore, ScreenerResultRow, SectorMap,
+    SectorScore, StockScore, Symbol, VolumeProfile, WatchlistRow,
 };
 
 use super::sqlite::Database;
@@ -624,6 +624,76 @@ impl Database {
             .query_row(&sql, params![date], |row| row.get(0))
             .optional()?
             .flatten())
+    }
+
+    /// Return all cached screener rows for a given sector key.
+    /// `sector` is the string key used in `screener_cache.sector` ("" for "All Sectors").
+    pub fn screener_results_for_sector(&self, sector: &str) -> Result<Vec<ScreenerResultRow>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT sector, ticker, company, industry, market_cap, pe_ratio, price, change, volume
+            FROM screener_cache
+            WHERE sector = ?1
+            ORDER BY ticker
+            "#,
+        )?;
+        let rows = stmt.query_map(params![sector], |row| {
+            Ok(ScreenerResultRow {
+                sector: row.get(0)?,
+                ticker: row.get(1)?,
+                company: row.get(2)?,
+                industry: row.get(3)?,
+                market_cap: row.get(4)?,
+                pe_ratio: row.get(5)?,
+                price: row.get(6)?,
+                change: row.get(7)?,
+                volume: row.get(8)?,
+            })
+        })?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    /// Check if screener_cache has any rows for the given sector.
+    pub fn screener_has_sector(&self, sector: &str) -> Result<bool> {
+        let count: i64 = self.conn.query_row(
+            "SELECT COUNT(*) FROM screener_cache WHERE sector = ?1",
+            params![sector],
+            |row| row.get(0),
+        )?;
+        Ok(count > 0)
+    }
+
+    /// Get all screener results across all sectors (for "All Sectors" view).
+    /// Merges all sector-specific results, deduplicating by ticker.
+    pub fn screener_all_results(&self) -> Result<Vec<ScreenerResultRow>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT sector, ticker, company, industry, market_cap, pe_ratio, price, change, volume
+            FROM screener_cache
+            WHERE sector != ''
+            ORDER BY ticker
+            "#,
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(ScreenerResultRow {
+                sector: row.get(0)?,
+                ticker: row.get(1)?,
+                company: row.get(2)?,
+                industry: row.get(3)?,
+                market_cap: row.get(4)?,
+                pe_ratio: row.get(5)?,
+                price: row.get(6)?,
+                change: row.get(7)?,
+                volume: row.get(8)?,
+            })
+        })?;
+        let mut seen = std::collections::HashSet::new();
+        let results = rows
+            .filter_map(|r| {
+                r.ok().filter(|row| seen.insert(row.ticker.clone()))
+            })
+            .collect();
+        Ok(results)
     }
 }
 

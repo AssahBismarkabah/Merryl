@@ -255,6 +255,20 @@ CREATE TABLE IF NOT EXISTS intraday_triggers (
     inserted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (date, symbol, ts, trigger_type)
 );
+
+CREATE TABLE IF NOT EXISTS screener_cache (
+    sector TEXT NOT NULL,
+    ticker TEXT NOT NULL,
+    company TEXT NOT NULL,
+    industry TEXT NOT NULL,
+    market_cap TEXT NOT NULL,
+    pe_ratio TEXT NOT NULL,
+    price TEXT NOT NULL,
+    change TEXT NOT NULL,
+    volume TEXT NOT NULL,
+    fetched_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (sector, ticker)
+);
 "#;
 
 impl Database {

@@ -5,8 +5,8 @@ use serde_json::json;
 use crate::config::{market_data, scoring::REPORT_WATCHLIST_LIMIT};
 use crate::domain::models::{
     DailyPrice, IndustryMap, IndustryScore, IntradayPrice, IntradaySetup, IntradayTrigger,
-    MacroObservation, MarketEvent, MarketRegimeScore, SectorMap, SectorScore, StockScore, Symbol,
-    VolumeProfile,
+    MacroObservation, MarketEvent, MarketRegimeScore, ScreenerResultRow, SectorMap, SectorScore,
+    StockScore, Symbol, VolumeProfile,
 };
 
 use super::sqlite::Database;
@@ -381,6 +381,45 @@ impl Database {
                     &score.symbol,
                     score.score,
                     &score.explanation,
+                ])?;
+            }
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
+    /// Replace all screener results for a given sector.
+    pub fn replace_screener_results(
+        &mut self,
+        sector: &str,
+        results: &[ScreenerResultRow],
+    ) -> Result<()> {
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            "DELETE FROM screener_cache WHERE sector = ?1",
+            params![sector],
+        )?;
+        {
+            let mut stmt = tx.prepare(
+                r#"
+                INSERT INTO screener_cache (
+                    sector, ticker, company, industry, market_cap, pe_ratio, price, change, volume
+                )
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+                "#,
+            )?;
+
+            for row in results {
+                stmt.execute(params![
+                    &row.sector,
+                    &row.ticker,
+                    &row.company,
+                    &row.industry,
+                    &row.market_cap,
+                    &row.pe_ratio,
+                    &row.price,
+                    &row.change,
+                    &row.volume,
                 ])?;
             }
         }

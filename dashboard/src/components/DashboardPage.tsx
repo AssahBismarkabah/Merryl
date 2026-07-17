@@ -3,6 +3,7 @@ import { type ReactNode, useMemo, useState } from "react";
 import { DataTable } from "./DataTable";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { MarketOverview } from "./MarketOverview";
+import { ScreenerPage } from "./ScreenerPage";
 import { number, percent } from "../format";
 import {
   actionabilityQueueColumns,
@@ -279,6 +280,8 @@ function renderView(view: DashboardView, data: DashboardSnapshot) {
           </section>
         </div>
       );
+    case "screener":
+      return <ScreenerPage />;
     case "validation":
       return (
         <div className="viewSurface validationStack">
@@ -729,5 +732,7 @@ function viewTitle(view: DashboardView) {
       return { eyebrow: "Intraday layer", heading: "Execution Readiness" };
     case "validation":
       return { eyebrow: "Controls", heading: "Validation" };
+    case "screener":
+      return { eyebrow: "Fundamental filters", heading: "Finviz Screener" };
   }
 }

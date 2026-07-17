@@ -6,4 +6,5 @@ export type DashboardView =
   | "leadership"
   | "watchlist"
   | "execution"
-  | "validation";
+  | "validation"
+  | "screener";

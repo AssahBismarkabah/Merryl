@@ -31,6 +31,7 @@ pub struct DbCounts {
     pub volume_profiles: i64,
     pub intraday_setups: i64,
     pub intraday_triggers: i64,
+    pub screener_cache: i64,
 }
 
 impl Database {
@@ -65,6 +66,7 @@ impl Database {
             volume_profiles: self.count_table("volume_profiles")?,
             intraday_setups: self.count_table("intraday_setups")?,
             intraday_triggers: self.count_table("intraday_triggers")?,
+            screener_cache: self.count_table("screener_cache")?,
         })
     }
 

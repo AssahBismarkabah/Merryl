@@ -2,6 +2,7 @@ import {
   Activity,
   BarChart3,
   Database,
+  Filter,
   Layers3,
   LineChart,
   MousePointer2,
@@ -30,7 +31,8 @@ export function DashboardSidebar({
     { view: "leadership", label: "Leadership", icon: <LineChart size={16} /> },
     { view: "watchlist", label: "Watchlist", icon: <Target size={16} /> },
     { view: "execution", label: "Execution", icon: <MousePointer2 size={16} /> },
-    { view: "validation", label: "Validation", icon: <Database size={16} /> }
+    { view: "validation", label: "Validation", icon: <Database size={16} /> },
+    { view: "screener", label: "Screener", icon: <Filter size={16} /> }
   ];
 
   return (

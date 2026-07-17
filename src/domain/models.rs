@@ -206,6 +206,19 @@ pub struct IntradayTrigger {
     pub source: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct ScreenerResultRow {
+    pub sector: String,
+    pub ticker: String,
+    pub company: String,
+    pub industry: String,
+    pub market_cap: String,
+    pub pe_ratio: String,
+    pub price: String,
+    pub change: String,
+    pub volume: String,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct SectorScore {
     pub date: String,

@@ -37,6 +37,7 @@ enum RunWorkflow {
         #[arg(long, default_value = "latest")]
         date: String,
     },
+    Screener,
     Backtest {
         #[arg(long)]
         from: String,
@@ -74,6 +75,14 @@ fn main() -> Result<()> {
                 println!("filing events: {}", result.filing_events);
                 for warning in result.warnings {
                     println!("warning: {warning}");
+                }
+            }
+            RunWorkflow::Screener => {
+                let result = merryl::workflows::run_screener_cache()?;
+                println!("Screener cache refresh:");
+                println!("database: {}", result.database.display());
+                for sector in &result.sectors {
+                    println!("  {}: {} results", sector.name, sector.count);
                 }
             }
             RunWorkflow::Backtest { from, to } => {

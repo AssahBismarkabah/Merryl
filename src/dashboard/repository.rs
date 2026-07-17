@@ -10,7 +10,7 @@ use crate::classification::WatchlistClassifier;
 use crate::config::{macro_data, scoring, universe};
 use crate::domain::models::{
     BacktestResultRow, IndustryScore, IntradaySetup, IntradayTrigger, MarketRegimeScore,
-    SectorScore, StockScore, WatchlistRow,
+    ScreenerResultRow, SectorScore, StockScore, WatchlistRow,
 };
 use crate::storage::{DataQualitySnapshot, Database};
 use crate::validation::{MacroContextOverlay, macro_context_overlay};
@@ -18,7 +18,8 @@ use crate::validation::{MacroContextOverlay, macro_context_overlay};
 use super::models::{
     BacktestDto, DashboardSnapshot, DataHealthDto, HealthDto, IndustryDto, IntradaySetupDto,
     IntradayTriggerDto, LatestScoreCoverageDto, MacroContextDto, MacroCoverageDto,
-    PriceCoverageDto, RegimeDto, SectorDto, StockDto, WatchlistDto,
+    PriceCoverageDto, RegimeDto, ScreenerResultDto, ScreenerResponseDto, SectorDto, StockDto,
+    WatchlistDto,
 };
 
 const RUN_DAILY_MESSAGE: &str =
@@ -61,6 +62,60 @@ pub fn load_scored_dates(db_path: &Path) -> Result<Vec<String>> {
     let db = Database::open(db_path)?;
     db.migrate()?;
     db.scored_dates()
+}
+
+/// Load cached screener results for a sector from the database.
+///
+/// `sector` is the sector name, or an empty string for "All Sectors".
+pub fn load_screener_results(db_path: &Path, sector: &str) -> Result<Vec<ScreenerResultRow>> {
+    if !db_path.exists() {
+        return Ok(Vec::new());
+    }
+    let db = Database::open(db_path)?;
+    db.migrate()?;
+    db.screener_results_for_sector(sector)
+}
+
+/// Check if the screener cache has any rows for the given sector.
+pub fn screener_has_results(db_path: &Path, sector: &str) -> bool {
+    if !db_path.exists() {
+        return false;
+    }
+    Database::open(db_path)
+        .and_then(|db| {
+            db.migrate()?;
+            db.screener_has_sector(sector)
+        })
+        .unwrap_or(false)
+}
+
+/// Load screener results for all sectors merged (deduplicated by ticker).
+/// Used for the "All Sectors" view.
+pub fn load_all_screener_results(db_path: &Path) -> Result<Vec<ScreenerResultRow>> {
+    if !db_path.exists() {
+        return Ok(Vec::new());
+    }
+    let db = Database::open(db_path)?;
+    db.migrate()?;
+    db.screener_all_results()
+}
+
+/// Check if any sector-specific results exist in the cache.
+pub fn screener_has_any_results(db_path: &Path) -> bool {
+    if !db_path.exists() {
+        return false;
+    }
+    Database::open(db_path)
+        .and_then(|db| {
+            db.migrate()?;
+            let count: i64 = db.conn.query_row(
+                "SELECT COUNT(*) FROM screener_cache WHERE sector != ''",
+                [],
+                |row| row.get(0),
+            )?;
+            Ok(count > 0)
+        })
+        .unwrap_or(false)
 }
 
 pub fn load_latest_dashboard(db_path: &Path) -> Result<DashboardSnapshot> {
@@ -111,6 +166,65 @@ pub fn export_static_dashboard(db_path: &Path, output_dir: &Path) -> Result<Stat
             latest_snapshot_path = output_dir.join("latest.json");
             write_json(&latest_snapshot_path, &snapshot)?;
         }
+    }
+
+    // Export screener cache data if available
+    let screener_dir = output_dir.join("screener");
+    if screener_has_any_results(db_path) {
+        let all_rows = load_all_screener_results(db_path)?;
+        let sector_names = [
+            "Basic Materials", "Communication Services", "Consumer Cyclical",
+            "Consumer Defensive", "Energy", "Financial", "Healthcare",
+            "Industrials", "Real Estate", "Technology", "Utilities",
+        ];
+        for s in &sector_names {
+            let sector_rows: Vec<ScreenerResultRow> = all_rows
+                .iter()
+                .filter(|r| r.sector == *s)
+                .cloned()
+                .collect();
+            let count = sector_rows.len();
+            let resp = ScreenerResponseDto {
+                sector: Some(s.to_string()),
+                results: sector_rows
+                    .into_iter()
+                    .map(|r| ScreenerResultDto {
+                        ticker: r.ticker,
+                        company: r.company,
+                        sector: r.sector,
+                        industry: r.industry,
+                        market_cap: r.market_cap,
+                        pe_ratio: r.pe_ratio,
+                        price: r.price,
+                        change: r.change,
+                        volume: r.volume,
+                    })
+                    .collect(),
+                count,
+            };
+            write_json(&screener_dir.join(format!("{s}.json")), &resp)?;
+        }
+        // Write "All Sectors" merged file
+        let all_count = all_rows.len();
+        let all_resp = ScreenerResponseDto {
+            sector: None,
+            results: all_rows
+                .into_iter()
+                .map(|r| ScreenerResultDto {
+                    ticker: r.ticker,
+                    company: r.company,
+                    sector: r.sector,
+                    industry: r.industry,
+                    market_cap: r.market_cap,
+                    pe_ratio: r.pe_ratio,
+                    price: r.price,
+                    change: r.change,
+                    volume: r.volume,
+                })
+                .collect(),
+            count: all_count,
+        };
+        write_json(&screener_dir.join("all.json"), &all_resp)?;
     }
 
     Ok(StaticDashboardExport {
