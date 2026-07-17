@@ -3,6 +3,7 @@ name: Static dashboard
 on:
   workflow_dispatch:
   schedule:
+    - cron: "30 11 * * 1-5"
     - cron: "30 23 * * 1-5"
 
 permissions:
