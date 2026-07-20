@@ -33,19 +33,17 @@ pub struct ScreenerResult {
     pub net_profit_margin: String,
 }
 
-/// Financial view row — a subset of ScreenerResult with just the v=161 fields.
+/// Financial view row — only the fields that v=161 uniquely provides.
+/// price, change, volume, and market_cap are already supplied by v=111
+/// (Overview) so they are not Repeated here.
 #[derive(Debug, Clone, Default)]
 pub struct FinancialResult {
     pub ticker: String,
-    pub market_cap: String,
     pub dividend: String,
     pub roa: String,
     pub roe: String,
     pub debt_equity: String,
     pub net_profit_margin: String,
-    pub price: String,
-    pub change: String,
-    pub volume: String,
 }
 
 /// Filter parameters for a sector, derived from the master screening table.
@@ -328,7 +326,8 @@ fn parse_financial_screener_table(html: &str) -> Result<Vec<FinancialResult>> {
         // v=161 has 18 columns: No, Ticker, Market Cap, Dividend, ROA, ROE, ROIC,
         // Curr R, Quick R, LTDebt/Eq, Debt/Eq, Gross M, Oper M, Profit M,
         // Earnings, Price, Change, Volume
-        if cells.len() < 18 {
+        // We only need columns 0-13; reduce threshold to 14 to accept partial rows.
+        if cells.len() < 14 {
             continue;
         }
 
@@ -341,15 +340,11 @@ fn parse_financial_screener_table(html: &str) -> Result<Vec<FinancialResult>> {
 
         results.push(FinancialResult {
             ticker,
-            market_cap: cells[2].clone(),
             dividend: cells[3].clone(),
             roa: cells[4].clone(),
             roe: cells[5].clone(),
             debt_equity: cells[10].clone(), // Debt/Eq (total debt/equity)
             net_profit_margin: cells[13].clone(), // Profit M
-            price: cells[15].clone(),
-            change: cells[16].clone(),
-            volume: cells[17].clone(),
         });
     }
 
