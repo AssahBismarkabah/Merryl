@@ -198,6 +198,11 @@ pub fn export_static_dashboard(db_path: &Path, output_dir: &Path) -> Result<Stat
                         price: r.price,
                         change: r.change,
                         volume: r.volume,
+                        dividend: r.dividend,
+                        roa: r.roa,
+                        roe: r.roe,
+                        debt_equity: r.debt_equity,
+                        net_profit_margin: r.net_profit_margin,
                     })
                     .collect(),
                 count,
@@ -220,6 +225,11 @@ pub fn export_static_dashboard(db_path: &Path, output_dir: &Path) -> Result<Stat
                     price: r.price,
                     change: r.change,
                     volume: r.volume,
+                    dividend: r.dividend,
+                    roa: r.roa,
+                    roe: r.roe,
+                    debt_equity: r.debt_equity,
+                    net_profit_margin: r.net_profit_margin,
                 })
                 .collect(),
             count: all_count,

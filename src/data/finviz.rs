@@ -8,7 +8,13 @@ const SCREENER_URL: &str = "https://finviz.com/screener.ashx";
 const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36";
 
 /// A single stock result from the Finviz screener.
-#[derive(Debug, Clone)]
+///
+/// Combines Overview (v=111) and Financial (v=161) view data for a
+/// complete Golden Ticket field set. v=111 provides the descriptive fields
+/// (ticker, company, sector, industry, market_cap, pe_ratio, price, change,
+/// volume). v=161 supplements with financial metrics (dividend, roa, roe,
+/// debt_equity, net_profit_margin).
+#[derive(Debug, Clone, Default)]
 pub struct ScreenerResult {
     pub ticker: String,
     pub company: String,
@@ -16,6 +22,27 @@ pub struct ScreenerResult {
     pub industry: String,
     pub market_cap: String,
     pub pe_ratio: String,
+    pub price: String,
+    pub change: String,
+    pub volume: String,
+    // Financial view supplements (v=161)
+    pub dividend: String,
+    pub roa: String,
+    pub roe: String,
+    pub debt_equity: String,
+    pub net_profit_margin: String,
+}
+
+/// Financial view row — a subset of ScreenerResult with just the v=161 fields.
+#[derive(Debug, Clone, Default)]
+pub struct FinancialResult {
+    pub ticker: String,
+    pub market_cap: String,
+    pub dividend: String,
+    pub roa: String,
+    pub roe: String,
+    pub debt_equity: String,
+    pub net_profit_margin: String,
     pub price: String,
     pub change: String,
     pub volume: String,
@@ -64,7 +91,7 @@ fn sector_filters() -> Vec<SectorFilter> {
     ]
 }
 
-/// Build the Finviz screener URL for a given sector filter.
+/// Build the Finviz screener URL for a given sector filter and view.
 ///
 /// Uses the master screening table filters from the doc:
 /// - Common (all sectors): Market Cap > $2B, EPS 5yr positive,
@@ -73,7 +100,9 @@ fn sector_filters() -> Vec<SectorFilter> {
 ///
 /// ROA uses `fa_roa_pos` (positive) not `fa_roa_o5` (over 5%) because
 /// the doc says "Positive or Over 5%" -- positive is the minimum.
-fn build_url(filter: &SectorFilter) -> String {
+///
+/// `view` is the Finviz view number (e.g. 111 for Overview, 161 for Financial).
+fn build_url(filter: &SectorFilter, view: u16) -> String {
     // Start with filters that apply to every sector unconditionally.
     let mut filters = String::from(
         "cap_midover,fa_eps5years_pos,fa_roa_pos,fa_roe_o10,fa_netmargin_pos",
@@ -105,7 +134,7 @@ fn build_url(filter: &SectorFilter) -> String {
         filters.push_str(filter.sector_code);
     }
 
-    format!("{SCREENER_URL}?v=111&f={filters}&ft=4")
+    format!("{SCREENER_URL}?v={view}&f={filters}&ft=4")
 }
 
 /// Create a reqwest blocking client with proper User-Agent and timeout.
@@ -119,32 +148,65 @@ pub fn new_client() -> Result<Client> {
 
 /// Run the Finviz screener for a specific sector.
 ///
-/// `sector` is the sector name as it appears in the doc
-/// (e.g. "Technology", "Healthcare"), or `None` to run all sectors.
-/// Run the Finviz screener for a specific sector.
+/// Fetches both the Overview (v=111) and Financial (v=161) views and merges
+/// them to produce a complete ScreenerResult with all Golden Ticket fields.
+/// v=111 provides: ticker, company, sector, industry, market_cap, pe_ratio, price,
+/// change, volume. v=161 supplements: dividend, roa, roe, debt_equity,
+/// net_profit_margin.
 ///
 /// `sector` is the sector name (e.g. "Technology", "Healthcare").
 /// Returns an error if the sector name is not recognized.
-/// Run the Finviz screener for a specific sector.
-///
-/// For sectors whose `sec_xxx` code is ignored by Finviz (Communication Services,
-/// Consumer Cyclical, Consumer Defensive), we omit the sector filter from the URL
-/// and instead filter results by the parsed sector column from the HTML.
 pub fn run_screener(client: &Client, sector: &str) -> Result<Vec<ScreenerResult>> {
     let code = sector_name_to_code(sector);
     let filters = sector_filters();
     let Some(filter) = filters.iter().find(|f| f.sector_code == code) else {
         return Ok(Vec::new());
     };
-    let url = build_url(filter);
-    let mut results = fetch_screener_page(client, &url)
-        .with_context(|| format!("failed to fetch Finviz screener for {sector}"))?;
+
+    // Fetch both views concurrently.
+    let overview_url = build_url(filter, 111);
+    let financial_url = build_url(filter, 161);
+
+    let (mut overview_results, financial_results) = {
+        let overview = fetch_screener_page(client, &overview_url)
+            .with_context(|| format!("failed to fetch Finviz Overview for {sector}"))?;
+        let financial = fetch_and_parse_financial_page(client, &financial_url)
+            .with_context(|| format!("failed to fetch Finviz Financial for {sector}"))?;
+        (overview, financial)
+    };
 
     // Post-filter by sector name for sectors whose sec_xxx code is ignored by Finviz.
-    // These requests return ALL stocks matching the fundamental filters; we must
-    // filter to keep only rows whose parsed sector matches.
-    if filter.needs_post_filter && !results.is_empty() {
-        results.retain(|r| r.sector.eq_ignore_ascii_case(sector));
+    if filter.needs_post_filter && !overview_results.is_empty() {
+        overview_results.retain(|r| r.sector.eq_ignore_ascii_case(sector));
+    }
+
+    // Merge financial metrics into overview results.
+    let financial_by_ticker: std::collections::HashMap<_, _> = financial_results
+        .into_iter()
+        .map(|fr| (fr.ticker.clone(), fr))
+        .collect();
+
+    let mut results = Vec::with_capacity(overview_results.len());
+    for overview_row in overview_results {
+        let ticker = overview_row.ticker.clone();
+        let fin = financial_by_ticker.get(&ticker);
+
+        results.push(ScreenerResult {
+            ticker: overview_row.ticker,
+            company: overview_row.company,
+            sector: overview_row.sector,
+            industry: overview_row.industry,
+            market_cap: overview_row.market_cap,
+            pe_ratio: overview_row.pe_ratio,
+            price: overview_row.price,
+            change: overview_row.change,
+            volume: overview_row.volume,
+            dividend: fin.map(|f| f.dividend.clone()).unwrap_or_default(),
+            roa: fin.map(|f| f.roa.clone()).unwrap_or_default(),
+            roe: fin.map(|f| f.roe.clone()).unwrap_or_default(),
+            debt_equity: fin.map(|f| f.debt_equity.clone()).unwrap_or_default(),
+            net_profit_margin: fin.map(|f| f.net_profit_margin.clone()).unwrap_or_default(),
+        });
     }
 
     Ok(results)
@@ -198,6 +260,100 @@ fn fetch_screener_page(client: &Client, url: &str) -> Result<Vec<ScreenerResult>
     }
 
     Ok(all_results)
+}
+
+/// Fetch all pages of Financial (v=161) screener results and parse them.
+fn fetch_and_parse_financial_page(client: &Client, url: &str) -> Result<Vec<FinancialResult>> {
+    let mut all_results = Vec::new();
+
+    let html = fetch_url(client, url)?;
+    let results = parse_financial_screener_table(&html)?;
+    let page_count = parse_page_count(&html);
+
+    all_results.extend(results);
+
+    if page_count > 1 {
+        for page in 2..=page_count {
+            let offset = (page - 1) * 20 + 1;
+            let page_url = if url.contains('?') {
+                format!("{url}&r={offset}")
+            } else {
+                format!("{url}?r={offset}")
+            };
+            let html = fetch_url(client, &page_url)?;
+            let results = parse_financial_screener_table(&html)?;
+            all_results.extend(results);
+        }
+    }
+
+    Ok(all_results)
+}
+
+/// Parse the financial view screener table (v=161).
+///
+/// v=161 columns: No., Ticker, Market Cap, Dividend, ROA, ROE, ROIC,
+/// Curr R, Quick R, LTDebt/Eq, Debt/Eq, Gross M, Oper M, Profit M,
+/// Earnings, Price, Change, Volume
+fn parse_financial_screener_table(html: &str) -> Result<Vec<FinancialResult>> {
+    let document = Html::parse_document(html);
+
+    let table_selector =
+        Selector::parse("table.screener_table").map_err(|e| anyhow::anyhow!(
+            "failed to create screener table selector: {e}"
+        ))?;
+
+    let Some(table) = document.select(&table_selector).next() else {
+        return Ok(Vec::new());
+    };
+
+    let row_selector =
+        Selector::parse("tr.styled-row").map_err(|e| anyhow::anyhow!(
+            "failed to create row selector: {e}"
+        ))?;
+
+    let cell_selector = Selector::parse("td")
+        .map_err(|e| anyhow::anyhow!("failed to create cell selector: {e}"))?;
+
+    let tab_link_selector = Selector::parse("a.tab-link")
+        .map_err(|e| anyhow::anyhow!("failed to create tab-link selector: {e}"))?;
+
+    let mut results = Vec::new();
+
+    for row in table.select(&row_selector) {
+        let cells: Vec<String> = row
+            .select(&cell_selector)
+            .map(|cell| cell.text().collect::<String>().trim().to_string())
+            .collect();
+
+        // v=161 has 18 columns: No, Ticker, Market Cap, Dividend, ROA, ROE, ROIC,
+        // Curr R, Quick R, LTDebt/Eq, Debt/Eq, Gross M, Oper M, Profit M,
+        // Earnings, Price, Change, Volume
+        if cells.len() < 18 {
+            continue;
+        }
+
+        let ticker = row
+            .select(&tab_link_selector)
+            .next()
+            .map(|el| el.text().collect::<String>().trim().to_string())
+            .filter(|t| !t.is_empty())
+            .unwrap_or_else(|| cells[1].clone());
+
+        results.push(FinancialResult {
+            ticker,
+            market_cap: cells[2].clone(),
+            dividend: cells[3].clone(),
+            roa: cells[4].clone(),
+            roe: cells[5].clone(),
+            debt_equity: cells[10].clone(), // Debt/Eq (total debt/equity)
+            net_profit_margin: cells[13].clone(), // Profit M
+            price: cells[15].clone(),
+            change: cells[16].clone(),
+            volume: cells[17].clone(),
+        });
+    }
+
+    Ok(results)
 }
 
 fn fetch_url(client: &Client, url: &str) -> Result<String> {
@@ -301,6 +457,7 @@ pub(crate) fn parse_screener_table(html: &str) -> Result<Vec<ScreenerResult>> {
             price: cells[8].clone(),
             change: cells[9].clone(),
             volume: cells[10].clone(),
+            ..Default::default()
         });
     }
 
@@ -340,7 +497,7 @@ mod tests {
             pb: "u3",
             needs_post_filter: false,
         };
-        let url = build_url(&filter);
+        let url = build_url(&filter, 111);
         assert!(url.contains("cap_midover"));
         assert!(url.contains("fa_pe_u20"));
         assert!(url.contains("fa_pb_u3"));
@@ -351,6 +508,23 @@ mod tests {
         assert!(!url.contains("fa_roa_o5"));
         assert!(url.contains("fa_div_o1"));
         assert!(url.contains("fa_debteq_u0.7"));
+        assert!(url.contains("sec_technology"));
+        assert!(url.contains("v=111"));
+    }
+
+    #[test]
+    fn test_build_url_financial_view() {
+        let filter = SectorFilter {
+            sector_code: "sec_technology",
+            dividend: "o1",
+            debt_equity: "u0.7",
+            pe: "u20",
+            pb: "u3",
+            needs_post_filter: false,
+        };
+        let url = build_url(&filter, 161);
+        assert!(url.contains("v=161"));
+        assert!(url.contains("cap_midover"));
         assert!(url.contains("sec_technology"));
     }
 
@@ -364,7 +538,7 @@ mod tests {
             pb: "u3",
             needs_post_filter: false,
         };
-        let url = build_url(&filter);
+        let url = build_url(&filter, 111);
         assert!(!url.contains("fa_div_"));
         assert!(url.contains("fa_debteq_u0.7"));
         assert!(url.contains("fa_pe_u20"));
@@ -381,7 +555,7 @@ mod tests {
             pb: "",
             needs_post_filter: false,
         };
-        let url = build_url(&filter);
+        let url = build_url(&filter, 111);
         assert!(url.contains("fa_div_o3"));
         assert!(url.contains("cap_midover"));
         assert!(!url.contains("fa_debteq_"));
@@ -400,7 +574,7 @@ mod tests {
             pb: "u3",
             needs_post_filter: true,
         };
-        let url = build_url(&filter);
+        let url = build_url(&filter, 111);
         // Should NOT include the sector_code since Finviz ignores it
         assert!(!url.contains("sec_communication"), "post-filter sector should omit sector_code in URL");
         // But should include fundamental filters

@@ -217,6 +217,11 @@ pub struct ScreenerResultRow {
     pub price: String,
     pub change: String,
     pub volume: String,
+    pub dividend: String,
+    pub roa: String,
+    pub roe: String,
+    pub debt_equity: String,
+    pub net_profit_margin: String,
 }
 
 #[derive(Debug, Clone, Serialize)]

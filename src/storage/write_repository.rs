@@ -403,9 +403,10 @@ impl Database {
             let mut stmt = tx.prepare(
                 r#"
                 INSERT INTO screener_cache (
-                    sector, ticker, company, industry, market_cap, pe_ratio, price, change, volume
+                    sector, ticker, company, industry, market_cap, pe_ratio, price,
+                    change, volume, dividend, roa, roe, debt_equity, net_profit_margin
                 )
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
                 "#,
             )?;
 
@@ -420,6 +421,11 @@ impl Database {
                     &row.price,
                     &row.change,
                     &row.volume,
+                    &row.dividend,
+                    &row.roa,
+                    &row.roe,
+                    &row.debt_equity,
+                    &row.net_profit_margin,
                 ])?;
             }
         }

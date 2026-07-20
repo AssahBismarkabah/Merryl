@@ -631,7 +631,8 @@ impl Database {
     pub fn screener_results_for_sector(&self, sector: &str) -> Result<Vec<ScreenerResultRow>> {
         let mut stmt = self.conn.prepare(
             r#"
-            SELECT sector, ticker, company, industry, market_cap, pe_ratio, price, change, volume
+            SELECT sector, ticker, company, industry, market_cap, pe_ratio, price,
+                   change, volume, dividend, roa, roe, debt_equity, net_profit_margin
             FROM screener_cache
             WHERE sector = ?1
             ORDER BY ticker
@@ -648,6 +649,11 @@ impl Database {
                 price: row.get(6)?,
                 change: row.get(7)?,
                 volume: row.get(8)?,
+                dividend: row.get(9)?,
+                roa: row.get(10)?,
+                roe: row.get(11)?,
+                debt_equity: row.get(12)?,
+                net_profit_margin: row.get(13)?,
             })
         })?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
@@ -668,7 +674,8 @@ impl Database {
     pub fn screener_all_results(&self) -> Result<Vec<ScreenerResultRow>> {
         let mut stmt = self.conn.prepare(
             r#"
-            SELECT sector, ticker, company, industry, market_cap, pe_ratio, price, change, volume
+            SELECT sector, ticker, company, industry, market_cap, pe_ratio, price,
+                   change, volume, dividend, roa, roe, debt_equity, net_profit_margin
             FROM screener_cache
             WHERE sector != ''
             ORDER BY ticker
@@ -685,6 +692,11 @@ impl Database {
                 price: row.get(6)?,
                 change: row.get(7)?,
                 volume: row.get(8)?,
+                dividend: row.get(9)?,
+                roa: row.get(10)?,
+                roe: row.get(11)?,
+                debt_equity: row.get(12)?,
+                net_profit_margin: row.get(13)?,
             })
         })?;
         let mut seen = std::collections::HashSet::new();

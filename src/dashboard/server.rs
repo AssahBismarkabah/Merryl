@@ -124,6 +124,11 @@ fn spawn_screener_refresh(db_path: PathBuf) {
                                     price: r.price,
                                     change: r.change,
                                     volume: r.volume,
+                                    dividend: r.dividend,
+                                    roa: r.roa,
+                                    roe: r.roe,
+                                    debt_equity: r.debt_equity,
+                                    net_profit_margin: r.net_profit_margin,
                                 })
                                 .collect();
 
@@ -231,6 +236,11 @@ async fn screener(
                                     price: r.price,
                                     change: r.change,
                                     volume: r.volume,
+                                    dividend: r.dividend,
+                                    roa: r.roa,
+                                    roe: r.roe,
+                                    debt_equity: r.debt_equity,
+                                    net_profit_margin: r.net_profit_margin,
                                 })
                                 .collect();
                             if let Err(e) = db.replace_screener_results(name, &rows) {
@@ -258,6 +268,11 @@ async fn screener(
                         price: r.price,
                         change: r.change,
                         volume: r.volume,
+                        dividend: r.dividend,
+                        roa: r.roa,
+                        roe: r.roe,
+                        debt_equity: r.debt_equity,
+                        net_profit_margin: r.net_profit_margin,
                     })
                     .collect();
                 db.replace_screener_results(name, &rows)?;
@@ -291,6 +306,11 @@ async fn screener(
                                         price: r.price,
                                         change: r.change,
                                         volume: r.volume,
+                                        dividend: r.dividend,
+                                        roa: r.roa,
+                                        roe: r.roe,
+                                        debt_equity: r.debt_equity,
+                                        net_profit_margin: r.net_profit_margin,
                                     })
                                     .collect();
                                 if let Err(e) = db.replace_screener_results(name, &rows) {
@@ -325,6 +345,11 @@ async fn screener(
                             price: r.price,
                             change: r.change,
                             volume: r.volume,
+                            dividend: r.dividend,
+                            roa: r.roa,
+                            roe: r.roe,
+                            debt_equity: r.debt_equity,
+                            net_profit_margin: r.net_profit_margin,
                         })
                         .collect();
                     db.replace_screener_results(sector_key, &rows)?;
@@ -349,6 +374,11 @@ async fn screener(
                         price: r.price,
                         change: r.change,
                         volume: r.volume,
+                        dividend: r.dividend,
+                        roa: r.roa,
+                        roe: r.roe,
+                        debt_equity: r.debt_equity,
+                        net_profit_margin: r.net_profit_margin,
                     })
                     .collect(),
                 count,

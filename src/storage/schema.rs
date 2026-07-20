@@ -266,6 +266,11 @@ CREATE TABLE IF NOT EXISTS screener_cache (
     price TEXT NOT NULL,
     change TEXT NOT NULL,
     volume TEXT NOT NULL,
+    dividend TEXT NOT NULL DEFAULT '',
+    roa TEXT NOT NULL DEFAULT '',
+    roe TEXT NOT NULL DEFAULT '',
+    debt_equity TEXT NOT NULL DEFAULT '',
+    net_profit_margin TEXT NOT NULL DEFAULT '',
     fetched_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (sector, ticker)
 );
@@ -380,6 +385,31 @@ impl Database {
                 ON events(source, source_event_id)
                 WHERE source_event_id IS NOT NULL AND source_event_id != '';
             "#,
+        )?;
+        self.add_column_if_missing(
+            "screener_cache",
+            "dividend",
+            "ALTER TABLE screener_cache ADD COLUMN dividend TEXT NOT NULL DEFAULT ''",
+        )?;
+        self.add_column_if_missing(
+            "screener_cache",
+            "roa",
+            "ALTER TABLE screener_cache ADD COLUMN roa TEXT NOT NULL DEFAULT ''",
+        )?;
+        self.add_column_if_missing(
+            "screener_cache",
+            "roe",
+            "ALTER TABLE screener_cache ADD COLUMN roe TEXT NOT NULL DEFAULT ''",
+        )?;
+        self.add_column_if_missing(
+            "screener_cache",
+            "debt_equity",
+            "ALTER TABLE screener_cache ADD COLUMN debt_equity TEXT NOT NULL DEFAULT ''",
+        )?;
+        self.add_column_if_missing(
+            "screener_cache",
+            "net_profit_margin",
+            "ALTER TABLE screener_cache ADD COLUMN net_profit_margin TEXT NOT NULL DEFAULT ''",
         )?;
         Ok(())
     }

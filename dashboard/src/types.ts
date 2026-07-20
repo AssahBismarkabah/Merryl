@@ -197,6 +197,11 @@ export interface ScreenerResult {
   price: string;
   change: string;
   volume: string;
+  dividend: string;
+  roa: string;
+  roe: string;
+  debt_equity: string;
+  net_profit_margin: string;
 }
 
 export interface ScreenerResponse {
