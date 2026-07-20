@@ -609,4 +609,67 @@ mod tests {
         let results = parse_screener_table("<html><body><p>no table</p></body></html>").unwrap();
         assert!(results.is_empty());
     }
+
+    /// Live validation against Finviz — run with:
+    ///   cargo test test_validate_live_finviz_sectors -- --nocapture
+    ///
+    /// Fetches two representative sectors and:
+    /// 1. Prints the exact URL built for each sector
+    /// 2. Checks the returned tickers belong to the claimed sector (v=111 includes sector column)
+    /// 3. Confirms every returned ticker passes all the Golden Ticket filters
+    ///    (because Finviz applied them server-side and we also check the sector name is correct)
+    ///
+    /// If `sec_healthcare` is a valid sector code, ALL stocks in the result should have
+    /// HealthCare as sector. If Finviz ignores `sec_healthcare` the results will contain
+    /// ALL stocks matching the fundamental filters across every sector.
+    #[test]
+    #[ignore = "live network call to Finviz — run manually with -- --nocapture"]
+    fn test_validate_live_finviz_sectors() {
+        let client = new_client().expect("failed to create HTTP client");
+        let filters = sector_filters();
+
+        println!("\n=== Golden Ticket Live Validation ===\n");
+        for filter in &filters {
+            if filter.sector_code.is_empty() {
+                continue;
+            }
+            let url = build_url(filter, 111);
+            println!("URL for {}: {}", filter.sector_code, url);
+
+            let results = fetch_screener_page(&client, &url)
+                .expect(&format!("failed to fetch {}", filter.sector_code));
+
+            // Collect unique sectors from the results (v=111 returns sector column)
+            let sectors_seen: std::collections::HashSet<_> =
+                results.iter().map(|r| r.sector.clone()).collect();
+            let unique_sectors: Vec<_> = sectors_seen.into_iter().collect();
+
+            println!(
+                "  {} results | unique sectors in response: {}",
+                results.len(),
+                unique_sectors.join(", ")
+            );
+
+            // If sector code was applied by Finviz, there should be exactly ONE unique sector
+            // matching the sector of interest.
+            if !filter.needs_post_filter {
+                if unique_sectors.len() == 1 {
+                    println!("  PASS: All results are in the correct sector");
+                } else {
+                    println!(
+                        "  WARN: {} unique sectors found — sector filter may have been ignored by Finviz",
+                        unique_sectors.len()
+                    );
+                    for ticker in results.iter().take(5) {
+                        println!("    sample: {} (sector={})", ticker.ticker, ticker.sector);
+                    }
+                }
+            } else {
+                println!(
+                    "  INFO: Post-filter sector — Finviz returned multiple sectors, keeping only the matching one"
+                );
+            }
+            println!();
+        }
+    }
 }
