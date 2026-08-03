@@ -351,7 +351,34 @@ fn parse_financial_screener_table(html: &str) -> Result<Vec<FinancialResult>> {
     Ok(results)
 }
 
+/// Maximum attempts per URL before giving up.
+const MAX_FETCH_ATTEMPTS: usize = 3;
+
+/// Fetch a URL, retrying transient failures (connection resets, timeouts,
+/// HTTP 429/5xx) with exponential backoff.
+///
+/// Finviz intermittently resets connections mid-run, which previously
+/// aborted the whole cache refresh. Only transport/status errors are retried;
+/// parse and other logic errors still fail immediately.
 fn fetch_url(client: &Client, url: &str) -> Result<String> {
+    let mut delay_ms = 500u64;
+
+    for attempt in 1..=MAX_FETCH_ATTEMPTS {
+        match fetch_url_once(client, url) {
+            Ok(html) => return Ok(html),
+            Err(err) => {
+                if attempt == MAX_FETCH_ATTEMPTS || !is_retryable(&err) {
+                    return Err(err);
+                }
+                std::thread::sleep(Duration::from_millis(delay_ms));
+                delay_ms *= 2;
+            }
+        }
+    }
+    unreachable!("fetch_url retry loop always returns")
+}
+
+fn fetch_url_once(client: &Client, url: &str) -> Result<String> {
     client
         .get(url)
         .send()
@@ -360,6 +387,23 @@ fn fetch_url(client: &Client, url: &str) -> Result<String> {
         .context("Finviz screener request failed")?
         .text()
         .context("failed to read Finviz screener response")
+}
+
+/// True if the error is a transient network or status failure worth retrying:
+/// connection resets, timeouts, TLS/body/decode errors, and HTTP 429/5xx.
+fn is_retryable(err: &anyhow::Error) -> bool {
+    err.chain().any(|cause| {
+        let Some(re) = cause.downcast_ref::<reqwest::Error>() else {
+            return false;
+        };
+        if re.is_status() {
+            return matches!(
+                re.status(),
+                Some(s) if s.is_server_error() || s == reqwest::StatusCode::TOO_MANY_REQUESTS
+            );
+        }
+        re.is_connect() || re.is_timeout() || re.is_body() || re.is_decode() || re.is_request()
+    })
 }
 
 /// Parse the total page count from the screener pagination footer.
@@ -602,6 +646,56 @@ mod tests {
     fn test_parse_screener_table_empty() {
         let results = parse_screener_table("<html><body></body></html>").unwrap();
         assert!(results.is_empty());
+    }
+
+    /// Verifies fetch_url retries transient connection resets and eventually
+    /// succeeds. The local server resets (RST) the first two connections,
+    /// then serves a valid response on the third.
+    #[test]
+    fn test_fetch_url_retries_on_connection_reset() {
+        use std::io::Write;
+        use std::net::TcpListener;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::Arc;
+        use std::thread;
+
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let hits = Arc::new(AtomicUsize::new(0));
+
+        let server = thread::spawn({
+            let hits = Arc::clone(&hits);
+            move || {
+                for i in 0..3 {
+                    let (sock, _) = listener.accept().unwrap();
+                    hits.fetch_add(1, Ordering::SeqCst);
+                    if i < 2 {
+                        // Drop without reading the request: unread data in the
+                        // receive buffer causes the OS to send an RST.
+                        drop(sock);
+                    } else {
+                        let body = "<html><body>ok</body></html>";
+                        let resp = format!(
+                            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                            body.len(),
+                            body
+                        );
+                        let mut sock = sock;
+                        let _ = sock.write_all(resp.as_bytes());
+                        let _ = sock.flush();
+                    }
+                }
+            }
+        });
+
+        let client = new_client().unwrap();
+        let url = format!("http://{addr}/page");
+        let html = fetch_url(&client, &url).unwrap();
+        assert_eq!(html, "<html><body>ok</body></html>");
+        // Two resets consumed by retries, then a successful third attempt.
+        assert_eq!(hits.load(Ordering::SeqCst), 3);
+
+        server.join().unwrap();
     }
 
     #[test]
