@@ -1,5 +1,3 @@
-<h2 align="center">Merryl</h2>
-
 <p align="center">
   <img src="docs/images/merryl-dashboard.png" alt="Merryl dashboard">
 </p>
