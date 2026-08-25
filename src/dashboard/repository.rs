@@ -14,6 +14,7 @@ use crate::domain::models::{
 };
 use crate::storage::{DataQualitySnapshot, Database};
 use crate::validation::{MacroContextOverlay, macro_context_overlay};
+use crate::volume_profile::classify_active_stocks;
 
 use super::models::{
     BacktestDto, DashboardSnapshot, DataHealthDto, HealthDto, IndustryDto, IntradaySetupDto,
@@ -236,6 +237,14 @@ pub fn export_static_dashboard(db_path: &Path, output_dir: &Path) -> Result<Stat
         };
         write_json(&screener_dir.join("all.json"), &all_resp)?;
     }
+
+    let db = Database::open(db_path)?;
+    db.migrate()?;
+    let volume_profile = classify_active_stocks(&db.active_symbols()?, &db.daily_prices()?);
+    write_json(
+        &output_dir.join("volume-profile/classifications.json"),
+        &volume_profile,
+    )?;
 
     Ok(StaticDashboardExport {
         output_dir: output_dir.to_path_buf(),

@@ -7,7 +7,8 @@ import {
   LineChart,
   MousePointer2,
   ShieldCheck,
-  Target
+  Target,
+  Volume
 } from "lucide-react";
 import type { ReactNode } from "react";
 import type { DashboardView } from "../view";
@@ -32,7 +33,8 @@ export function DashboardSidebar({
     { view: "watchlist", label: "Watchlist", icon: <Target size={16} /> },
     { view: "execution", label: "Execution", icon: <MousePointer2 size={16} /> },
     { view: "validation", label: "Validation", icon: <Database size={16} /> },
-    { view: "screener", label: "Screener", icon: <Filter size={16} /> }
+    { view: "screener", label: "Screener", icon: <Filter size={16} /> },
+    { view: "volume_profiles", label: "Volume Profiles", icon: <Volume size={16} /> }
   ];
 
   return (

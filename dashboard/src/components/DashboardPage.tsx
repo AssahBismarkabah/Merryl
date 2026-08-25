@@ -4,6 +4,7 @@ import { DataTable } from "./DataTable";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { MarketOverview } from "./MarketOverview";
 import { ScreenerPage } from "./ScreenerPage";
+import { VolumeProfilePage } from "./VolumeProfilePage";
 import { number, percent } from "../format";
 import {
   actionabilityQueueColumns,
@@ -282,6 +283,8 @@ function renderView(view: DashboardView, data: DashboardSnapshot) {
       );
     case "screener":
       return <ScreenerPage />;
+    case "volume_profiles":
+      return <VolumeProfilePage />;
     case "validation":
       return (
         <div className="viewSurface validationStack">
@@ -734,5 +737,7 @@ function viewTitle(view: DashboardView) {
       return { eyebrow: "Controls", heading: "Validation" };
     case "screener":
       return { eyebrow: "Fundamental filters", heading: "Finviz Screener" };
+    case "volume_profiles":
+      return { eyebrow: "Chart review", heading: "Volume Profiles" };
   }
 }

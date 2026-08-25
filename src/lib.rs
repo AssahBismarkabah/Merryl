@@ -10,4 +10,5 @@ pub mod output;
 pub mod scoring;
 pub mod storage;
 pub mod validation;
+pub mod volume_profile;
 pub mod workflows;

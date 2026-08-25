@@ -160,6 +160,63 @@ h3 {
   color: var(--accent);
 }
 
+.volumeProfileNotice {
+  display: grid;
+  gap: 5px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted-strong);
+  background: var(--surface-soft);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.volumeProfileNotice strong {
+  color: var(--text-strong);
+}
+
+.volumeProfileStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin-top: 14px;
+  color: var(--muted-strong);
+  font-size: 12px;
+}
+
+.volumeProfileStats strong {
+  color: var(--text-strong);
+}
+
+.volumeProfileToggle {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.volumeProfileSubtext {
+  display: block;
+  max-width: 180px;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.volumeProfileReview {
+  min-width: 260px;
+  max-width: 360px;
+  color: var(--muted-strong);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .sideStat {
   padding: 13px 0;
   border-bottom: 1px solid var(--border);

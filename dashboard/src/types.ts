@@ -209,3 +209,32 @@ export interface ScreenerResponse {
   sector: string | null;
   count: number;
 }
+
+export interface VolumeProfileClassificationResponse {
+  date: string;
+  timeframe: string;
+  volume_source: string;
+  approximation_note: string;
+  evaluated_count: number;
+  candidate_count: number;
+  skipped_count: number;
+  results: VolumeProfileClassification[];
+}
+
+export interface VolumeProfileClassification {
+  symbol: string;
+  name: string;
+  sector: string;
+  industry: string;
+  labels: string[];
+  direction: string;
+  status: string;
+  anchor_start: string;
+  anchor_end: string;
+  poc: number | null;
+  node_low: number | null;
+  node_high: number | null;
+  latest_price: number;
+  distance_to_node_pct: number | null;
+  review_note: string;
+}

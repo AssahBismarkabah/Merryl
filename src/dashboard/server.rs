@@ -15,6 +15,7 @@ use crate::config::dashboard as dashboard_config;
 use crate::data::{new_client, run_screener};
 use crate::domain::models::ScreenerResultRow;
 use crate::storage::{Database, default_db_path};
+use crate::volume_profile::classify_active_stocks;
 
 use super::models::{ApiErrorDto, DatesDto, ScreenerResponseDto, ScreenerResultDto};
 use super::repository::{
@@ -170,6 +171,10 @@ pub fn router(db_path: PathBuf, frontend_dist_dir: &Path) -> Router {
         .route("/api/dashboard/latest", get(latest_dashboard))
         .route("/api/dashboard/{date}", get(dashboard_for_date))
         .route("/api/screener", get(screener))
+        .route(
+            "/api/volume-profile/classifications",
+            get(volume_profile_classifications),
+        )
         .with_state(state);
 
     if frontend_dist_dir.exists() {
@@ -197,6 +202,22 @@ async fn dashboard_for_date(
     AxumPath(date): AxumPath<String>,
 ) -> impl IntoResponse {
     api_response(load_dashboard_for_date(&state.db_path, &date))
+}
+
+async fn volume_profile_classifications(State(state): State<DashboardState>) -> impl IntoResponse {
+    let db_path = state.db_path.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        let db = Database::open(&db_path)?;
+        db.migrate()?;
+        let symbols = db.active_symbols()?;
+        let prices = db.daily_prices()?;
+        Ok::<_, anyhow::Error>(classify_active_stocks(&symbols, &prices))
+    })
+    .await
+    .map_err(|error| anyhow::anyhow!("volume-profile task failed: {error}"))
+    .and_then(|result| result);
+
+    api_response(result)
 }
 
 async fn screener(

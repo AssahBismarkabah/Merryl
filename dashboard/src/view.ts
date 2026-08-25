@@ -7,4 +7,5 @@ export type DashboardView =
   | "watchlist"
   | "execution"
   | "validation"
-  | "screener";
+  | "screener"
+  | "volume_profiles";

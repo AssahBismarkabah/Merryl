@@ -1,4 +1,8 @@
-import type { DashboardSnapshot, ScreenerResponse } from "./types";
+import type {
+  DashboardSnapshot,
+  ScreenerResponse,
+  VolumeProfileClassificationResponse,
+} from "./types";
 
 const STATIC_MODE = import.meta.env.VITE_MERRYL_STATIC_DASHBOARD === "true";
 const STATIC_DATA_BASE = `${import.meta.env.BASE_URL}static-data`;
@@ -68,6 +72,17 @@ export async function fetchScreener(sector?: string): Promise<ScreenerResponse> 
     throw new Error(await errorMessage(response));
   }
   return response.json() as Promise<ScreenerResponse>;
+}
+
+export async function fetchVolumeProfileClassifications(): Promise<VolumeProfileClassificationResponse> {
+  const url = STATIC_MODE
+    ? `${STATIC_DATA_BASE}/volume-profile/classifications.json`
+    : "/api/volume-profile/classifications";
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(await errorMessage(response));
+  }
+  return response.json() as Promise<VolumeProfileClassificationResponse>;
 }
 
 async function errorMessage(response: Response): Promise<string> {
