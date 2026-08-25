@@ -227,6 +227,7 @@ export interface VolumeProfileClassification {
   sector: string;
   industry: string;
   labels: string[];
+  structure_kind: string;
   direction: string;
   status: string;
   anchor_start: string;
@@ -237,4 +238,21 @@ export interface VolumeProfileClassification {
   latest_price: number;
   distance_to_node_pct: number | null;
   review_note: string;
+  confidence: string;
+  chart_bars: ChartBar[];
+  profile_rows: ProfileRow[];
+}
+
+export interface ChartBar {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+export interface ProfileRow {
+  price_low: number;
+  price_high: number;
+  volume_pct: number;
 }

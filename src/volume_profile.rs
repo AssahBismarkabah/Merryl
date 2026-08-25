@@ -34,6 +34,7 @@ pub struct VolumeProfileClassification {
     pub sector: String,
     pub industry: String,
     pub labels: Vec<String>,
+    pub structure_kind: String,
     pub direction: String,
     pub status: String,
     pub anchor_start: String,
@@ -44,13 +45,33 @@ pub struct VolumeProfileClassification {
     pub latest_price: f64,
     pub distance_to_node_pct: Option<f64>,
     pub review_note: String,
+    pub confidence: String,
+    pub chart_bars: Vec<ChartBar>,
+    pub profile_rows: Vec<ProfileRow>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Serialize)]
+pub struct ChartBar {
+    pub date: String,
+    pub open: f64,
+    pub high: f64,
+    pub low: f64,
+    pub close: f64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ProfileRow {
+    pub price_low: f64,
+    pub price_high: f64,
+    pub volume_pct: f64,
+}
+
+#[derive(Debug, Clone)]
 struct Profile {
     poc: f64,
     node_low: f64,
     node_high: f64,
+    rows: Vec<ProfileRow>,
 }
 
 pub fn classify_active_stocks(
@@ -116,13 +137,22 @@ pub fn classify_active_stocks(
 }
 
 fn classify_symbol(symbol: &Symbol, history: &[&DailyPrice]) -> VolumeProfileClassification {
-    let start = history.len() - PROFILE_BARS;
-    let window = &history[start..];
     let latest = history[history.len() - 1];
     let atr = average_true_range(history, history.len() - 1, ATR_BARS);
+    let (start, end, structure_kind, anchor_direction) = atr
+        .and_then(|atr| choose_structure(history, atr))
+        .unwrap_or_else(|| {
+            (
+                history.len() - PROFILE_BARS,
+                history.len() - 1,
+                "provisional_window".to_string(),
+                "neutral".to_string(),
+            )
+        });
+    let window = &history[start..=end];
     let profile = build_profile(window);
     let mut labels = Vec::new();
-    let mut direction = "neutral".to_string();
+    let mut direction = anchor_direction;
     let mut review_note =
         "No current candidate; continue monitoring the daily structure.".to_string();
 
@@ -145,7 +175,7 @@ fn classify_symbol(symbol: &Symbol, history: &[&DailyPrice]) -> VolumeProfileCla
             review_note = "Review the approach, rejection displacement, and follow-through on the chart; wick size alone is not sufficient.".to_string();
         }
 
-        if let Some(profile) = profile {
+        if let Some(profile) = profile.as_ref() {
             if let Some(failure_direction) = crossed_and_retested(profile, history, atr) {
                 labels.push("level_failure_candidate".to_string());
                 direction = failure_direction.to_string();
@@ -154,8 +184,9 @@ fn classify_symbol(symbol: &Symbol, history: &[&DailyPrice]) -> VolumeProfileCla
         }
     }
 
-    let distance_to_node_pct =
-        profile.map(|profile| ((latest.adjusted_close - profile.poc).abs() / profile.poc) * 100.0);
+    let distance_to_node_pct = profile
+        .as_ref()
+        .map(|profile| ((latest.adjusted_close - profile.poc).abs() / profile.poc) * 100.0);
 
     VolumeProfileClassification {
         symbol: symbol.symbol.clone(),
@@ -163,17 +194,98 @@ fn classify_symbol(symbol: &Symbol, history: &[&DailyPrice]) -> VolumeProfileCla
         sector: symbol.sector.clone().unwrap_or_default(),
         industry: symbol.industry.clone().unwrap_or_default(),
         labels,
+        structure_kind,
         direction,
         status: "candidate_review".to_string(),
         anchor_start: window[0].date.clone(),
         anchor_end: window[window.len() - 1].date.clone(),
-        poc: profile.map(|profile| profile.poc),
-        node_low: profile.map(|profile| profile.node_low),
-        node_high: profile.map(|profile| profile.node_high),
+        poc: profile.as_ref().map(|profile| profile.poc),
+        node_low: profile.as_ref().map(|profile| profile.node_low),
+        node_high: profile.as_ref().map(|profile| profile.node_high),
         latest_price: latest.adjusted_close,
         distance_to_node_pct,
         review_note,
+        confidence: if profile.is_some() { "candidate".to_string() } else { "insufficient_profile".to_string() },
+        chart_bars: history[start..].iter().map(|bar| ChartBar {
+            date: bar.date.clone(),
+            open: bar.open,
+            high: bar.high,
+            low: bar.low,
+            close: bar.adjusted_close,
+        }).collect(),
+        profile_rows: profile
+            .as_ref()
+            .map(|profile| profile.rows.clone())
+            .unwrap_or_default(),
     }
+}
+
+fn choose_structure(
+    history: &[&DailyPrice],
+    atr: f64,
+) -> Option<(usize, usize, String, String)> {
+    let latest = history.len() - 1;
+
+    // Rejection: anchor the profile around the completed event, not the whole
+    // trailing window. Require two bars after the event so the reversal is
+    // knowable without using a future bar that has not closed.
+    if let Some(event) = rejection_event(history, latest.saturating_sub(25), latest.saturating_sub(2), atr) {
+        let start = event.saturating_sub(5);
+        let end = (event + 2).min(latest);
+        let direction = if history[event].close > (history[event].high + history[event].low) / 2.0 {
+            "long"
+        } else {
+            "short"
+        };
+        return Some((start, end, "rejection".to_string(), direction.to_string()));
+    }
+
+    // Box: choose the most recent anchored window with repeated boundaries.
+    for end in (latest.saturating_sub(3)..=latest).rev() {
+        let min_start = end.saturating_sub(35);
+        for start in (min_start..end.saturating_sub(9)).rev() {
+            let window = &history[start..=end];
+            if is_box_candidate(window, atr) {
+                return Some((start, end, "box".to_string(), "neutral".to_string()));
+            }
+        }
+    }
+
+    // Trend: use confirmed swing endpoints when a directional leg is visible.
+    let start = latest.saturating_sub(PROFILE_BARS - 1);
+    let window = &history[start..=latest];
+    let net_move = latest_price(window) - window[0].adjusted_close;
+    if net_move.abs() >= 2.5 * atr && trend_efficiency(window) >= 0.35 {
+        return Some((
+            start,
+            latest,
+            "trend".to_string(),
+            if net_move > 0.0 { "long" } else { "short" }.to_string(),
+        ));
+    }
+    None
+}
+
+fn latest_price(window: &[&DailyPrice]) -> f64 {
+    window.last().map(|bar| bar.adjusted_close).unwrap_or(0.0)
+}
+
+fn rejection_event(history: &[&DailyPrice], start: usize, end: usize, atr: f64) -> Option<usize> {
+    (start..=end)
+        .filter(|index| *index < history.len())
+        .filter(|index| {
+            let bar = history[*index];
+            let range = bar.high - bar.low;
+            if range < 1.8 * atr {
+                return false;
+            }
+            let location = (bar.close - bar.low) / range.max(f64::EPSILON);
+            location <= 0.25 || location >= 0.75
+        })
+        .max_by(|left, right| {
+            (history[*left].high - history[*left].low)
+                .total_cmp(&(history[*right].high - history[*right].low))
+        })
 }
 
 fn build_profile(bars: &[&DailyPrice]) -> Option<Profile> {
@@ -205,10 +317,25 @@ fn build_profile(bars: &[&DailyPrice]) -> Option<Profile> {
         .max_by(|left, right| left.1.total_cmp(right.1))
         .map(|(index, _)| index)?;
     let poc = low + (poc_index as f64 + 0.5) * width;
+    let total_volume = volumes.iter().sum::<f64>();
+    let rows = volumes
+        .iter()
+        .enumerate()
+        .map(|(index, volume)| ProfileRow {
+            price_low: low + index as f64 * width,
+            price_high: low + (index as f64 + 1.0) * width,
+            volume_pct: if total_volume > 0.0 {
+                volume / total_volume
+            } else {
+                0.0
+            },
+        })
+        .collect();
     Some(Profile {
         poc,
         node_low: low + poc_index as f64 * width,
         node_high: low + (poc_index as f64 + 1.0) * width,
+        rows,
     })
 }
 
@@ -296,7 +423,7 @@ fn rejection_direction(window: &[&DailyPrice]) -> &'static str {
 }
 
 fn crossed_and_retested(
-    profile: Profile,
+    profile: &Profile,
     history: &[&DailyPrice],
     atr: f64,
 ) -> Option<&'static str> {

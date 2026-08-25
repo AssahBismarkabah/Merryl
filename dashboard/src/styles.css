@@ -217,6 +217,62 @@ h3 {
   line-height: 1.35;
 }
 
+.volumeProfileClickable {
+  cursor: pointer;
+}
+
+.volumeProfileClickable:hover {
+  background: var(--surface-hover);
+}
+
+.volumeProfilePreview {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+}
+
+.volumeProfilePreview > div {
+  display: grid;
+  gap: 3px;
+}
+
+.volumeProfilePreview span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.volumeProfilePreview svg {
+  width: min(100%, 720px);
+  height: auto;
+  overflow: visible;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-soft);
+}
+
+.previewAxis {
+  stroke: var(--border);
+}
+
+.previewNode {
+  fill: var(--accent);
+  opacity: 0.12;
+}
+
+.previewPoc {
+  stroke: var(--accent);
+  stroke-dasharray: 4 3;
+}
+
+.previewVolume {
+  fill: var(--accent);
+  opacity: 0.6;
+}
+
+.previewLabel {
+  fill: var(--muted-strong);
+  font-size: 10px;
+}
+
 .sideStat {
   padding: 13px 0;
   border-bottom: 1px solid var(--border);
